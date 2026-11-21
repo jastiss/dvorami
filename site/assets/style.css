@@ -778,3 +778,126 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
   .av-section--red .s1 { right: -200px; top: -150px; }
   .av-section--red .s2 { display: none; }
 }
+
+/* ---------- Telegram-ссылки (22.11) ---------- */
+.nav a.nav-tg { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; justify-content: center; color: var(--text); text-decoration: none; }
+.nav a.nav-tg svg { width: 24px; height: 24px; flex: none; }
+.nav a.nav-tg span { display: none; }
+@media (min-width: 1000px) { .nav a.nav-tg span { display: inline; } }
+.nav a.nav-tg:hover { color: var(--accent); }
+.theme-avangard .nav a.nav-tg { display: inline-flex; color: var(--text); }
+.theme-avangard .nav a.nav-tg:hover { color: var(--accent-text); }
+.btn-tg { display: inline-flex; align-items: center; gap: 10px; }
+.btn-tg svg { width: 24px; height: 24px; }
+.honest .btn { margin-top: 18px; }
+
+/* ---------- Каталог дел: N квестов (22.11) ---------- */
+.qfilter { display: none; flex-wrap: wrap; gap: 10px; margin: -8px 0 28px; }
+.js .qfilter { display: flex; }
+.qfilter button { font: 600 16px var(--font-text); color: var(--text); background: transparent; border: 2px solid var(--control); border-radius: 999px; padding: 9px 18px; min-height: 44px; cursor: pointer; }
+.qfilter button:hover { border-color: var(--sky); }
+.qfilter button[aria-pressed="true"] { background: var(--sky); border-color: var(--sky); color: var(--on-accent); }
+.qgrid { list-style: none; padding: 0; display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 700px) { .qgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 28px; } }
+@media (min-width: 1180px) { .qgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px; } }
+@media (min-width: 700px) {
+  .qgrid > .qcard--suggest { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) auto; grid-template-rows: auto auto; align-items: center; gap: 4px 32px; padding: 34px 32px 28px; transform: rotate(-.4deg); }
+  .qcard--suggest .hand { grid-column: 1; grid-row: 1; }
+  .qcard--suggest .qc-title { grid-column: 1; grid-row: 2; }
+  .qcard--suggest p { grid-column: 2; grid-row: 1 / 3; }
+  .qcard--suggest .btn { grid-column: 3; grid-row: 1 / 3; margin: 0; align-self: center; }
+}
+@media (min-width: 700px) and (max-width: 999px) { .qgrid > .qcard--suggest { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .qcard--suggest .btn { grid-column: 1 / -1; grid-row: 3; justify-self: start; margin-top: 14px; } }
+/* Квестов станет больше — сетка просто добавит строки; «Предложите свой квест» всегда последняя карточка. */
+.qcard[hidden] { display: none; }
+.qcard { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 26px 22px 24px; min-height: 380px; box-shadow: 0 24px 40px -24px rgba(0,0,0,.7); transition: transform .3s ease; }
+.qcard > * { position: relative; z-index: 1; }
+.qcard p { max-width: 30em; }
+.qc-where { font-size: 15px; font-weight: 600; }
+.qc-title { font-size: 26px; line-height: 1.12; }
+.qc-meta { font-size: 15px; }
+.qc-foot { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; padding-top: 14px; }
+.qc-price { font-size: 15px; } .qc-price b { font-size: 26px; display: block; line-height: 1.1; }
+.qc-badge { display: inline-block; font: 700 22px/1 var(--font-hand); border: 2px solid currentColor; border-radius: 6px; padding: 2px 8px; transform: rotate(-4deg); }
+.qc-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 20px; font-weight: 700; text-decoration: none; align-self: flex-start; }
+.qc-btn::after { content: "→"; margin-left: 10px; transition: transform .2s ease; }
+.qc-btn:hover::after { transform: translateX(4px); }
+@media (prefers-reduced-motion: no-preference) { .qcard:hover { transform: translateY(-4px) rotate(0deg) !important; } }
+
+/* ЗИЛАРТ — «Авангард»: чёрный, красный, рубленый шрифт, геометрия */
+.qcard--avangard { background: #141414; color: #F2EFE8; border: 3px solid #F2EFE8; transform: rotate(-.6deg); }
+.qcard--avangard .qc-title { font: 700 clamp(30px, 3.2vw, 40px)/1 'Oswald', 'Arial Narrow', sans-serif; text-transform: uppercase; letter-spacing: .01em; max-width: 9em; }
+.qcard--avangard .qc-where { color: #FF5A4E; font-family: 'Oswald', 'Arial Narrow', sans-serif; text-transform: uppercase; font-size: 17px; letter-spacing: .03em; }
+.qcard--avangard p { color: #C9C5BC; } .qcard--avangard .qc-meta { color: #9A968E; }
+.qcard--avangard .qc-foot { border-top: 3px solid #E1251B; }
+.qcard--avangard .qc-badge { color: #FF5A4E; }
+.qcard--avangard .qc-btn { background: #C81E17; color: #F2EFE8; box-shadow: 5px 5px 0 #F2EFE8; }
+.qcard--avangard .qc-btn:hover { color: #F2EFE8; transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #F2EFE8; }
+.qc-shapes i { position: absolute; display: block; }
+.qc-shapes i:nth-child(1) { right: -40px; top: -40px; width: 150px; height: 150px; border-radius: 50%; background: #E1251B; }
+.qc-shapes i:nth-child(2) { right: 60px; top: 70px; width: 120px; height: 14px; background: #F2EFE8; transform: rotate(-28deg); }
+.qc-shapes i:nth-child(3) { right: 14px; top: 104px; width: 0; height: 0; border-left: 26px solid transparent; border-right: 26px solid transparent; border-bottom: 44px solid #F2EFE8; transform: rotate(12deg); }
+.qc-shapes { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.qcard--avangard .qc-where, .qcard--avangard .qc-title { padding-right: 90px; }
+
+/* Башня — петровское барокко: охра, белый камень, антиква, рамка-картуш */
+.qcard--baroque { background: #EFE3C8 radial-gradient(120% 80% at 100% 0, #F7EED9 0, #E6D4AE 100%); color: #3B1F14; border: 2px solid #8E5A2B; outline: 6px double #8E5A2B; outline-offset: -14px; transform: rotate(.7deg); padding: 34px 30px 30px; }
+.qcard--baroque .qc-title { font: 700 clamp(30px, 3vw, 36px)/1.02 'Cormorant', 'Georgia', serif; max-width: 10em; padding-right: 64px; }
+.qcard--baroque .qc-where { color: #8E2B1C; font-family: 'Cormorant', Georgia, serif; font-size: 20px; font-style: italic; }
+.qcard--baroque p { color: #4A2A1C; } .qcard--baroque .qc-meta { color: #6B4630; }
+.qcard--baroque .qc-foot { border-top: 1px solid #8E5A2B; }
+.qcard--baroque .qc-badge { color: #8E2B1C; }
+.qcard--baroque .qc-btn { background: #7A2E1F; color: #F7EED9; border-radius: 999px 999px 6px 6px; padding-left: 24px; padding-right: 24px; }
+.qcard--baroque .qc-btn:hover { background: #5E2216; color: #F7EED9; }
+.qc-tower { position: absolute !important; right: 18px; top: 22px; width: 64px; height: auto; z-index: 0 !important; fill: #C9A46A; opacity: .9; }
+.qc-tower .w { fill: #EFE3C8; }
+
+/* Коломенское — туман, легенда, природа: тёмная зелень, дымка, рукописная надпись */
+.qcard--fog { background: linear-gradient(180deg, #2C3B35 0, #3F5148 55%, #6E8279 100%); color: #EEF2EC; border-radius: 28px 28px 28px 6px; transform: rotate(-.4deg); }
+.qcard--fog .qc-title { font: 700 clamp(28px, 2.8vw, 34px)/1.1 var(--font-display); letter-spacing: -0.01em; max-width: 10em; }
+.qcard--fog .qc-where { font: 700 26px/1 var(--font-hand); color: #CFE3C8; }
+.qcard--fog p { color: #DDE6DA; } .qcard--fog .qc-meta { color: #C2D0C0; }
+.qcard--fog .qc-foot { border-top: 1px dashed rgba(238,242,236,.5); }
+.qcard--fog .qc-badge { color: #EEF2EC; }
+.qcard--fog .qc-btn { background: #EEF2EC; color: #23302B; border-radius: 14px; }
+.qcard--fog .qc-btn:hover { background: #FFFFFF; color: #23302B; }
+.qc-church { position: absolute !important; right: 22px; top: 18px; width: 58px; height: auto; z-index: 0 !important; fill: #1F2A26; opacity: .75; }
+.qc-mist { position: absolute !important; inset: 0; z-index: 0 !important; pointer-events: none; }
+.qc-mist i { position: absolute; display: block; left: -20%; width: 140%; height: 90px; border-radius: 50%; background: rgba(230,238,232,.22); filter: blur(18px); }
+.qc-mist i:nth-child(1) { top: 70px; } .qc-mist i:nth-child(2) { top: 170px; opacity: .7; } .qc-mist i:nth-child(3) { bottom: -30px; height: 140px; opacity: .9; }
+@media (prefers-reduced-motion: no-preference) {
+  .qc-mist i:nth-child(1) { animation: mist 14s ease-in-out infinite alternate; }
+  .qc-mist i:nth-child(2) { animation: mist 19s ease-in-out infinite alternate-reverse; }
+}
+@keyframes mist { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
+
+/* «Предложите свой квест» — записка на скотче */
+.qcard--suggest { background: transparent; color: var(--text); border: 2px dashed var(--control); border-radius: 18px; box-shadow: none; min-height: 0; padding-top: 34px; overflow: visible; transform: rotate(1deg); }
+.qcard--suggest .tape { top: -12px; left: auto; right: 30px; transform: rotate(5deg); }
+.qcard--suggest .hand { font-size: 28px; color: var(--accent); transform: rotate(-2deg); transform-origin: left; }
+.qcard--suggest .qc-title { font: 800 26px/1.1 var(--font-display); }
+.qcard--suggest p { color: var(--text-2); }
+.qcard--suggest .btn { margin-top: auto; align-self: flex-start; text-align: center; }
+
+/* Карта + легенда */
+.map-row { display: grid; gap: 28px; margin-top: 56px; }
+@media (min-width: 900px) { .map-row { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; align-items: center; } }
+.map-legend { display: flex; flex-direction: column; gap: 14px; }
+.map-legend .hand { font-size: 30px; }
+.map-legend ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.map-legend li { position: relative; padding-left: 40px; color: var(--text-2); }
+.map-legend li b { color: var(--text); }
+.lg { position: absolute; left: 0; top: 2px; width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--sky); background: var(--surface-2); display: grid; place-items: center; font: 800 13px var(--font-display); }
+.lg--live { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.map-label--ttk { font-size: 20px; }
+
+/* Картинки в «Искусстве вокруг»: показываются, когда файл загрузился */
+.art .art-img { display: none; aspect-ratio: auto; background: #0B0B0B; }
+.art .art-img.is-loaded { display: block; }
+.art-img img { height: auto; max-height: 340px; object-fit: contain; margin: 0 auto; }
+.art.has-img .art-year, .art.has-img .art-shards, .art.has-img .art-wedge { display: none; }
+.qcard--suggest .tape { position: absolute; }
+@media (max-width: 479px) { .theme-avangard .nav a.nav-tg { display: none; } }
+.art .img-credit { display: none; } .art.has-img .img-credit { display: inline; }
+.nav .btn { white-space: nowrap; }
+@media (max-width: 999px) { .nav { column-gap: 10px; } }
