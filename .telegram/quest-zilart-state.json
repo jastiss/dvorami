@@ -1,0 +1,16 @@
+{
+ "quest": "zilart",
+ "version": "3.0-field",
+ "day": "2026-11-21",
+ "phase": "idle",
+ "p": 0,
+ "k": 0,
+ "hint": 0,
+ "await_note": false,
+ "board": [],
+ "events": [],
+ "files": 0,
+ "finished": false,
+ "t_start": null,
+ "t_end": null
+}
