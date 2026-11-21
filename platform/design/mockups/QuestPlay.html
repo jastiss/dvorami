@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Точка 08 · Почти всадник</title>
+<meta name="description" content="Макет экрана прохождения квеста «Дело о Синей птице» (ЗИЛАРТ), стиль «Авангард», тёмная тема.">
+<meta name="theme-color" content="#141414">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Onest:wght@400;500;600&display=swap">
+<style>
+/* ===== Токены. Платформенные имена, значения — скин квеста «Авангард» (см. BRAND.md) ===== */
+:root{
+  --bg:#141414;          /* фон экрана */
+  --surface:#1E1E1E;     /* карточки */
+  --surface-2:#262626;   /* вложенные блоки, поле ввода */
+  --line:#333333;        /* разделители (декор) */
+  --control:#9A968E;     /* рамки полей и кнопок-контуров, ≥3:1 */
+  --text:#F2EFE8;        /* основной текст: «бумага», не чистый белый */
+  --text-2:#C9C5BC;      /* второстепенный */
+  --text-3:#9A968E;      /* подписи, метки */
+  --accent:#E1251B;      /* фигуры, крупный текст ≥24px, плашки */
+  --accent-text:#FF5A4E; /* красный мелкий текст на тёмном */
+  --accent-btn:#C81E17;  /* фон основной кнопки */
+  --on-accent:#F2EFE8;   /* текст на кнопке */
+  --font-display:'Oswald', 'Arial Narrow', sans-serif;
+  --font-text:'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;--s8:64px;
+  --radius:0;            /* «Авангард» — острые углы; платформа «Синий час» — 8/24 */
+  --tap:52px;            /* минимальная высота нажимаемого элемента */
+  color-scheme:dark;
+}
+:root[data-theme="light"]{ /* режим «Солнце»: для яркого дня на улице */
+  --bg:#F4F1EA;--surface:#FFFFFF;--surface-2:#ECE8DF;--line:#D6D1C6;--control:#6E6A62;
+  --text:#141414;--text-2:#3A3833;--text-3:#55524C;
+  --accent:#E1251B;--accent-text:#B81B14;--accent-btn:#B81B14;--on-accent:#FFFFFF;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:72px;scroll-padding-bottom:88px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-text);font-size:18px;line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+.app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:calc(76px + env(safe-area-inset-bottom));position:relative}
+b,strong{font-weight:600}
+a{color:var(--accent-text)}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent-text);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ===== Верхняя панель ===== */
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top__row{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);padding:var(--s3) var(--s4)}
+.mark{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;font-size:20px;letter-spacing:.04em;color:var(--text);text-decoration:none;min-height:44px}
+.mark::before{content:"";width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid var(--accent)}
+.top__right{display:flex;align-items:center;gap:var(--s2)}
+.count{font-family:var(--font-display);font-weight:500;font-size:18px;letter-spacing:.04em;color:var(--text-2)}
+.count b{color:var(--text);font-weight:700}
+.iconbtn{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;background:transparent;border:1px solid var(--control);border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer}
+.iconbtn svg{width:18px;height:18px}
+.progress{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;padding:0 var(--s4) var(--s3)}
+.progress i{height:6px;background:var(--line)}
+.progress i.done{background:var(--text-2)}
+.progress i.now{background:var(--accent)}
+
+/* ===== Шапка точки ===== */
+.hero{position:relative;overflow:hidden;padding:var(--s6) var(--s4) var(--s5)}
+.hero__shape1{position:absolute;right:-70px;top:-40px;width:210px;height:210px;border-radius:50%;background:var(--accent);opacity:.9}
+.hero__shape2{position:absolute;right:-26px;top:150px;width:74px;height:74px;border:3px solid var(--text);border-radius:50%}
+.hero__shape3{position:absolute;left:-10%;bottom:10px;width:120%;height:4px;background:var(--text);transform:rotate(-3deg);opacity:.85}
+.hero__in{position:relative;display:flex;flex-direction:column;gap:var(--s3)}
+.kicker{align-self:flex-start;background:var(--text);color:var(--bg);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px}
+.hero h1{margin:0;font-family:var(--font-display);font-weight:700;font-size:56px;line-height:.95;text-transform:uppercase;max-width:6.2em;letter-spacing:.005em}
+.place{margin:0;color:var(--text-2);font-size:17px;max-width:16.5em}
+
+/* ===== Общие блоки ===== */
+.section{padding:var(--s5) var(--s4)}
+.label{margin:0 0 var(--s3);font-family:var(--font-display);font-weight:500;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+.card{background:var(--surface);border-radius:var(--radius);padding:var(--s5) var(--s4)}
+
+/* Карта-заглушка */
+.map{position:relative;background:var(--surface);overflow:hidden}
+.map svg{display:block;width:100%;height:auto}
+.map__bar{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);align-items:center;justify-content:space-between;padding:var(--s3) var(--s4)}
+.map__dist{font-family:var(--font-display);font-weight:700;font-size:24px}
+.map__dist span{font-family:var(--font-text);font-weight:400;font-size:15px;color:var(--text-3);margin-left:6px}
+details.walk{border-top:1px solid var(--line)}
+details.walk summary{list-style:none;cursor:pointer;min-height:var(--tap);display:flex;align-items:center;justify-content:space-between;padding:0 var(--s4);font-weight:500}
+details.walk summary::-webkit-details-marker{display:none}
+details.walk summary::after{content:"+";font-family:var(--font-display);font-size:26px;color:var(--accent-text)}
+details.walk[open] summary::after{content:"−"}
+details.walk p{margin:0;padding:0 var(--s4) var(--s4);color:var(--text-2)}
+
+/* Сцена — реплика свидетеля */
+.scene{position:relative;border-left:6px solid var(--accent);padding:var(--s4) var(--s4) var(--s4) var(--s5);background:var(--surface)}
+.scene p{margin:0 0 var(--s3)}
+.scene p:last-child{margin:0}
+.scene__stage{color:var(--text-2);font-style:italic}
+.who{display:flex;align-items:baseline;gap:var(--s3);margin-bottom:var(--s3)}
+.who__name{font-family:var(--font-display);font-weight:700;font-size:24px;text-transform:uppercase;line-height:1.1}
+.who__year{font-family:var(--font-display);font-weight:500;font-size:20px;color:var(--accent-text)}
+
+/* Шаги: Смотри / Крути / Думай */
+.steps{display:flex;flex-direction:column;gap:var(--s3)}
+.step{background:var(--surface);padding:var(--s4)}
+.step__head{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s3)}
+.tag{font-family:var(--font-display);font-weight:700;font-size:17px;letter-spacing:.08em;text-transform:uppercase;padding:2px 10px;border:2px solid var(--text);line-height:1.4}
+.tag--look{background:var(--text);color:var(--bg)}
+.tag--turn{border-color:var(--accent);background:var(--accent);color:#FFFFFF}
+.tag--think{border-color:var(--text);color:var(--text)}
+.tag--kids{border-color:var(--control);color:var(--text-2);border-style:dashed}
+.step__state{margin-left:auto;font-size:14px;font-weight:500;color:var(--text-3)}
+.step p{margin:0}
+.step.is-locked p{color:var(--text-3)}
+.step.is-locked .tag{border-color:var(--control);color:var(--text-3)}
+.step.is-locked .answer,.step.is-locked .hints{display:none}
+.step.is-done .answer,.step.is-done .hints{display:none}
+.step.is-done .step__state{color:var(--text)}
+
+.answer{margin-top:var(--s4);display:flex;flex-direction:column;gap:var(--s2)}
+.answer input{width:100%;min-width:0;height:var(--tap);padding:0 var(--s4);background:var(--surface-2);border:2px solid var(--control);border-radius:var(--radius);font-size:19px}
+.answer input::placeholder{color:var(--text-3)}
+.answer input[aria-invalid="true"]{border-color:var(--accent-text)}
+.btn{min-height:var(--tap);padding:0 var(--s5);border:0;border-radius:var(--radius);background:var(--accent-btn);color:var(--on-accent);font-family:var(--font-display);font-weight:700;font-size:20px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.btn:active{transform:translateY(1px)}
+.btn--wide{width:100%;display:flex;align-items:center;justify-content:center;gap:var(--s2);text-decoration:none}
+.btn[disabled],.btn[aria-disabled="true"]{background:var(--surface-2);color:var(--text-3);cursor:not-allowed}
+.msg{margin-top:var(--s2);font-size:16px;color:var(--accent-text);min-height:0}
+.ok{margin-top:var(--s3);display:flex;gap:var(--s3);align-items:flex-start}
+.ok__stamp{flex:none;font-family:var(--font-display);font-weight:700;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-text);border:2px solid var(--accent-text);padding:0 8px;transform:rotate(-4deg);margin-top:2px}
+.ok__text{font-weight:500}
+
+/* Подсказки ступенями */
+.hints{margin-top:var(--s4);border-top:1px solid var(--line);padding-top:var(--s3)}
+.hints__row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2)}
+.hint-btn{min-height:44px;padding:var(--s1) var(--s2);background:transparent;border:1px solid var(--control);border-radius:var(--radius);font-size:15px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
+.hint-btn small{font-size:12px;color:var(--text-3);font-weight:400}
+.hint-btn[aria-expanded="true"]{background:var(--surface-2);border-color:var(--text-2)}
+.hint-btn[disabled]{opacity:.45;cursor:not-allowed}
+.hint-text{margin:var(--s3) 0 0;padding:var(--s3);background:var(--surface-2);font-size:17px}
+.hint-text b{font-family:var(--font-display);font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:14px;color:var(--text-3);display:block}
+
+/* Доска улик */
+.board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.chip{aspect-ratio:3/4;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+.chip__l{font-family:var(--font-display);font-weight:700;font-size:34px;line-height:1}
+.chip__y{font-size:13px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.chip.is-empty{background:transparent;border:1px dashed var(--control)}
+.chip.is-empty .chip__l{color:var(--text-3);font-weight:500}
+.chip.is-new{background:var(--accent);color:#FFFFFF}
+.chip.is-new .chip__y{color:#FFFFFF}
+.chip.is-new{animation:drop .5s ease-out}
+@keyframes drop{from{transform:translateY(-16px) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.chip.is-new{animation:none}}
+.board-note{margin:var(--s3) 0 0;font-size:15px;color:var(--text-3)}
+.says{margin-top:var(--s4);padding:var(--s4);background:var(--surface);display:none}
+.says.is-on{display:block}
+.says p{margin:0}
+.says__who{font-size:14px;color:var(--text-3);margin-top:var(--s2)!important}
+
+.next{padding:var(--s2) var(--s4) var(--s6)}
+.next p{margin:var(--s2) 0 0;font-size:15px;color:var(--text-3);text-align:center}
+
+/* Нижняя навигация */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.tabs__in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+.tabs a{position:relative;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--text-2);text-decoration:none;font-size:14px;font-weight:500}
+.tabs a svg{width:22px;height:22px}
+.tabs a[aria-current="true"]{color:var(--text)}
+.tabs a[aria-current="true"]::before{content:"";position:absolute;top:0;left:50%;margin-left:-14px;width:28px;height:3px;background:var(--accent)}
+.badge{font-family:var(--font-display);font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="top">
+  <div class="top__row">
+    <a class="mark" href="#" aria-label="Дворами: к списку дел">ДВОРАМИ</a>
+    <div class="top__right">
+      <span class="count" aria-label="Точка 8 из 12"><b>08</b>/12</span>
+      <button class="iconbtn" id="sun" type="button" aria-pressed="false" title="Светлая тема для яркого солнца">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+        <span>Солнце</span>
+      </button>
+    </div>
+  </div>
+  <div class="progress" role="progressbar" aria-label="Прогресс по маршруту" aria-valuemin="1" aria-valuemax="12" aria-valuenow="8" aria-valuetext="Точка 8 из 12">
+    <i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="now"></i><i></i><i></i><i></i><i></i>
+  </div>
+</header>
+
+<main>
+<section class="hero" aria-labelledby="pt-title">
+  <div class="hero__shape1" aria-hidden="true"></div>
+  <div class="hero__shape2" aria-hidden="true"></div>
+  <div class="hero__shape3" aria-hidden="true"></div>
+  <div class="hero__in">
+    <span class="kicker">Точка 08 · Свидетель 1911</span>
+    <h1 id="pt-title">Почти всадник</h1>
+    <p class="place">Улица Кандинского, середина. Ищите качели под навесом.</p>
+  </div>
+</section>
+
+<section class="section" id="map" aria-labelledby="map-h">
+  <h2 class="label" id="map-h">Где вы</h2>
+  <div class="map">
+    <!-- Заглушка: в продукте — интерактивная карта. Схема не в масштабе. -->
+    <svg viewBox="0 0 360 200" role="img" aria-label="Схема маршрута: пройдено 7 точек, вы на точке 8, впереди 4">
+      <rect width="360" height="200" fill="var(--surface)"/>
+      <path d="M-10 168 C80 150 150 196 230 176 S330 120 372 132" fill="none" stroke="var(--surface-2)" stroke-width="26"/>
+      <text x="296" y="160" font-size="11" fill="var(--text-3)" font-family="Onest, sans-serif" letter-spacing="1">МОСКВА-РЕКА</text>
+      <path d="M40 30 L70 70 L120 52 L150 96 L112 126 L176 120" fill="none" stroke="var(--text-2)" stroke-width="3"/>
+      <path d="M176 120 L232 96 L282 120 L312 70 L262 36 L210 50" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-dasharray="1 7" stroke-linecap="round"/>
+      <g fill="var(--text-2)"><rect x="36" y="26" width="8" height="8"/><rect x="66" y="66" width="8" height="8"/><rect x="116" y="48" width="8" height="8"/><rect x="146" y="92" width="8" height="8"/><rect x="108" y="122" width="8" height="8"/></g>
+      <g fill="none" stroke="var(--text-3)" stroke-width="2"><rect x="228" y="92" width="8" height="8"/><rect x="278" y="116" width="8" height="8"/><rect x="308" y="66" width="8" height="8"/><rect x="258" y="32" width="8" height="8"/></g>
+      <circle cx="176" cy="120" r="20" fill="var(--accent)" opacity=".25"/>
+      <circle cx="176" cy="120" r="9" fill="var(--accent)"/>
+      <text x="190" y="140" font-size="14" font-weight="700" fill="var(--text)" font-family="Oswald, sans-serif">08</text>
+    </svg>
+    <div class="map__bar">
+      <span class="map__dist">380 м<span>от точки 07</span></span>
+      <a href="#" class="iconbtn" style="text-decoration:none;color:var(--text)" aria-label="Открыть точку в картах (заглушка)">Открыть в картах</a>
+    </div>
+    <details class="walk">
+      <summary>Как дойти</summary>
+      <p>Сверните на пешеходную улицу Кандинского и идите в сторону реки — около 380 метров до середины улицы. Ищите качели под навесом.</p>
+    </details>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="scene-h">
+  <h2 class="label" id="scene-h">Свидетель</h2>
+  <div class="scene">
+    <p class="scene__stage">На качелях сидит девушка в берете с этюдником.</p>
+    <div class="who"><span class="who__name">Художница Варя</span><span class="who__year">1911</span></div>
+    <p>— Рисую ткани и плакаты. А вы знали, что у цвета бывает характер?</p>
+  </div>
+</section>
+
+<section class="section" id="task" aria-labelledby="task-h">
+  <h2 class="label" id="task-h">Задание</h2>
+  <div class="steps">
+
+    <article class="step">
+      <div class="step__head"><span class="tag tag--look">Смотри</span></div>
+      <p>Найдите табличку с названием улицы. Сядьте на качели и посмотрите вдоль улицы: прямая, без машин, а в конце — река.</p>
+    </article>
+
+    <article class="step is-done" data-step="1" data-answers="в" data-ok="Не хватает В. Почти всадник!">
+      <div class="step__head"><span class="tag tag--turn">Крути</span><span class="step__state">Решено</span></div>
+      <p>Из букв фамилии на табличке почти складывается слово ВСАДНИК. Какой одной буквы не хватает?</p>
+      <div class="ok"><span class="ok__stamp">Верно</span><span class="ok__text">Не хватает В. Почти всадник!</span></div>
+    </article>
+
+    <article class="step" data-step="2" data-answers="синий|синего|синим|~син" data-ok="«Синий всадник»! Опять синий." data-hints="Наше дело — о … птице.|Того же цвета, что и птица.|«Синий всадник».">
+      <div class="step__head"><span class="tag tag--think">Думай</span><span class="step__state">1 из 2</span></div>
+      <p>В 1911 году Кандинский с друзьями назвал своё объединение художников «… всадник». Какого цвета был всадник? Догадайтесь по названию нашего дела.</p>
+    </article>
+
+    <article class="step is-locked" data-step="3" data-last="1" data-answers="линия|линии|прямая|~лини" data-ok="Линия! Первая буква этого слова — улика." data-hints="Карандаш оставляет её на бумаге.|Прямая, ровная, длинная…|Линия.">
+      <div class="step__head"><span class="tag tag--think">Думай</span><span class="step__state">2 из 2 · после первого</span></div>
+      <p>Потом Кандинский написал книгу о двух главных героях любой картины: «Точка и … на плоскости». Точка — это вы на качелях. А второй герой — то, на что похожа эта улица, если смотреть сверху. Что это?</p>
+    </article>
+
+    <article class="step">
+      <div class="step__head"><span class="tag tag--kids">Малышам</span></div>
+      <p>Пройти по шву плитки, как по канату: ты — точка, которая рисует линию.</p>
+    </article>
+
+  </div>
+</section>
+
+<section class="section" id="board" aria-labelledby="board-h">
+  <h2 class="label" id="board-h">Доска улик · <span id="board-count">7</span> из 10</h2>
+  <ol class="board" id="board-list" aria-label="Улики в порядке получения">
+    <li class="chip"><span class="chip__l">А</span><span class="chip__y">2025</span></li>
+    <li class="chip"><span class="chip__l">Ь</span><span class="chip__y">1931</span></li>
+    <li class="chip"><span class="chip__l">Г</span><span class="chip__y">1792</span></li>
+    <li class="chip"><span class="chip__l">У</span><span class="chip__y">1916</span></li>
+    <li class="chip"><span class="chip__l">О</span><span class="chip__y">1964</span></li>
+    <li class="chip"><span class="chip__l">Б</span><span class="chip__y">1924</span></li>
+    <li class="chip"><span class="chip__l">Д</span><span class="chip__y">1937</span></li>
+    <li class="chip is-empty" id="slot-8"><span class="chip__l">?</span><span class="chip__y">1911</span></li>
+    <li class="chip is-empty"><span class="chip__l">?</span><span class="chip__y">····</span></li>
+    <li class="chip is-empty"><span class="chip__l">?</span><span class="chip__y">····</span></li>
+  </ol>
+  <p class="board-note">Улики приходят вперемешку. Расставить их по годам можно будет на точке 11.</p>
+  <div class="says" id="says" aria-live="polite">
+    <p>«Синяя птица — это просто цвет. Синий всегда зовёт куда-то дальше».</p>
+    <p class="says__who">Художница Варя, 1911 · улика: первая буква слова ЛИНИЯ</p>
+  </div>
+</section>
+
+<div class="next">
+  <a href="#" class="btn btn--wide" id="next" aria-disabled="true">К точке 09 <span aria-hidden="true">→</span></a>
+  <p id="next-note">Откроется, когда решите задание</p>
+</div>
+</main>
+
+<nav class="tabs" aria-label="Разделы точки">
+  <div class="tabs__in">
+    <a href="#map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>Карта</a>
+    <a href="#task" aria-current="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Задание</a>
+    <a href="#board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="4" width="7" height="9"/><rect x="13" y="4" width="7" height="6"/><rect x="13" y="12" width="7" height="8"/><rect x="4" y="15" width="7" height="5"/></svg><span>Доска <span class="badge" id="tab-count">7</span>/10</span></a>
+  </div>
+</nav>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement, sun=document.getElementById('sun');
+  function setTheme(t){ if(t==='light'){root.setAttribute('data-theme','light');}else{root.removeAttribute('data-theme');}
+    sun.setAttribute('aria-pressed', t==='light'?'true':'false');
+    try{localStorage.setItem('dv-theme',t);}catch(e){} }
+  try{ if(localStorage.getItem('dv-theme')==='light') setTheme('light'); }catch(e){}
+  sun.addEventListener('click',function(){ setTheme(root.getAttribute('data-theme')==='light'?'dark':'light'); });
+
+  /* Проверка ответа: регистр и ё не важны; "~стем" — совпадение по началу слова */
+  function norm(s){ return s.toLowerCase().replace(/ё/g,'е').replace(/[^a-zа-я0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+  function match(input, answers){
+    var v=norm(input); if(!v) return false;
+    return answers.some(function(a){
+      if(a.charAt(0)==='~'){ var st=norm(a.slice(1)); return v.split(' ').some(function(w){return w.indexOf(st)===0;}); }
+      return v===norm(a);
+    });
+  }
+  var HL=['Намёк','Направление','Ответ'], HS=['почти даром','ближе к цели','улика всё равно ваша'];
+
+  function build(step){
+    if(step.classList.contains('is-done')||step.dataset.built) return;
+    step.dataset.built='1';
+    var id='a'+step.dataset.step, hints=(step.dataset.hints||'').split('|');
+    var f=document.createElement('form'); f.className='answer'; f.noValidate=true;
+    f.innerHTML='<label class="sr" for="'+id+'">Ваш ответ</label><input id="'+id+'" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="Ваш ответ"><button class="btn" type="submit">Проверить</button>';
+    var msg=document.createElement('p'); msg.className='msg'; msg.setAttribute('aria-live','polite');
+    var h=document.createElement('div'); h.className='hints';
+    var row='<div class="hints__row" role="group" aria-label="Подсказки">';
+    hints.forEach(function(_,i){ row+='<button type="button" class="hint-btn" data-i="'+i+'" aria-expanded="false"'+(i>0?' disabled':'')+'>'+HL[i]+'<small>'+HS[i]+'</small></button>'; });
+    h.innerHTML=row+'</div><div class="hint-list" aria-live="polite"></div>';
+    step.appendChild(f); step.appendChild(msg); step.appendChild(h);
+    var list=h.querySelector('.hint-list');
+    h.addEventListener('click',function(e){
+      var b=e.target.closest('.hint-btn'); if(!b||b.disabled||b.getAttribute('aria-expanded')==='true') return;
+      var i=+b.dataset.i; b.setAttribute('aria-expanded','true');
+      var p=document.createElement('p'); p.className='hint-text'; p.innerHTML='<b>'+HL[i]+'</b>'+hints[i]; list.appendChild(p);
+      var nx=h.querySelector('.hint-btn[data-i="'+(i+1)+'"]'); if(nx) nx.disabled=false;
+    });
+    f.addEventListener('submit',function(e){
+      e.preventDefault(); var inp=f.querySelector('input');
+      if(match(inp.value, step.dataset.answers.split('|'))){ solve(step); }
+      else { inp.setAttribute('aria-invalid','true'); msg.textContent='Пока не то. Посмотрите ещё раз — или откройте подсказку.'; }
+    });
+    f.querySelector('input').addEventListener('input',function(){ this.removeAttribute('aria-invalid'); msg.textContent=''; });
+  }
+  function solve(step){
+    step.classList.add('is-done');
+    ['.answer','.msg','.hints'].forEach(function(s){ var n=step.querySelector(s); if(n) n.remove(); });
+    step.querySelector('.step__state').textContent='Решено';
+    var ok=document.createElement('div'); ok.className='ok'; ok.setAttribute('role','status');
+    ok.innerHTML='<span class="ok__stamp">Верно</span><span class="ok__text"></span>'; ok.lastChild.textContent=step.dataset.ok;
+    step.appendChild(ok);
+    var nx=step.nextElementSibling;
+    if(nx && nx.classList.contains('is-locked')){ nx.classList.remove('is-locked'); nx.querySelector('.step__state').textContent='2 из 2'; build(nx); nx.querySelector('input').focus({preventScroll:true}); }
+    if(step.dataset.last){ addClue(); }
+  }
+  function addClue(){
+    var s=document.getElementById('slot-8'); s.classList.remove('is-empty'); s.classList.add('is-new');
+    s.querySelector('.chip__l').textContent='Л'; s.setAttribute('aria-label','Новая улика: Л, 1911');
+    document.getElementById('board-count').textContent='8'; document.getElementById('tab-count').textContent='8';
+    document.getElementById('says').classList.add('is-on');
+    var n=document.getElementById('next'); n.removeAttribute('aria-disabled');
+    document.getElementById('next-note').textContent='Варя показывает вдоль улицы: «Там шагает Марк. Догоните его».';
+  }
+  document.getElementById('next').addEventListener('click',function(e){ e.preventDefault(); });
+  document.querySelectorAll('.step[data-answers]').forEach(function(s){ if(!s.classList.contains('is-locked')) build(s); });
+  /* Демо-состояние макета: в первом «Думай» уже открыт намёк */
+  var first=document.querySelector('.step[data-step="2"] .hint-btn[data-i="0"]'); if(first) first.click();
+})();
+</script>
+</body>
+</html>
