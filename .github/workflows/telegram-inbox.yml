@@ -1,0 +1,39 @@
+name: Telegram — входящие
+
+# Каждый час с 08:00 до 23:00 по Москве + в 06:00, перед утренней итерацией.
+# Реже — чтобы не расходовать бесплатные минуты GitHub Actions (≈500 мин/мес).
+on:
+  schedule:
+    - cron: "0 3,5-20 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-inbox
+  cancel-in-progress: false
+
+jobs:
+  inbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Забрать сообщения
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 scripts/telegram_inbox.py
+      - name: Сохранить в репозиторий
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then exit 0; fi
+          git config user.name "dvorami-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add DIRECTIVES.md .telegram/offset
+          git commit -m "Telegram: указания владельца"
+          for i in 1 2 3; do
+            git pull --rebase && git push && exit 0
+            sleep 5
+          done
+          exit 1
