@@ -1,6 +1,6 @@
 /* Дворами — плеер квеста (экран прохождения).
    Токены — имена из platform/design/BRAND.md, раздел 1; значения — скин «Авангард» (раздел 3).
-   Тёмная тема по умолчанию, режим «Солнце» — html[data-theme="sun"]. Mobile-first, контейнер до 520 px. */
+   Тёмная тема по умолчанию, светлая тема (для солнца) — html[data-theme="sun"]. Mobile-first, контейнер до 520 px. */
 
 :root {
   --bg: #141414;
@@ -82,6 +82,16 @@ code {
   font: 500 15px/1 var(--font-display); text-transform: uppercase; letter-spacing: .1em; cursor: pointer;
 }
 .pl-sun[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.pl-sun { white-space: nowrap; flex: none; }
+/* Узкие экраны: «Светлая тема» длиннее прежнего «Солнце» — ужимаем шапку, чтобы не было переноса и выезда за край */
+@media (max-width: 400px) {
+  .pl-top { gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .pl-logo { gap: 6px; font-size: 17px; letter-spacing: .02em; }
+  .pl-logo svg { width: 26px; height: 26px; }
+  .pl-count { font-size: 17px; }
+  .pl-sun { padding: 0 8px; font-size: 13px; letter-spacing: .03em; }
+}
+@media (max-width: 340px) { .pl-logo span { display: none; } }
 
 .pl-progress { display: flex; gap: 3px; max-width: 520px; margin: 0 auto; padding: 8px 16px 0; }
 .pl-progress i { flex: 1; height: 6px; background: var(--surface-2); }

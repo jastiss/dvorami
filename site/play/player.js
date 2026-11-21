@@ -47,7 +47,7 @@
   }
   // 👀 🔄 🧠 🧸 → типографские теги (BRAND.md, раздел 5): эмодзи в интерфейсе не показываем
   var TAGS = [['\u{1F440}', 'Смотри', 'smo'], ['\u{1F504}', 'Крути', 'krut'], ['\u{1F9E0}', 'Думай', 'dum'],
-    ['\u{1F9F8}', 'Малышам', 'mal'], ['☕', 'Перерыв', 'brk'], ['\u{1F5C2}', 'Доска', 'brd']];
+    ['\u{1F9F8}', 'По желанию', 'mal'], ['☕', 'Перерыв', 'brk'], ['\u{1F5C2}', 'Доска', 'brd']];
   function stepTag(text) {
     var t = String(text || '').replace(/^\s+/, '');
     for (var i = 0; i < TAGS.length; i++) {
@@ -231,7 +231,7 @@
   function checkBlock(p, collapsed) {
     if (!S.field || !p.check || !p.check.length) return '';
     var items = '<ul>' + p.check.map(function (c) { return '<li>' + inline(c) + '</li>'; }).join('') + '</ul>' +
-      '<p class="pl-small" style="margin-top:10px">Фото — в галерею телефона. Что заметили — кнопкой «Заметка» внизу: попадёт в отчёт к точке ' + p.n + '.</p>';
+      '<p class="pl-small" style="margin-top:10px">Фотографии сохраняйте в галерею телефона. Замечания записывайте кнопкой «Заметка» внизу — они попадут в отчёт к точке ' + p.n + '.</p>';
     if (collapsed) return '<details class="pl-card pl-field"><summary>Полевой тест: что проверить</summary>' + items + '</details>';
     return '<section class="pl-card pl-field"><span class="pl-label">Полевой тест: что проверить</span>' + items + '</section>';
   }
@@ -253,7 +253,7 @@
       '<div class="pl-prose">' + prose(t.text) + '</div>' + stamp + ok + '</section>';
   }
   function ladderLabels(n) {
-    if (n === 3) return [['Намёк', 'почти даром'], ['Направление', 'ближе к цели'], ['Ответ', 'улика всё равно ваша']];
+    if (n === 3) return [['Намёк', 'куда смотреть'], ['Почти решение', 'останется один шаг'], ['Ответ', 'улика всё равно ваша']];
     var out = [];
     for (var i = 0; i < n; i++) out.push(i === n - 1 ? ['Ответ', 'улика всё равно ваша'] : ['Подсказка ' + (i + 1), '']);
     return out;
@@ -272,9 +272,9 @@
     var revealed = hints.length && S.hint >= hints.length;
     h += '<form class="pl-form" data-form="answer" autocomplete="off">' +
       '<label class="visually-hidden" for="ans">Ваш ответ</label>' +
-      '<input class="pl-input" id="ans" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + (st.type === 'free' ? 'Ваш ответ' : 'Ответ одним-двумя словами') + '" value="' + esc(S.last) + '">' +
+      '<input class="pl-input" id="ans" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + (st.type === 'free' ? 'Ваш ответ' : 'Ответ в одно-два слова') + '" value="' + esc(S.last) + '">' +
       '<button class="pl-btn" type="submit">Ответить</button></form>';
-    if (S.wrong) h += '<p class="pl-wrong" role="status" style="margin-top:12px">«' + esc(S.wrong) + '» — не то. Попробуйте ещё' + (hints.length ? ' или возьмите подсказку.' : '.') + '</p>';
+    if (S.wrong) h += '<p class="pl-wrong" role="status" style="margin-top:12px">«' + esc(S.wrong) + '» — не подходит. Попробуйте ещё раз' + (hints.length ? ' или откройте подсказку.' : '.') + '</p>';
     if (hints.length) {
       var labels = ladderLabels(hints.length);
       h += '<div class="pl-ladder" style="--n:' + hints.length + '">';
@@ -334,7 +334,7 @@
     } else if (S.phase === 'idle') {
       h = '<header class="pl-head pl-cover" id="top">' + SHAPES[0] + '<div class="pl-num">' + esc(Q.district || '') + ' · Дело № 1</div>' +
         '<h1>' + esc(plain(Q.title)) + '</h1><p class="pl-place">' + esc(plain(Q.summary || '')) + '</p></header>' +
-        (S.field ? '<section class="pl-card pl-field"><span class="pl-label">Режим полевого теста</span><p class="pl-small">На каждой точке — список «что проверить». Время, ошибки, подсказки и заметки записываются. В конце (или в любой момент: «Ещё» → «Отправить отчёт») — отчёт одним сообщением в Telegram.</p></section>' : '') +
+        (S.field ? '<section class="pl-card pl-field"><span class="pl-label">Режим полевого теста</span><p class="pl-small">На каждой точке — список «что проверить». Время, ошибки, подсказки и заметки сохраняются сами. В конце, а при желании и раньше («Ещё» → «Отправить отчёт»), отправьте отчёт одним сообщением в Telegram.</p></section>' : '') +
         '<div class="pl-actions"><button class="pl-btn" type="button" data-act="start">Открыть дело</button></div>' +
         '<p class="pl-small">Прогресс сохраняется на этом телефоне: можно закрыть страницу и вернуться.</p>';
     } else if (S.phase === 'intro') {
@@ -369,13 +369,13 @@
       h = '<header class="pl-head" id="top">' + SHAPES[1] + '<div class="pl-num">Финал</div><h1>Дело закрыто</h1></header>' +
         (Q.finale || []).map(function (m) { return '<section class="pl-card"><div class="pl-prose">' + prose(m) + '</div></section>'; }).join('') +
         '<section class="pl-card"><span class="pl-label">Время прохождения</span><div class="pl-dist" style="font-size:28px">' + dur((S.t_end || Date.now()) - S.t_start) + '</div></section>' +
-        (S.field ? '<section class="pl-card pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что было лучшим, где застряли, что скучно. Потом — «Отправить отчёт» и перешлите его в Telegram.</p>' +
+        (S.field ? '<section class="pl-card pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
           '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="note">Заметка</button><button class="pl-btn" type="button" data-act="report">Отправить отчёт</button></div></section>' : '') +
         '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>';
     }
     app.innerHTML = h;
     var sun = document.documentElement.dataset.theme === 'sun';
-    document.querySelector('.pl-sun').setAttribute('aria-pressed', String(sun));
+    var sb = document.querySelector('.pl-sun'); sb.setAttribute('aria-pressed', String(sun)); sb.textContent = sun ? 'Тёмная тема' : 'Светлая тема';
   }
 
   function commit(focus) {
@@ -403,8 +403,8 @@
       var n = curN();
       title = 'Заметка';
       var notes = S.events.filter(function (e) { return e.kind === 'note' && e.point === n; });
-      body = '<form data-form="note"><label class="pl-small" for="note-text">' + (n ? 'Сохраню к точке ' + n + '.' : 'Сохраню в общий список.') +
-        (S.field ? ' Попадёт в отчёт полевого теста.' : '') + '</label>' +
+      body = '<form data-form="note"><label class="pl-small" for="note-text">' + (n ? 'Заметка сохранится к точке ' + n + '.' : 'Заметка попадёт в общий список.') +
+        (S.field ? ' Она войдёт в отчёт полевого теста.' : '') + '</label>' +
         '<textarea class="pl-textarea" id="note-text" name="note" style="margin-top:8px" placeholder="Что заметили, где застряли, что поправить"></textarea>' +
         '<div class="pl-actions"><button class="pl-btn" type="submit">Сохранить</button></div></form>' +
         (notes.length ? '<span class="pl-label" style="margin-top:20px">Уже записано' + (n ? ' к точке ' + n : '') + '</span><ul class="pl-notes">' +
@@ -413,14 +413,14 @@
       title = 'Ещё';
       var sun = document.documentElement.dataset.theme === 'sun';
       body = '<div class="pl-menu">' +
-        '<button class="pl-btn pl-btn--ghost" type="button" data-act="theme">' + (sun ? 'Тёмная тема' : 'Режим «Солнце»') + '</button>' +
+        '<button class="pl-btn pl-btn--ghost" type="button" data-act="theme">' + (sun ? 'Тёмная тема' : 'Светлая тема — для яркого солнца') + '</button>' +
         (S.field ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт</button>' : '') +
         (S.phase !== 'idle' && S.phase !== 'done' ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="stop">Закончить</button>' : '') +
         '<button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>' +
         '<p class="pl-small" style="margin-top:16px">Прогресс хранится только на этом телефоне и в этом браузере.</p>';
     } else if (kind === 'report') {
       title = 'Отчёт';
-      body = '<p class="pl-small">Нажмите «Отправить» и выберите Telegram. Если не получается — «Скопировать» и вставьте в чат с ботом.</p>' +
+      body = '<p class="pl-small">Нажмите «Отправить» и выберите Telegram. Если не получается, нажмите «Скопировать» и вставьте текст в чат с ботом.</p>' +
         '<div class="pl-actions"><button class="pl-btn" type="button" data-act="share">Отправить</button>' +
         '<div class="pl-row"><button class="pl-btn pl-btn--ghost pl-btn--sm" type="button" data-act="copy">Скопировать</button>' +
         '<button class="pl-btn pl-btn--ghost pl-btn--sm" type="button" data-act="download">Скачать .txt</button></div></div>' +
