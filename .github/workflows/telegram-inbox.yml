@@ -1,10 +1,12 @@
 name: Telegram — входящие
 
-# Каждый час с 08:00 до 23:00 по Москве + в 06:00, перед утренней итерацией.
-# Реже — чтобы не расходовать бесплатные минуты GitHub Actions (≈500 мин/мес).
+# Каждые 30 минут с 08:00 до 23:30 по Москве + в 06:00, перед утренней итерацией.
+# Команда также запускает этот workflow сама в начале каждой итерации, чтобы не пропустить свежие указания.
+# Частота подобрана под бесплатные минуты GitHub Actions (~1000 мин/мес на входящие).
 on:
   schedule:
-    - cron: "0 3,5-20 * * *"
+    - cron: "0 3 * * *"
+    - cron: "*/30 5-20 * * *"
   workflow_dispatch:
 
 permissions:
@@ -27,7 +29,7 @@ jobs:
         run: python3 scripts/telegram_inbox.py
       - name: Сохранить в репозиторий
         run: |
-          if [ -z "$(git status --porcelain)" ]; then exit 0; fi
+          if [ -z "$(git status --porcelain -- DIRECTIVES.md .telegram/offset)" ]; then exit 0; fi
           git config user.name "dvorami-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add DIRECTIVES.md .telegram/offset
@@ -37,3 +39,10 @@ jobs:
             sleep 5
           done
           exit 1
+      - name: Запустить команду, если просили /run
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CLAUDE_FIRE_URL: ${{ secrets.CLAUDE_FIRE_URL }}
+          CLAUDE_FIRE_TOKEN: ${{ secrets.CLAUDE_FIRE_TOKEN }}
+        run: python3 scripts/fire_team.py

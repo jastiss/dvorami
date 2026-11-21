@@ -28,6 +28,8 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tg  # noqa: E402
+import telegram_inbox  # noqa: E402
+import fire_team  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 MSK = ZoneInfo("Europe/Moscow")
@@ -313,8 +315,8 @@ class Bot:
         dur = self.duration_str()
         msg = f"⏱ Время прохождения: <b>{dur}</b>."
         if FIELD:
-            msg += ("\n\nПолевой тест окончен. Пришлите голосовое или текст с впечатлениями: "
-                    "что было лучшим, где застряли, что скучно. Всё сохраню. Когда закончите — кнопка «⏹ Закончить».")
+            msg += ("\n\nПолевой тест окончен. Пришлите голосовое с впечатлениями или нажмите «📝 Заметка» и напишите: "
+                    "что было лучшим, где застряли, что скучно. Всё сохраню к итогам теста. Когда закончите — «⏹ Закончить».")
         self.send(msg, reply_kb=True)
 
     def duration_str(self):
@@ -420,7 +422,7 @@ class Bot:
         if not COMMIT or not self.dirty:
             return
         try:
-            subprocess.run(["git", "add", "-A", "quests", ".telegram"], cwd=ROOT, check=True)
+            subprocess.run(["git", "add", "-A", "quests", ".telegram", "DIRECTIVES.md"], cwd=ROOT, check=True)
             if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
                 self.dirty = False
                 return
@@ -511,10 +513,23 @@ class Bot:
             return self.repeat()
         if cmd == "/restart":
             return self.start_quest()
+        if telegram_inbox.is_run(text):
+            telegram_inbox.record_directive(msg.get("date", time.time()), "Принудительный запуск итерации (из бота квеста): " + text)
+            self.save()
+            self.commit()
+            ok, info = fire_team.fire("Принудительный запуск из Telegram (во время работы бота квеста)")
+            return self.send(info)
+        low = text.lower()
+        if low.startswith(("команде:", "команде ", "/team")):
+            body = text.split(maxsplit=1)[1] if len(text.split(maxsplit=1)) > 1 else ""
+            telegram_inbox.record_directive(msg.get("date", time.time()), body)
+            self.dirty = True
+            return self.send("📨 Передал команде — учтут в следующей итерации.")
         if cmd == "/help":
             return self.send("/quest — начать или продолжить\n/restart — начать заново\n"
                              "🗂 Улики · 📝 Заметка · 🔁 Повторить · ⏹ Закончить\n"
-                             "Фото, голосовые и геометки сохраняются автоматически.")
+                             "Фото, голосовые и геометки сохраняются к текущей точке.\n"
+                             "«команде: …» — передать указание команде прямо во время квеста. /run — запустить команду.")
         if text.startswith(("!", "#")):
             return self.save_note(text.lstrip("!# "))
 
@@ -523,9 +538,12 @@ class Bot:
             if st["type"] in ("ask", "free"):
                 return self.answer(text)
         # всё остальное — заметка (на шагах без вопроса, по дороге, после финала)
-        if s["phase"] in ("walk", "step", "done"):
+        if s["phase"] in ("walk", "step"):
             return self.save_note(text)
-        self.send("Чтобы начать квест, отправьте /quest")
+        # квест не идёт или уже закончен — это указание команде, а не заметка
+        telegram_inbox.record_directive(msg.get("date", time.time()), text)
+        self.dirty = True
+        self.send("📨 Записал как указание команде. Чтобы начать квест, отправьте /quest.")
 
     # ---------- главный цикл ----------
 

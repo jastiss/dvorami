@@ -30,6 +30,7 @@ HELP = (
     "Остаток лимита Claude для отчётов: <code>лимит 40%</code>\n\n"
     "/status — где мы сейчас\n"
     "/approvals — что ждёт вашего решения\n"
+    "/run — запустить команду сейчас (можно с пояснением: /run займитесь дизайном)\n"
     "/help — эта справка\n\n"
     "Пройти квест: GitHub → Actions → «Квест — прохождение» → Run workflow, затем /quest здесь."
 )
@@ -65,6 +66,25 @@ def format_entry(ts, body):
     return "\n".join([first, *rest])
 
 
+RUN_FLAG = ROOT / ".telegram" / "run-requested"
+
+
+def is_run(text):
+    first = text.split()[0].split("@")[0].lower() if text.split() else ""
+    return first in ("/run", "запуск", "запусти", "запустить")
+
+
+def request_run(reason):
+    RUN_FLAG.parent.mkdir(exist_ok=True)
+    RUN_FLAG.write_text(reason, encoding="utf-8")
+
+
+def record_directive(date_ts, text):
+    """Для других скриптов (бот квеста): сразу записать указание в DIRECTIVES.md."""
+    ts = datetime.datetime.fromtimestamp(date_ts, MSK).strftime("%Y-%m-%d %H:%M")
+    append_directives([format_entry(ts, text)])
+
+
 def main():
     token, chat_id = tg.env()
     offset = read_offset()
@@ -96,6 +116,12 @@ def main():
             tg.send(token, chat_id, tg.md_to_html(STATUS.read_text(encoding="utf-8")), reply_to=mid)
         elif cmd == "/approvals":
             tg.send(token, chat_id, tg.md_to_html(pending_approvals()), reply_to=mid)
+        elif is_run(text):
+            ts = datetime.datetime.fromtimestamp(msg.get("date", 0), MSK).strftime("%Y-%m-%d %H:%M")
+            extra = text.split(maxsplit=1)[1] if len(text.split(maxsplit=1)) > 1 else ""
+            entries.append(format_entry(ts, "Принудительный запуск итерации" + (f": {extra}" if extra else "")))
+            request_run(f"Принудительный запуск из Telegram, {ts}")
+            tg.send(token, chat_id, "🚀 Принял. Сохраняю ваши указания и запускаю команду…", reply_to=mid)
         else:
             ts = datetime.datetime.fromtimestamp(msg.get("date", 0), MSK).strftime("%Y-%m-%d %H:%M")
             entries.append(format_entry(ts, text))
