@@ -1,7 +1,7 @@
 """Забирает сообщения владельца из Telegram и складывает их в DIRECTIVES.md.
 
 Принимаются сообщения только из чата TELEGRAM_CHAT_ID. Остальные пропускаются.
-Команды: /status, /approvals, /help. Любой другой текст — указание команде.
+Команды: /quest, /status, /approvals, /help. Любой другой текст — указание команде.
 """
 
 import datetime
@@ -28,11 +28,21 @@ HELP = (
     "Можно начать с метки: <code>дизайн:</code>, <code>сценарий:</code>, <code>сайт:</code>, <code>квест:</code>. Фото и скриншоты — через бота квеста.\n\n"
     "Ответ на вопрос из отчёта: <code>A-3 да</code> или <code>A-3 нет, лучше …</code>\n"
     "Остаток лимита Claude для отчётов: <code>лимит 40%</code>\n\n"
+    "/quest — пройти квест в браузере телефона (ссылка на плеер)\n"
     "/status — где мы сейчас\n"
     "/approvals — что ждёт вашего решения\n"
     "/run — запустить команду сейчас (можно с пояснением: /run займитесь дизайном)\n"
-    "/help — эта справка\n\n"
-    "Пройти квест: GitHub → Actions → «Квест — прохождение» → Run workflow, затем /quest здесь."
+    "/help — эта справка"
+)
+
+PLAYER_URL = "https://jastiss.github.io/dvorami/play/zilart/?field=1"
+QUEST_MSG = (
+    "🕊 <b>Дело о Синей птице</b> — прохождение в браузере:\n"
+    f"{PLAYER_URL}\n\n"
+    "Режим полевого теста: на каждой точке — «что проверить», время и ошибки записываются. "
+    "Прогресс хранится в телефоне, можно закрывать страницу. "
+    "В конце: «Ещё» → «Отправить отчёт» → Telegram, перешлите сюда.\n"
+    "Фото снимайте в галерею телефона: этот бот их не сохраняет. Что заметили — кнопкой «Заметка» в плеере, попадёт в отчёт."
 )
 
 
@@ -110,7 +120,9 @@ def main():
             tg.send(token, chat_id, "Пока понимаю только текст.", reply_to=mid)
             continue
         cmd = text.split()[0].split("@")[0].lower()
-        if cmd in ("/start", "/help"):
+        if cmd == "/quest":
+            tg.send(token, chat_id, QUEST_MSG, reply_to=mid)
+        elif cmd in ("/start", "/help"):
             tg.send(token, chat_id, HELP, reply_to=mid)
         elif cmd == "/status":
             tg.send(token, chat_id, tg.md_to_html(STATUS.read_text(encoding="utf-8")), reply_to=mid)

@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "quests/**/quest.json"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -29,6 +30,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # Плеер квеста (site/play/<id>/) читает quest.json из своей папки.
+      # Источник истины — quests/<id>/quest.json, в site/ его не храним (см. .gitignore).
+      - name: Данные квестов для плеера
+        run: |
+          for d in site/play/*/; do
+            id=$(basename "$d")
+            if [ -f "quests/$id/quest.json" ]; then
+              cp "quests/$id/quest.json" "$d/quest.json"
+              echo "quest.json → site/play/$id/"
+            else
+              echo "::warning::нет quests/$id/quest.json — плеер $id не загрузится"
+            fi
+          done
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 .DS_Store
 .telegram/run-requested
+# Плеер: копия quests/<id>/quest.json кладётся при сборке Pages
+site/play/*/quest.json

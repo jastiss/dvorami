@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дело о Синей птице — прохождение | Дворами</title>
+<!-- Плеер квеста: не индексируется ни на стенде, ни на боевом сайте -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#141414">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Onest:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../player.css">
+<script>
+  try { if (localStorage.getItem('dvorami:theme') === 'sun') document.documentElement.dataset.theme = 'sun'; } catch (e) {}
+</script>
+</head>
+<body data-quest="zilart">
+<header class="pl-top">
+  <a class="pl-logo" href="../../" aria-label="Дворами — на главную">
+    <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="currentColor" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M24 27.5l6 10.5H18z" fill="#E1251B"/></svg>
+    <span>ДВОРАМИ</span>
+  </a>
+  <span class="pl-count" id="count" aria-live="polite"></span>
+  <button class="pl-sun" type="button" data-act="theme" aria-pressed="false">Солнце</button>
+</header>
+<div class="pl-progress" id="progress" aria-hidden="true"></div>
+
+<main class="pl-main" id="app" tabindex="-1">
+  <p class="pl-loading">Загружаем дело…</p>
+  <noscript><p class="pl-loading">Для прохождения квеста включите JavaScript.</p></noscript>
+</main>
+
+<nav class="pl-tabs" id="tabs" aria-label="Действия" hidden>
+  <button type="button" data-act="board"><span class="pl-tab-ico" aria-hidden="true">▦</span>Улики<b class="pl-badge" id="badge"></b></button>
+  <button type="button" data-act="note"><span class="pl-tab-ico" aria-hidden="true">✎</span>Заметка</button>
+  <button type="button" data-act="repeat"><span class="pl-tab-ico" aria-hidden="true">↻</span>Повторить</button>
+  <button type="button" data-act="menu"><span class="pl-tab-ico" aria-hidden="true">≡</span>Ещё</button>
+</nav>
+
+<dialog class="pl-sheet" id="sheet" aria-labelledby="sheet-title">
+  <div class="pl-sheet-head">
+    <h2 id="sheet-title"></h2>
+    <button type="button" class="pl-x" data-act="close" aria-label="Закрыть">×</button>
+  </div>
+  <div class="pl-sheet-body" id="sheet-body"></div>
+</dialog>
+
+<div class="pl-toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../player.js" defer></script>
+</body>
+</html>
