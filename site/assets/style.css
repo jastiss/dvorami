@@ -543,11 +543,12 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 .av-hero { position: relative; overflow: hidden; }
 .av-hero .wrap { position: relative; padding-top: 8px; padding-bottom: 110px; display: flex; flex-direction: column; gap: 22px; }
 @media (min-width: 900px) { .av-hero .wrap { padding-top: 24px; padding-bottom: 140px; gap: 26px; } }
-.av-hero h1 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; line-height: .92; max-width: 8em; position: relative; z-index: 1; }
+.av-hero h1 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; line-height: .92; max-width: none; position: relative; z-index: 1; }
 .av-hero h1 .pre, .av-hero h1 .post { display: block; font-size: 21px; line-height: 1.1; letter-spacing: .06em; font-weight: 500; }
 .av-hero h1 .pre { margin-bottom: 10px; color: var(--text-2); }
 .av-hero h1 .post { margin-top: 12px; color: var(--accent-text); }
-.av-hero h1 .big { display: block; font-size: clamp(54px, 9vw, 124px); }
+.av-hero h1 .big { display: block; font-size: clamp(40px, 10.5vw, 104px); line-height: 1; text-wrap: balance; }
+@media (min-width: 900px) { .av-hero h1 .big { font-size: clamp(64px, 6.6vw, 104px); } }
 .av-hero .intro { font-size: 19px; max-width: 32em; color: var(--text-2); position: relative; z-index: 1; }
 .av-hero .intro + .intro { margin-top: -8px; }
 .av-hero .intro b { color: var(--text); font-weight: 600; }
