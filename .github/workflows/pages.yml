@@ -16,19 +16,22 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read
 
+# Не прерываем идущую публикацию новым пушем — дождёмся её.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
+# ВАЖНО: загрузка и публикация — в РАЗНЫХ job (build → deploy).
+# В одном job deploy-pages иногда не видит только что загруженный артефакт
+# («No artifacts named github-pages», actions/deploy-pages#451),
+# а re-run такого запуска ломается окончательно (два артефакта github-pages).
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/configure-pages@v5
       # Плеер квеста (site/play/<id>/) читает quest.json из своей папки.
       # Источник истины — quests/<id>/quest.json, в site/ его не храним (см. .gitignore).
@@ -46,5 +49,13 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
