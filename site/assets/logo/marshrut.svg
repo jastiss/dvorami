@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 110" role="img" aria-labelledby="t">
+  <title id="t">Дворами — концепция B «Маршрут»</title>
+  <rect width="360" height="110" rx="16" fill="#0E1630"/>
+  <text x="34" y="58" font-family="Unbounded, 'Arial Black', sans-serif" font-weight="800" font-size="40" letter-spacing="-0.5" fill="#F3F1EA">дворами</text>
+  <!-- Пешеходная тропинка «дворами»: ныряет под буквы и выходит к цели -->
+  <circle cx="26" cy="80" r="5" fill="none" stroke="#8FC2FF" stroke-width="2.5"/>
+  <path d="M34 80 C 80 92, 104 66, 150 78 S 230 96, 268 78 S 312 52, 318 40" fill="none" stroke="#8FC2FF" stroke-width="3" stroke-dasharray="2 8" stroke-linecap="round"/>
+  <circle cx="320" cy="34" r="9" fill="#FFC53D"/>
+</svg>

@@ -1,0 +1,5 @@
+# ТЕСТОВЫЙ СТЕНД (GitHub Pages): индексация закрыта целиком.
+# Снять при выкладке на боевой домен — заменить на правила из docs/seo/site-plan.md, раздел 4
+# (Disallow: /play/, /api/, /*?key=; Clean-param для Яндекса; Sitemap: https://dvorami.ru/sitemap.xml).
+User-agent: *
+Disallow: /

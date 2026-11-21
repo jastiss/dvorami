@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 110" role="img" aria-labelledby="t">
+  <title id="t">Дворами — концепция A «Арка»</title>
+  <rect width="360" height="110" rx="16" fill="#0E1630"/>
+  <!-- Арка-проход во двор: внешний свод, внутренний свод (глубина), свет во дворе -->
+  <g transform="translate(22 19) scale(1.5)">
+    <path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F3F1EA" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#8FC2FF" stroke-width="2.5"/>
+    <circle cx="24" cy="33" r="4.5" fill="#FFC53D"/>
+  </g>
+  <text x="104" y="70" font-family="Unbounded, 'Arial Black', sans-serif" font-weight="800" font-size="40" letter-spacing="-0.5" fill="#F3F1EA">дворами</text>
+</svg>
