@@ -108,6 +108,7 @@ code {
 .pl-card { background: var(--surface); padding: 20px 16px; border: 1px solid var(--line); scroll-margin-top: calc(var(--top-h) + 24px); }
 .pl-card--paper { background: var(--text); color: var(--bg); border-color: var(--text); }
 .pl-card--paper .pl-label { color: var(--bg); opacity: .75; }
+.pl-card--paper .pl-prose code { background: transparent; color: var(--bg); border-left-color: var(--accent); font-weight: 600; }
 
 /* Заголовок точки */
 .pl-head { position: relative; padding: 16px 0 8px; overflow: hidden; scroll-margin-top: calc(var(--top-h) + 24px); }

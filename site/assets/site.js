@@ -19,6 +19,15 @@
     });
   });
 
+  // Реперные точки показываем вразнобой: порядок на странице не совпадает с маршрутом
+  document.querySelectorAll('[data-shuffle]').forEach(function (list) {
+    var items = Array.prototype.slice.call(list.children);
+    for (var i = items.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)); var t = items[i]; items[i] = items[j]; items[j] = t;
+    }
+    items.forEach(function (li) { list.appendChild(li); });
+  });
+
   // Появление при прокрутке
   var targets = document.querySelectorAll('.draw, .rise, [data-reveal]');
   if (!('IntersectionObserver' in window) || reduce) {
@@ -30,38 +39,20 @@
     targets.forEach(function (t) { io.observe(t); });
   }
 
-  // Мини-загадка «Улица Родченко»: соберите слово из четырёх букв
-  var clue = document.getElementById('clue');
-  if (clue) {
-    var letters = clue.querySelectorAll('.letter');
-    var slots = clue.querySelectorAll('.slot');
-    var msg = clue.querySelector('.answer-msg');
-    var reset = clue.querySelector('.answer-reset');
-    var picked = [];
-    var RIGHT = 'ОКНО'; // ответ не светим в разметке
-    function render() {
-      slots.forEach(function (s, i) { s.textContent = picked[i] ? picked[i].textContent : ''; });
-      reset.hidden = picked.length === 0;
-    }
-    function clear() {
-      picked.forEach(function (b) { b.setAttribute('aria-pressed', 'false'); b.disabled = false; });
-      picked = []; render(); msg.textContent = 'Нажмите четыре буквы';
-    }
-    letters.forEach(function (b) {
-      b.addEventListener('click', function () {
-        if (b.getAttribute('aria-pressed') === 'true' || picked.length >= 4) return;
-        b.setAttribute('aria-pressed', 'true'); picked.push(b); render();
-        if (picked.length < 4) { msg.textContent = 'Ещё ' + (4 - picked.length); return; }
-        var word = picked.map(function (x) { return x.textContent; }).join('');
-        if (word === RIGHT) {
-          msg.innerHTML = '<span class="stamp-ok">верно!</span> На точке вас ждёт ещё «Думай».';
-          letters.forEach(function (x) { x.disabled = true; });
-        } else {
-          msg.textContent = 'Не то слово. Ещё раз?';
-          if (!reduce) { clue.classList.remove('wiggle'); void clue.offsetWidth; clue.classList.add('wiggle'); }
-        }
-      });
+  // Мини-дело на главной: версию можно записать, но ответ сайт не раскрывает и не проверяет.
+  // Ничего не сохраняем и никуда не отправляем.
+  var form = document.getElementById('version');
+  if (form) {
+    var input = form.querySelector('input');
+    var msg = form.parentNode.querySelector('.version-msg');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = (input.value || '').trim();
+      if (!v) { msg.textContent = 'Сначала напишите версию — хотя бы одно слово.'; input.focus(); return; }
+      msg.innerHTML = '';
+      var st = document.createElement('span'); st.className = 'stamp-ok'; st.textContent = 'записано';
+      msg.appendChild(st);
+      msg.appendChild(document.createTextNode('«' + v + '». Проверить версию можно только на месте: ответ ждёт у воды.'));
     });
-    reset.addEventListener('click', clear);
   }
 })();
