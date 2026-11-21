@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Дворами — квест «Дело о Синей птице»</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Onest:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+a{color:#C81E17}a:hover{color:#8F1510}
+</style>
+</helmet>
+<div style="background: #FFFFFF; color: #111111; font-family: 'Onest', system-ui, sans-serif; font-size: 18px; line-height: 1.5; overflow-x: hidden">
+
+<header style="position: relative; z-index: 2; max-width: 1240px; margin: 0 auto; padding: 24px 32px; display: flex; flex-wrap: wrap; gap: 12px 32px; align-items: center; justify-content: space-between">
+<a href="Main.dc.html" style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 28px; letter-spacing: 0.04em; color: #111111; text-decoration: none; display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-bottom: 19px solid #E1251B"></span>ДВОРАМИ</a>
+<nav aria-label="Навигация по странице" style="display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: center">
+<a href="Main.dc.html" style="color: #111111; text-decoration: none; font-weight: 500; padding: 12px 0">Все квесты</a>
+<a href="#route" style="color: #111111; text-decoration: none; font-weight: 500; padding: 12px 0">Маршрут</a>
+<a href="#practical" style="color: #111111; text-decoration: none; font-weight: 500; padding: 12px 0">Что взять</a>
+<a href="#buy" style="background: #111111; color: #FFFFFF; text-decoration: none; font-weight: 600; padding: 12px 22px">Открыть дело</a>
+</nav>
+</header>
+
+<section style="position: relative; overflow: hidden">
+<div aria-hidden="true" style="position: absolute; right: -160px; top: -60px; width: 620px; height: 620px; border-radius: 50%; background: #E1251B"></div>
+<div aria-hidden="true" style="position: absolute; right: 250px; top: 430px; width: 380px; height: 330px; background: #111111; clip-path: polygon(50% 0, 100% 100%, 0 100%)"></div>
+<div aria-hidden="true" style="position: absolute; right: 90px; top: 110px; width: 92px; height: 92px; background: #FFFFFF; transform: rotate(18deg)"></div>
+<div aria-hidden="true" style="position: absolute; left: 58%; top: 30px; width: 150px; height: 150px; border-radius: 50%; border: 6px solid #111111"></div>
+<div aria-hidden="true" style="position: absolute; left: -5%; bottom: 70px; width: 110%; height: 10px; background: #111111; transform: rotate(-4deg)"></div>
+<div aria-hidden="true" style="position: absolute; left: 6%; bottom: 22px; width: 64px; height: 64px; background: #E1251B; clip-path: polygon(0 0, 100% 50%, 0 100%)"></div>
+<div style="position: relative; max-width: 1240px; margin: 0 auto; padding: 56px 32px 140px; display: flex; flex-direction: column; gap: 28px">
+<span style="align-self: flex-start; background: #111111; color: #FFFFFF; font-weight: 600; padding: 6px 14px; text-transform: uppercase; letter-spacing: 0.06em; font-size: 15px">Семейный детектив · ЗИЛАРТ</span>
+<h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: clamp(64px, 11vw, 168px); line-height: 0.92; text-transform: uppercase; max-width: 6.5em">Дело о Синей птице</h1>
+<p style="margin: 0; font-size: 22px; max-width: 26em; background: #FFFFFF; padding: 8px 12px 8px 0">В архиве завода нашли телеграмму без подписи: «Синяя птица дома. Встречайте». Какая птица? Чей дом? Ответ спрятан на улицах района, который вырос на месте ЗИЛа.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center">
+<a href="#buy" style="background: #E1251B; color: #FFFFFF; text-decoration: none; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; text-transform: uppercase; letter-spacing: 0.04em; padding: 18px 34px; border: 4px solid #FFFFFF">Открыть дело</a>
+<span style="background: #FFFFFF; padding: 8px 12px; font-weight: 500">[ЦЕНА] ₽ за компанию до [N] человек</span>
+</div>
+</div>
+</section>
+
+<section aria-label="Квест в цифрах" style="position: relative; overflow: hidden; background: #111111; color: #FFFFFF">
+<div aria-hidden="true" style="position: absolute; right: 40px; top: 50%; width: 120px; height: 120px; margin-top: -60px; border-radius: 50%; border: 4px solid #E1251B"></div>
+<div style="position: relative; max-width: 1240px; margin: 0 auto; padding: 40px 32px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 28px">
+<div style="display: flex; flex-direction: column"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 56px; line-height: 1">12</span><span>точек</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 56px; line-height: 1">2,8 км</span><span>кольцо от метро и обратно</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 56px; line-height: 1">2,5–3 ч</span><span>с перерывом на кафе</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 56px; line-height: 1">7+</span><span>и задания для малышей</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 56px; line-height: 1">М</span><span>старт у метро «ЗИЛ»</span></div>
+</div>
+</section>
+
+<section style="position: relative; overflow: hidden">
+<div aria-hidden="true" style="position: absolute; right: -40px; bottom: -40px; width: 340px; height: 340px; background: #E1251B; clip-path: polygon(100% 0, 100% 100%, 0 100%)"></div>
+<div aria-hidden="true" style="position: absolute; left: 44%; top: 70px; width: 56px; height: 56px; border-radius: 50%; background: #111111"></div>
+<div style="position: relative; max-width: 1240px; margin: 0 auto; padding: 104px 32px; display: flex; flex-wrap: wrap; gap: 56px">
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<h2 style="margin: 0; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: clamp(40px, 5vw, 72px); line-height: 1; text-transform: uppercase">Кто ведёт дело</h2>
+<p style="margin: 0; max-width: 28em">Сыщик Зиля — сизый голубь с крыши. Знает район сверху, шутит и ничего не боится, кроме одного усатого конкурента.</p>
+<p style="margin: 0; max-width: 28em">Кот Тюфель тоже ищет птицу, по понятной кошачьей причине. На каждой точке он подбрасывает вам версию. Верить ли ей, решайте сами.</p>
+</div>
+<div style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 4px solid #111111; padding: 32px; display: flex; flex-direction: column; gap: 16px; align-self: flex-start; transform: rotate(1.5deg)">
+<span style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 15px; color: #C81E17">Телеграмма · без подписи · без даты</span>
+<p style="margin: 0; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: clamp(32px, 4vw, 52px); line-height: 1.05; text-transform: uppercase">Синяя птица дома тчк встречайте</p>
+</div>
+</div>
+</section>
+
+<section style="position: relative; overflow: hidden; background: #E1251B; color: #FFFFFF">
+<div aria-hidden="true" style="position: absolute; right: -90px; top: -90px; width: 440px; height: 440px; border-radius: 50%; border: 6px solid #FFFFFF"></div>
+<div aria-hidden="true" style="position: absolute; right: 120px; top: 150px; width: 160px; height: 140px; background: #111111; clip-path: polygon(50% 0, 100% 100%, 0 100%)"></div>
+<div aria-hidden="true" style="position: absolute; left: -60px; bottom: -60px; width: 200px; height: 200px; background: #111111; transform: rotate(45deg)"></div>
+<div style="position: relative; max-width: 1240px; margin: 0 auto; padding: 104px 32px; display: flex; flex-direction: column; gap: 40px">
+<h2 style="margin: 0; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: clamp(40px, 5vw, 72px); line-height: 1; text-transform: uppercase; max-width: 12em">Десять свидетелей из десяти эпох</h2>
+<p style="margin: 0; max-width: 34em; font-size: 20px">Каждый видел Синюю птицу по-своему и оставил улику. Улики приходят вперемешку. Дело раскроется, когда вы расставите их по времени.</p>
+<ol aria-label="Годы свидетелей" style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 30px">
+<li style="background: #FFFFFF; color: #111111; padding: 14px 12px">1792</li>
+<li style="background: #FFFFFF; color: #111111; padding: 14px 12px">1908</li>
+<li style="background: #FFFFFF; color: #111111; padding: 14px 12px">1911</li>
+<li style="background: #FFFFFF; color: #111111; padding: 14px 12px">1916</li>
+<li style="background: #FFFFFF; color: #111111; padding: 14px 12px">1924</li>
+<li style="background: #111111; color: #FFFFFF; padding: 14px 12px">1931</li>
+<li style="background: #111111; color: #FFFFFF; padding: 14px 12px">1937</li>
+<li style="background: #111111; color: #FFFFFF; padding: 14px 12px">1964</li>
+<li style="background: #111111; color: #FFFFFF; padding: 14px 12px">1975</li>
+<li style="background: #111111; color: #FFFFFF; padding: 14px 12px">2025</li>
+</ol>
+<p style="margin: 0; max-width: 34em">Цветочница, зрительница театра, художница, мастер с конвейера, испытатель вездеходов для космонавтов. История места складывается у ребёнка в руках.</p>
+</div>
+</section>
+
+<section id="route" style="position: relative; overflow: hidden">
+<div aria-hidden="true" style="position: absolute; right: 0; top: 0; width: 220px; height: 220px; background: #E1251B; border-radius: 0 0 0 100%"></div>
+<div aria-hidden="true" style="position: absolute; right: 250px; top: 60px; width: 48px; height: 48px; background: #111111; transform: rotate(20deg)"></div>
+<div style="position: relative; max-width: 1240px; margin: 0 auto; padding: 104px 32px; display: flex; flex-direction: column; gap: 40px">
+<h2 style="margin: 0; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: clamp(40px, 5vw, 72px); line-height: 1; text-transform: uppercase">Маршрут</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 40px">
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">01</span><span>Метро «ЗИЛ». Три буквы, с которых всё началось</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">02</span><span>Парк «Тюфелева роща». Навес, который заржавел нарочно</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">03</span><span>Пруд. Голубая вода и бедная Лиза</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">04</span><span>Смотровая площадка. Самое старое, что здесь есть</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">05</span><span>Заводской пресс. Форма для неба</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">06</span><span>Грузовик из кружева</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">07</span><span>Бульвар Братьев Весниных. Перерыв на кафе</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">08</span><span>Улица Кандинского. Почти всадник</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">09</span><span>Набережная Марка Шагала. Дело раскрыто?</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">10</span><span>Золотая арка и 238 зайцев</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">11</span><span>Улица Татлина. Ключ ко всему</span></li>
+<li style="border-top: 2px solid #111111; padding: 16px 0; display: flex; gap: 16px; align-items: baseline"><span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; min-width: 36px; color: #C81E17">12</span><span>Финал. Адрес вы назовёте сами</span></li>
+</ol>
+</div>
+</section>
+
+<section id="practical" style="position: relative; overflow: hidden; background: #111111; color: #FFFFFF">
+<div aria-hidden="true" style="position: absolute; left: -30px; bottom: -30px; width: 260px; height: 230px; background: #E1251B; clip-path: polygon(0 0, 100% 100%, 0 100%)"></div>
+<div aria-hidden="true" style="position: absolute; right: 60px; top: 60px; width: 180px; height: 180px; border-radius: 50%; border: 3px solid #FFFFFF"></div>
+<div aria-hidden="true" style="position: absolute; right: 150px; top: 150px; width: 70px; height: 70px; border-radius: 50%; background: #E1251B"></div>
+<div style="position: relative; max-width: 1240px; margin: 0 auto; padding: 104px 32px; display: flex; flex-direction: column; gap: 40px">
+<h2 style="margin: 0; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: clamp(40px, 5vw, 72px); line-height: 1; text-transform: uppercase">Что нужно знать</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 8px"><h3 style="margin: 0; font-size: 22px; font-weight: 600">Один телефон на всех</h3><p style="margin: 0; color: #D9D9D9">Квест открывается в браузере. Наушники не обязательны, зарядка пригодится.</p></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><h3 style="margin: 0; font-size: 22px; font-weight: 600">Любой день и час</h3><p style="margin: 0; color: #D9D9D9">Ключ действует год. Можно остановиться и продолжить позже.</p></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><h3 style="margin: 0; font-size: 22px; font-weight: 600">С коляской можно</h3><p style="margin: 0; color: #D9D9D9">Парк, бульвар, пешеходные улицы и набережная. Лестниц на маршруте нет.</p></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><h3 style="margin: 0; font-size: 22px; font-weight: 600">Застрять нельзя</h3><p style="margin: 0; color: #D9D9D9">У каждой загадки три подсказки: намёк, направление и ответ.</p></div>
+</div>
+</div>
+</section>
+
+<section id="buy" style="position: relative; overflow: hidden">
+<div aria-hidden="true" style="position: absolute; right: -80px; top: 40px; width: 420px; height: 360px; background: #111111; clip-path: polygon(50% 0, 100% 100%, 0 100%)"></div>
+<div aria-hidden="true" style="position: absolute; right: 230px; top: 20px; width: 110px; height: 110px; border-radius: 50%; background: #E1251B"></div>
+<div style="position: relative; max-width: 1240px; margin: 0 auto; padding: 104px 32px; display: flex; flex-wrap: wrap; gap: 32px; align-items: center; justify-content: space-between">
+<h2 style="margin: 0; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: clamp(48px, 7vw, 104px); line-height: 0.95; text-transform: uppercase; max-width: 8em">Птица ждёт. Вперёд</h2>
+<div style="display: flex; flex-direction: column; gap: 16px; align-items: flex-start; background: #FFFFFF; border: 4px solid #111111; padding: 28px">
+<span style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 44px">[ЦЕНА] ₽</span>
+<span>за компанию до [N] человек, ключ приходит сразу</span>
+<a href="#buy" style="background: #E1251B; color: #FFFFFF; text-decoration: none; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; text-transform: uppercase; letter-spacing: 0.04em; padding: 18px 34px">Купить квест</a>
+</div>
+</div>
+</section>
+
+<footer style="border-top: 4px solid #111111">
+<div style="max-width: 1240px; margin: 0 auto; padding: 32px; display: flex; flex-wrap: wrap; gap: 12px 40px; justify-content: space-between; font-size: 15px">
+<a href="Main.dc.html" style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 20px; color: #111111; text-decoration: none">ДВОРАМИ</a>
+<span>Квесты по городу, которого нет в путеводителях.</span>
+<span>[контакты] · [оферта] · [политика данных]</span>
+</div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":4300}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

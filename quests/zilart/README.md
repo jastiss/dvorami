@@ -1,6 +1,6 @@
 # Квест ЗИЛАРТ — «Дело о Синей птице»
 
-Бриф: `briefs/quest-zilart.md`. Стиль: «Авангард» (макет — `platform/design/v1/ZilartQuest.dc.html`).
+Бриф: `briefs/quest-zilart.md`. Стиль: «Авангард» (макет — `platform/design/mockups/ZilartQuest.dc.html`).
 
 Текущая версия сценария: `story/scenario-v2.md` — 12 точек, кольцо ~2,8 км от метро «ЗИЛ», шифр «ГОЛУБЬ ДОМА». Черновик: на месте не проверен, часть фактов не сверена.
 

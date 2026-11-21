@@ -19,7 +19,7 @@ def env():
     return token, chat_id
 
 
-def call(token, method, params):
+def call(token, method, params, timeout=None):
     data = json.dumps(params).encode("utf-8")
     req = urllib.request.Request(
         f"https://api.telegram.org/bot{token}/{method}",
@@ -27,11 +27,14 @@ def call(token, method, params):
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        wait = timeout or (int(params.get("timeout", 0)) + 30)
+        with urllib.request.urlopen(req, timeout=wait) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")
         return {"ok": False, "error_code": e.code, "description": body}
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+        return {"ok": False, "description": f"{type(e).__name__}: {e}"}
 
 
 def _esc(s):

@@ -1,0 +1,53 @@
+name: Квест — прохождение
+
+# Бот-ведущий квеста. Запускайте перед выходом на маршрут: Actions → «Квест — прохождение» → Run workflow.
+# Пока он работает, бот отвечает мгновенно. Обычная проверка входящих в это время ждёт своей очереди.
+on:
+  workflow_dispatch:
+    inputs:
+      quest:
+        description: "Квест (папка в quests/)"
+        default: "zilart"
+        required: true
+      field:
+        description: "Полевой тест: подсказки «что проверить», сохранение фото и заметок"
+        type: boolean
+        default: true
+      restart:
+        description: "Начать заново (иначе продолжит с места остановки)"
+        type: boolean
+        default: false
+      hours:
+        description: "Сколько часов боту работать (максимум 5.5)"
+        default: "5"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-bot
+  cancel-in-progress: false
+
+jobs:
+  play:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - name: Настроить git
+        run: |
+          git config user.name "dvorami-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Бот ведёт квест
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          QUEST: ${{ inputs.quest }}
+          FIELD_MODE: ${{ inputs.field && '1' || '0' }}
+          RESTART: ${{ inputs.restart && '1' || '0' }}
+          HOURS: ${{ inputs.hours }}
+          COMMIT: "1"
+        run: |
+          export DURATION_MIN=$(python3 -c "import os; print(int(min(float(os.environ.get('HOURS') or 5), 5.5) * 60))")
+          python3 scripts/quest_bot.py

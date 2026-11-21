@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: telegram-inbox
+  group: telegram-bot
   cancel-in-progress: false
 
 jobs:
