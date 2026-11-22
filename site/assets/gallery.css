@@ -1,0 +1,13 @@
+/* Галерея видов внутри блока «Что вы увидите» — берёт фон, шрифты и цвета своей страницы */
+.pgal{list-style:none;margin:24px 0 32px;padding:0 0 8px;display:grid;grid-auto-flow:column;grid-auto-columns:82%;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.pgal li{scroll-snap-align:start;margin:0;padding:0;list-style:none}
+.pgal li::before{content:none}
+.pgal figure{margin:0}
+.pgal img{display:block;width:100%;height:auto;aspect-ratio:4/3}
+.pgal figcaption{font-size:15px;line-height:1.35;margin-top:8px;color:inherit;opacity:.85}
+.pgal--av img{border-radius:0;border:2px solid currentColor}
+.pgal--av figcaption{text-transform:uppercase;letter-spacing:.04em;font-size:13px}
+.pgal--gv img{border-radius:2px;border:6px solid #fff;box-shadow:0 2px 0 rgba(90,60,30,.25),0 8px 20px rgba(90,60,30,.18)}
+.pgal--gv figcaption{font-style:italic}
+.pgal--tm img{border-radius:18px}
+@media (min-width:900px){.pgal{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);overflow:visible}.pgal.pgal-3{grid-template-columns:repeat(3,1fr)}.pgal:not(.pgal-3) li:first-child{grid-column:span 2;grid-row:span 2}}

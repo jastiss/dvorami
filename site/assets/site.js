@@ -8,7 +8,8 @@
   var TG = {
     channel: 'https://t.me/dvorami_quest',
     suggest: 'https://t.me/dvorami_quest',  // «Предложите свой квест» → потом бот
-    review: 'https://t.me/dvorami_quest'    // «Оставить отзыв» → потом бот
+    review: 'https://t.me/dvorami_quest',   // «Оставить отзыв» → потом бот
+    want: 'https://t.me/dvorami_quest'      // «Хочу это дело» у дел в разработке → потом бот
   };
   document.querySelectorAll('[data-tg]').forEach(function (a) {
     var url = TG[a.getAttribute('data-tg')];
@@ -80,7 +81,7 @@
 
   // Каталог дел: фильтр по статусу + «Показать все», когда дел больше LIMIT.
   // Без JS видны все карточки, кнопки фильтра скрыты.
-  var LIMIT = 6;
+  var LIMIT = 24; // до 24 дел видны сразу, дальше — «Показать все»
   document.querySelectorAll('[data-filter-group]').forEach(function (group) {
     var grid = document.getElementById(group.getAttribute('data-filter-group'));
     if (!grid) return;
@@ -116,71 +117,54 @@
     apply();
   });
 
-  // Картотека дел в первом экране. Источник данных — карточки каталога li[data-case]
-  // (номер, короткое название, район, статус, ссылка). Новое дело = одна карточка в каталоге.
-  // Первое дело — развёрнутой карточкой, следующие — строками; после ROWS строк — ссылка «Все дела (N)».
-  // Без JS в разметке остаётся карточка дела №1 и ссылка на каталог.
-  var ROWS = 4;
-  var track = document.getElementById('cases-track');
-  var cards = Array.prototype.slice.call(document.querySelectorAll('li[data-case]'));
-  if (track && cards.length) {
-    var box = track.parentNode;
-    var txt = function (root, sel) { var el = root.querySelector(sel); return el ? el.textContent.trim() : ''; };
-    var mk = function (tag, cls, text) { var el = document.createElement(tag); if (cls) el.className = cls; if (text != null) el.textContent = text; return el; };
-    var title = function (tag, cls, n, name) {
-      var h = mk(tag, cls);
-      h.appendChild(mk('span', 'case-no', 'Дело №' + n));
-      h.appendChild(document.createTextNode(' '));
-      var sep = h.appendChild(mk('span', 'case-sep', '·')); sep.setAttribute('aria-hidden', 'true');
-      h.appendChild(document.createTextNode(' ' + name));
-      return h;
+  // Иллюстрации: если файла нет, остаётся оформленный фон обложки, а не значок битой картинки
+  document.querySelectorAll('.qc-cover img, .gallery img, .hero-card img, .guide-places img').forEach(function (img) {
+    function bad() { img.classList.add('is-broken'); }
+    if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) bad();
+    img.addEventListener('error', bad);
+  });
+
+  // Лента дел на телефоне: счётчик «3 / 8»
+  var lane = document.getElementById('qgrid'), cnt = document.getElementById('qlane-count');
+  if (lane && cnt) {
+    var upd = function () {
+      var items = lane.querySelectorAll(':scope > li:not([hidden])');
+      if (!items.length) return;
+      var w = items[0].getBoundingClientRect().width + 16;
+      var i = Math.min(items.length, Math.round(lane.scrollLeft / w) + 1);
+      cnt.textContent = i + ' / ' + items.length;
     };
-    cards.sort(function (a, b) { return (+a.getAttribute('data-case')) - (+b.getAttribute('data-case')); });
-    track.innerHTML = '';
-    cards.forEach(function (c, i) {
-      if (i > ROWS) return;
-      var n = c.getAttribute('data-case'), name = c.getAttribute('data-name');
-      var btn = c.querySelector('.qc-btn');
-      var href = btn ? btn.getAttribute('href') : '#quests';
-      var status = txt(c, '.qc-badge');
-      if (i === 0) {
-        var s = mk('li', 'case case--lead');
-        s.appendChild(mk('p', 'case-where', txt(c, '.qc-where')));
-        s.appendChild(title('h3', 'case-title', n, name));
-        var wire = c.getAttribute('data-wire');
-        if (wire) {
-          var w = mk('p', 'case-wire');
-          w.appendChild(mk('span', null, 'Телеграмма без подписи:'));
-          w.appendChild(document.createTextNode(' «' + wire + '»'));
-          s.appendChild(w);
-        }
-        s.appendChild(mk('p', 'case-hook', c.getAttribute('data-hook') || ''));
-        var foot = mk('div', 'case-foot');
-        foot.appendChild(mk('span', 'case-badge', status));
-        var a = mk('a', 'btn case-btn', btn ? btn.textContent.trim() : 'Подробнее о деле');
-        a.href = href;
-        foot.appendChild(a);
-        s.appendChild(foot);
-        track.appendChild(s);
-      } else {
-        var li = mk('li', 'case-row' + (c.getAttribute('data-status') === 'soon' ? ' case-row--soon' : ''));
-        var link = mk('a');
-        link.href = href;
-        var body = mk('span', 'case-row-body');
-        body.appendChild(title('span', 'case-row-title', n, name));
-        body.appendChild(mk('span', 'case-row-meta', [txt(c, '.qc-where'), status].filter(Boolean).join(' · ')));
-        link.appendChild(body);
-        var arr = mk('span', 'case-row-go'); arr.setAttribute('aria-hidden', 'true');
-        arr.innerHTML = '<svg viewBox="0 0 24 24" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        link.appendChild(arr);
-        li.appendChild(link);
-        track.appendChild(li);
-      }
-    });
-    var all = box.querySelector('.cases-all');
-    if (all) {
-      var rest = cards.length - Math.min(cards.length, ROWS + 1);
-      all.textContent = rest > 0 ? 'Все дела (' + cards.length + ')' : 'Все дела и карта районов';
-    }
+    lane.addEventListener('scroll', function () { window.requestAnimationFrame(upd); }, { passive: true });
+    upd();
   }
+
+  // Плавающая кнопка «Выбрать квест»: видна, только когда на экране нет блока дел
+  // и другого целевого действия ([data-cta]) и не виден подвал.
+  var fab = document.getElementById('fab');
+  if (fab && 'IntersectionObserver' in window) {
+    var seen = new Set();
+    var cta = document.querySelectorAll('[data-cta], .site-footer, .site-header');
+    var fo = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) seen.add(e.target); else seen.delete(e.target); });
+      var on = seen.size === 0;
+      fab.classList.toggle('is-on', on);
+      fab.setAttribute('aria-hidden', on ? 'false' : 'true');
+      fab.tabIndex = on ? 0 : -1;
+    }, { threshold: 0 });
+    cta.forEach(function (el) { fo.observe(el); });
+  }
+})();
+
+/* Игровой бот. BOT — его имя без @ (например 'dvorami_quest_bot'). Пустая строка: кнопки
+   «Оставить отзыв» и «Предложить район» ведут в канал, как задано выше. Имя задано: ведут в бота
+   (https://t.me/<бот>?start=review|suggest), бот сразу начинает нужный диалог. */
+(function () {
+  'use strict';
+  var BOT = '';
+  if (!BOT) return;
+  var START = { review: 'review', suggest: 'suggest' };
+  document.querySelectorAll('[data-tg]').forEach(function (a) {
+    var p = START[a.getAttribute('data-tg')];
+    if (p) a.setAttribute('href', 'https://t.me/' + BOT + '?start=' + p);
+  });
 })();

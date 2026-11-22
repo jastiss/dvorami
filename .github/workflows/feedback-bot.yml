@@ -1,0 +1,48 @@
+name: Игровой бот — отзывы
+
+# Бот для игроков: отзывы, предложения районов, вопросы команде (scripts/feedback_bot.py).
+# Запуск каждые 10 минут; каждый запуск ещё 8 минут слушает, чтобы начатый диалог шёл без пауз.
+# Пока секрета PLAYER_BOT_TOKEN нет — скрипт сразу выходит, ничего не коммитит.
+# У этого бота свой токен и свой offset (.telegram/feedback-offset), поэтому с «Telegram — входящие» он не пересекается.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: feedback-bot
+  cancel-in-progress: false
+
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ответить игрокам
+        env:
+          PLAYER_BOT_TOKEN: ${{ secrets.PLAYER_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          POLL_MIN: "8"
+        run: python3 scripts/feedback_bot.py
+      - name: Сохранить в репозиторий
+        if: always()
+        run: |
+          paths=""
+          for p in feedback .telegram/feedback-offset .telegram/feedback-state.json; do
+            [ -e "$p" ] && paths="$paths $p"
+          done
+          if [ -z "$paths" ] || [ -z "$(git status --porcelain -- $paths)" ]; then exit 0; fi
+          git config user.name "dvorami-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- $paths
+          git commit -m "Игровой бот: отзывы и состояние"
+          for i in 1 2 3; do
+            git pull --rebase && git push && exit 0
+            sleep 5
+          done
+          exit 1
