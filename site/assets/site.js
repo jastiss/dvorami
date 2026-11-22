@@ -116,98 +116,71 @@
     apply();
   });
 
-  // Карусель дел в первом экране. Источник данных — карточки каталога li[data-case]
+  // Картотека дел в первом экране. Источник данных — карточки каталога li[data-case]
   // (номер, короткое название, район, статус, ссылка). Новое дело = одна карточка в каталоге.
-  // Листается свайпом (нативная прокрутка со снапом), стрелками и точками; клавиатура ←/→. Без автопрокрутки.
+  // Первое дело — развёрнутой карточкой, следующие — строками; после ROWS строк — ссылка «Все дела (N)».
+  // Без JS в разметке остаётся карточка дела №1 и ссылка на каталог.
+  var ROWS = 4;
   var track = document.getElementById('cases-track');
   var cards = Array.prototype.slice.call(document.querySelectorAll('li[data-case]'));
   if (track && cards.length) {
     var box = track.parentNode;
-    var ctrl = box.querySelector('.cases-ctrl');
-    var dotsBox = box.querySelector('.cases-dots');
-    var live = box.querySelector('.cases-status');
     var txt = function (root, sel) { var el = root.querySelector(sel); return el ? el.textContent.trim() : ''; };
     var mk = function (tag, cls, text) { var el = document.createElement(tag); if (cls) el.className = cls; if (text != null) el.textContent = text; return el; };
-    cards.sort(function (a, b) { return (+a.getAttribute('data-case')) - (+b.getAttribute('data-case')); });
-    track.innerHTML = '';
-    var slides = cards.map(function (c, i) {
-      var n = c.getAttribute('data-case'), name = c.getAttribute('data-name');
-      var skin = (c.className.match(/qcard--(\w+)/) || [])[1] || 'avangard';
-      var s = mk('article', 'case case--' + skin);
-      s.id = 'case-' + n;
-      s.setAttribute('aria-roledescription', 'слайд');
-      s.setAttribute('aria-label', 'Дело №' + n + ' · ' + name + ' (' + (i + 1) + ' из ' + cards.length + ')');
-      s.appendChild(mk('p', 'case-where', txt(c, '.qc-where')));
-      var h = mk(i === 0 ? 'h2' : 'h3', 'case-title');
+    var title = function (tag, cls, n, name) {
+      var h = mk(tag, cls);
       h.appendChild(mk('span', 'case-no', 'Дело №' + n));
       h.appendChild(document.createTextNode(' '));
       var sep = h.appendChild(mk('span', 'case-sep', '·')); sep.setAttribute('aria-hidden', 'true');
       h.appendChild(document.createTextNode(' ' + name));
-      s.appendChild(h);
-      var wire = c.getAttribute('data-wire');
-      if (wire) {
-        var w = mk('div', 'wire');
-        w.appendChild(mk('small', null, 'Телеграмма · без подписи · без даты'));
-        w.appendChild(mk('p', null, wire));
-        s.appendChild(w);
-      }
-      s.appendChild(mk('p', 'case-hook', c.getAttribute('data-hook') || ''));
-      var foot = mk('div', 'case-foot');
-      foot.appendChild(mk('span', 'case-badge', txt(c, '.qc-badge')));
+      return h;
+    };
+    cards.sort(function (a, b) { return (+a.getAttribute('data-case')) - (+b.getAttribute('data-case')); });
+    track.innerHTML = '';
+    cards.forEach(function (c, i) {
+      if (i > ROWS) return;
+      var n = c.getAttribute('data-case'), name = c.getAttribute('data-name');
       var btn = c.querySelector('.qc-btn');
-      var a = mk('a', 'btn case-btn', btn ? btn.textContent.trim() : 'Подробнее о деле');
-      a.href = btn ? btn.getAttribute('href') : '#quests';
-      foot.appendChild(a);
-      s.appendChild(foot);
-      track.appendChild(s);
-      return s;
+      var href = btn ? btn.getAttribute('href') : '#quests';
+      var status = txt(c, '.qc-badge');
+      if (i === 0) {
+        var s = mk('li', 'case case--lead');
+        s.appendChild(mk('p', 'case-where', txt(c, '.qc-where')));
+        s.appendChild(title('h3', 'case-title', n, name));
+        var wire = c.getAttribute('data-wire');
+        if (wire) {
+          var w = mk('p', 'case-wire');
+          w.appendChild(mk('span', null, 'Телеграмма без подписи:'));
+          w.appendChild(document.createTextNode(' «' + wire + '»'));
+          s.appendChild(w);
+        }
+        s.appendChild(mk('p', 'case-hook', c.getAttribute('data-hook') || ''));
+        var foot = mk('div', 'case-foot');
+        foot.appendChild(mk('span', 'case-badge', status));
+        var a = mk('a', 'btn case-btn', btn ? btn.textContent.trim() : 'Подробнее о деле');
+        a.href = href;
+        foot.appendChild(a);
+        s.appendChild(foot);
+        track.appendChild(s);
+      } else {
+        var li = mk('li', 'case-row' + (c.getAttribute('data-status') === 'soon' ? ' case-row--soon' : ''));
+        var link = mk('a');
+        link.href = href;
+        var body = mk('span', 'case-row-body');
+        body.appendChild(title('span', 'case-row-title', n, name));
+        body.appendChild(mk('span', 'case-row-meta', [txt(c, '.qc-where'), status].filter(Boolean).join(' · ')));
+        link.appendChild(body);
+        var arr = mk('span', 'case-row-go'); arr.setAttribute('aria-hidden', 'true');
+        arr.innerHTML = '<svg viewBox="0 0 24 24" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        link.appendChild(arr);
+        li.appendChild(link);
+        track.appendChild(li);
+      }
     });
-    if (slides.length > 1 && ctrl) {
-      ctrl.hidden = false;
-      box.classList.add('is-carousel');
-      track.setAttribute('tabindex', '0');
-      track.setAttribute('aria-label', 'Дела: листайте влево и вправо');
-      var dots = slides.map(function (s, i) {
-        var d = mk('button', 'cases-dot');
-        d.type = 'button';
-        d.setAttribute('aria-label', 'Дело №' + cards[i].getAttribute('data-case') + ' · ' + cards[i].getAttribute('data-name'));
-        d.addEventListener('click', function () { go(i); });
-        dotsBox.appendChild(d);
-        return d;
-      });
-      var cur = 0;
-      var go = function (i) {
-        i = Math.max(0, Math.min(slides.length - 1, i));
-        track.scrollTo({ left: slides[i].offsetLeft - slides[0].offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
-        mark(i);
-      };
-      var mark = function (i) {
-        if (i === cur && dots[i].getAttribute('aria-current')) return;
-        cur = i;
-        dots.forEach(function (d, k) { if (k === i) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current'); });
-        slides.forEach(function (s, k) { s.classList.toggle('is-active', k === i); });
-        var arrows = ctrl.querySelectorAll('.cases-arrow');
-        arrows[0].disabled = i === 0; arrows[1].disabled = i === slides.length - 1;
-        if (live) live.textContent = slides[i].getAttribute('aria-label');
-      };
-      ctrl.querySelectorAll('.cases-arrow').forEach(function (b) {
-        b.addEventListener('click', function () { go(cur + (+b.getAttribute('data-dir'))); });
-      });
-      track.addEventListener('keydown', function (e) {
-        if (e.key === 'ArrowRight') { e.preventDefault(); go(cur + 1); }
-        else if (e.key === 'ArrowLeft') { e.preventDefault(); go(cur - 1); }
-      });
-      var t;
-      track.addEventListener('scroll', function () {
-        clearTimeout(t);
-        t = setTimeout(function () {
-          var x = track.scrollLeft, best = 0, dist = Infinity;
-          slides.forEach(function (s, k) { var dd = Math.abs(s.offsetLeft - slides[0].offsetLeft - x); if (dd < dist) { dist = dd; best = k; } });
-          mark(best);
-        }, 80);
-      }, { passive: true });
-      mark(0);
-      if (live) live.textContent = '';
+    var all = box.querySelector('.cases-all');
+    if (all) {
+      var rest = cards.length - Math.min(cards.length, ROWS + 1);
+      all.textContent = rest > 0 ? 'Все дела (' + cards.length + ')' : 'Все дела и карта районов';
     }
   }
 })();
