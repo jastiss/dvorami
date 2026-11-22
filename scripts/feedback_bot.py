@@ -8,6 +8,10 @@
   review[-<квест>] — отзыв после игры: оценка → понравилось → непонятно → можно ли цитировать
   suggest          — предложить район: где → почему → контакт (по желанию)
   question         — вопрос команде → контакт (по желанию) → сразу владельцу
+  report-<квест>-<точка>-<шаг>-<категория> — «Что-то не так?» из веб-плеера: категория (если не пришла
+                     в ссылке — кнопками) → текст (игрок вставляет из буфера) → владельцу сразу.
+                     Точка/шаг 0 — «не на точке». Текст с меткой [report квест/точка/шаг/категория],
+                     пришедший без /start, тоже распознаётся как сообщение о проблеме.
   без параметра    — меню из трёх кнопок
 
 Данные: feedback/ГГГГ-ММ.jsonl (репозиторий публичный — пишем минимум).
@@ -29,6 +33,7 @@ import html
 import json
 import os
 import pathlib
+import re
 import sys
 import time
 from zoneinfo import ZoneInfo
@@ -48,7 +53,22 @@ EXPIRE = 24 * 3600   # незаконченный диалог живёт сут
 LOW = 3              # оценка не выше этой — сразу владельцу
 MAXLEN = 2000        # обрезаем слишком длинные ответы
 
-FLOWS = ("review", "suggest", "question")
+FLOWS = ("review", "suggest", "question")   # пункты меню; report — только из плеера
+
+# Категории «Что-то не так?» — те же ключи, что в site/play/player.js (ISSUE_CATS)
+REPORT_CATS = {
+    "fact": "Факт не тот",
+    "riddle": "Загадка не решается",
+    "place": "Место или объект не там",
+    "hint": "Подсказка не помогла",
+    "tech": "Техническая ошибка",
+    "other": "Другое",
+}
+REPORT_TAG = re.compile(r"\[report ([a-z0-9]{1,32})/(\d{0,3})/(\d{0,3})/([a-z]{1,12})\]")
+# Репозиторий публичный: из текста сообщения о проблеме убираем похожее на контакты
+_PII = [(re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"), "[почта]"),
+        (re.compile(r"(?<!\w)@[A-Za-z0-9_]{4,}"), "[ник]"),
+        (re.compile(r"(?:\+7|\b8)[\s(-]*\d{3}[\s)-]*\d{3}[\s-]*\d{2}[\s-]*\d{2}\b"), "[телефон]")]
 
 T = {
     "menu": "Здравствуйте! Это бот <b>Дворами</b> — квестов-прогулок по городу.\nЧем помочь?",
@@ -73,6 +93,11 @@ T = {
     "yes": "Да", "no": "Нет",
     "noname": "Без имени",
     "nocontact": "Не нужно",
+    "report_cat": "Спасибо, что написали! Что случилось?",
+    "report_text": "Спасибо, что написали! {where}\n\nВставьте текст из буфера (долгое нажатие → «Вставить») "
+                   "или опишите своими словами, что не так. Фото пока не принимаем — опишите словами, что видите.",
+    "report_nocomment": "Без комментария",
+    "report_done": "Спасибо! Передали команде — поправим. Можно возвращаться к квесту: прогресс на месте.",
     "text_only": "Пока понимаю только текст.",
     "use_buttons": "Нажмите одну из кнопок выше 🙂",
     "cancelled": "Хорошо, отменил.",
@@ -89,6 +114,40 @@ def stamp(t):
 
 def esc(s):
     return html.escape(s or "", quote=False)
+
+
+def redact(text):
+    for rx, sub in _PII:
+        text = rx.sub(sub, text)
+    return text
+
+
+def parse_report_start(arg):
+    """report-zilart-3-2-fact → данные сообщения о проблеме (всё, кроме квеста, необязательно)."""
+    parts = arg.lower().replace("_", "-").split("-")[1:]
+    data = {}
+    if parts and parts[0].isalnum():
+        data["quest"] = parts[0][:32]
+    for key, val in zip(("point", "step"), parts[1:3]):
+        if val.isdigit() and int(val) > 0:
+            data[key] = int(val)
+    if len(parts) > 3 and parts[3] in REPORT_CATS:
+        data["category"] = parts[3]
+    return data
+
+
+def parse_report_tag(text):
+    """Метка из текста, который скопировал плеер: [report zilart/3/2/fact]. Возвращает (данные, текст без метки)."""
+    m = REPORT_TAG.search(text)
+    if not m:
+        return None, text
+    data = {"quest": m.group(1)}
+    for key, val in (("point", m.group(2)), ("step", m.group(3))):
+        if val and int(val) > 0:
+            data[key] = int(val)
+    if m.group(4) in REPORT_CATS:
+        data["category"] = m.group(4)
+    return data, (text[:m.start()] + text[m.end():]).strip()
 
 
 class Bot:
@@ -136,6 +195,8 @@ class Bot:
             # уходит только владельцу, в файл пишется лишь факт обращения.
             if rec["kind"] in ("question", "message"):
                 stored = {k: rec[k] for k in ("ts", "kind", "user", "complete", "contact_given") if k in rec}
+            elif rec["kind"] == "report":
+                stored = dict(rec, text=redact(rec.get("text", "")))
             else:
                 stored = rec
             f.write(json.dumps(stored, ensure_ascii=False) + "\n")
@@ -168,13 +229,26 @@ class Bot:
         b = [[self.btn(T[f"menu_{f}"], "m", f, 0)] for f in FLOWS]
         self.send(chat, T["menu"], b)
 
-    def begin(self, chat, user, flow, quest=None):
+    def begin(self, chat, user, flow, quest=None, data=None):
         self.state["seq"] = self.state.get("seq", 0) + 1
-        d = {"flow": flow, "user": user, "sid": self.state["seq"], "ts": now(), "data": {}}
+        d = {"flow": flow, "user": user, "sid": self.state["seq"], "ts": now(), "data": dict(data or {})}
         if quest:
             d["data"]["quest"] = quest
         self.state["dialogs"][user] = d
+        if flow == "report":
+            return self.ask(chat, d, "report_text" if d["data"].get("category") else "report_cat")
         self.ask(chat, d, {"review": "rating", "suggest": "where", "question": "question"}[flow])
+
+    @staticmethod
+    def report_where(data):
+        bits = []
+        if data.get("quest"):
+            bits.append(f"квест «{esc(data['quest'])}»")
+        if data.get("point"):
+            bits.append(f"точка {data['point']}" + (f", шаг {data['step']}" if data.get("step") else ""))
+        if data.get("category"):
+            bits.append(REPORT_CATS[data["category"]].lower())
+        return ("Записали: " + " · ".join(bits) + ".") if bits else ""
 
     def ask(self, chat, d, step):
         d["step"] = step
@@ -190,6 +264,11 @@ class Bot:
             b = [[self.btn(T["noname"], "skip", step, sid)]]
         elif step == "contact":
             b = [[self.btn(T["nocontact"], "skip", step, sid)]]
+        elif step == "report_cat":
+            b = [[self.btn(label, "c", key, sid)] for key, label in REPORT_CATS.items()]
+        elif step == "report_text":
+            b = [[self.btn(T["report_nocomment"], "skip", step, sid)]]
+            return self.send(chat, T[step].format(where=self.report_where(d["data"])).strip(), b)
         self.send(chat, T[step], b)
 
     def advance(self, chat, d, value):
@@ -221,6 +300,15 @@ class Bot:
         if step == "question":
             data["text"] = value
             return self.ask(chat, d, "contact")
+        if step == "report_cat":
+            data["category"] = value
+            return self.ask(chat, d, "report_text")
+        if step == "report_text":
+            tag, value = parse_report_tag(value)
+            for k, v in (tag or {}).items():
+                data.setdefault(k, v)
+            data["text"] = value
+            return self.finish(chat, d)
         if step == "contact":
             data["contact_given"] = bool(value)
             if value:
@@ -237,6 +325,10 @@ class Bot:
                 self.notify_owner(self.owner_text(rec))
             if chat is not None:
                 self.send(chat, T["review_done"])
+        elif flow == "report":
+            self.notify_owner(self.owner_text(rec))
+            if chat is not None:
+                self.send(chat, T["report_done"])
         else:
             self.notify_owner(self.owner_text(rec, contact))
             if chat is not None:
@@ -245,10 +337,12 @@ class Bot:
     @staticmethod
     def owner_text(rec, contact=None):
         k = rec["kind"]
+        cat = REPORT_CATS.get(rec.get("category"), "без категории")
         title = {"review": f"⚠️ Низкая оценка: {rec.get('rating')}/5", "suggest": "🗺 Предложили район",
-                 "question": "✉️ Вопрос от игрока", "message": "💬 Сообщение в игровой бот"}[k]
+                 "question": "✉️ Вопрос от игрока", "message": "💬 Сообщение в игровой бот",
+                 "report": f"🚩 Что-то не так: {cat}"}[k]
         lines = [f"<b>{title}</b>" + ("" if rec.get("complete", True) else " (не дописан)")]
-        labels = [("quest", "Квест"), ("liked", "Понравилось"), ("unclear", "Непонятно"),
+        labels = [("quest", "Квест"), ("point", "Точка"), ("step", "Шаг"), ("liked", "Понравилось"), ("unclear", "Непонятно"),
                   ("where", "Где"), ("why", "Почему"), ("text", "Текст")]
         for key, label in labels:
             if rec.get(key):
@@ -267,7 +361,7 @@ class Bot:
         if (msg.get("chat") or {}).get("type") != "private" or chat is None:
             return  # в группах и каналах бот молчит
         user = self.uid((msg.get("from") or {}).get("id", chat))
-        text = (msg.get("text") or "").strip()[:MAXLEN]
+        text = (msg.get("text") or msg.get("caption") or "").strip()[:MAXLEN]
         d = self.state["dialogs"].get(user)
         if not text:
             self.send(chat, T["text_only"])
@@ -279,7 +373,9 @@ class Bot:
             if cmd == "/start":
                 flow, _, quest = arg.replace("_", "-").partition("-")
                 flow = flow.lower()
-                if flow in FLOWS:
+                if flow == "report":
+                    self.begin(chat, user, "report", data=parse_report_start(arg))
+                elif flow in FLOWS:
                     quest = "".join(c for c in quest.lower() if c.isalnum())[:32] or None
                     self.begin(chat, user, flow, quest)
                 else:
@@ -295,6 +391,16 @@ class Bot:
             if cmd in ("/help", "/menu"):
                 self.menu(chat)
                 return
+        if d is None or d["flow"] != "report":
+            # Текст из плеера с меткой [report …] пришёл без /start (например, ссылка открыла канал,
+            # а игрок потом написал боту) — это сообщение о проблеме, а не вопрос команде.
+            tag, rest = parse_report_tag(text)
+            if tag:
+                rd = {"flow": "report", "user": user, "sid": 0, "ts": now(), "data": dict(tag, text=rest)}
+                self.finish(chat, rd)
+                if d is not None:
+                    self.state["dialogs"][user] = d  # начатый отзыв не теряем
+                return
         if d is None:
             # текст вне диалога не теряем: это вопрос/сообщение команде
             d = {"flow": "message", "user": user, "sid": 0, "ts": now(), "data": {"text": text}}
@@ -303,7 +409,7 @@ class Bot:
             self.send(chat, T["message_done"])
             self.menu(chat)
             return
-        if d["step"] in ("rating", "quote"):
+        if d["step"] in ("rating", "quote", "report_cat"):
             self.send(chat, T["use_buttons"])
             return
         self.advance(chat, d, text)
@@ -329,6 +435,7 @@ class Bot:
             return  # кнопка из старого диалога
         step = d["step"]
         ok = ((action == "r" and step == "rating" and value in "12345")
+              or (action == "c" and step == "report_cat" and value in REPORT_CATS)
               or (action == "q" and step == "quote" and value in ("0", "1"))
               or (action == "skip" and value == step))
         if not ok:
@@ -338,6 +445,8 @@ class Bot:
             self.advance(chat, d, int(value))
         elif action == "q":
             self.advance(chat, d, value == "1")
+        elif action == "c":
+            self.advance(chat, d, value)
         else:
             self.advance(chat, d, "")
 
@@ -352,7 +461,8 @@ class Bot:
             if now() - d.get("ts", 0) <= EXPIRE:
                 continue
             data = d["data"]
-            if (d["flow"] == "review" and "rating" in data) or data.get("where") or data.get("text"):
+            if ((d["flow"] == "review" and "rating" in data) or d["flow"] == "report"
+                    or data.get("where") or data.get("text")):
                 self.finish(None, d, complete=False)
             else:
                 self.state["dialogs"].pop(user, None)

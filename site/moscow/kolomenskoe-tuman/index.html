@@ -23,9 +23,9 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Дело о тумане в овраге — квест-прогулка по Коломенскому">
 <meta name="twitter:image" content="https://dvorami.ru/assets/og/main.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,500;0,700;1,500&family=Alegreya+Sans:wght@400;500;700&family=Neucha&display=swap">
+<link rel="preload" href="../../assets/fonts/alegreya-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../assets/fonts/alegreya-sans-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/fonts.css">
 <link rel="stylesheet" href="../../assets/style.css">
 <link rel="stylesheet" href="../../assets/gallery.css">
 <script>document.documentElement.classList.add('js')</script>
@@ -154,7 +154,8 @@
 .fogband.f3 { bottom: 32%; height: 60px; animation: drift 44s linear infinite alternate; opacity: .55; }
 @keyframes drift { from { transform: translateX(-8%); } to { transform: translateX(8%); } }
 @media (prefers-reduced-motion: reduce) { .fogband { animation: none; } }
-.tm-hero .wrap { position: relative; z-index: 2; padding-top: 16px; padding-bottom: 300px; }
+.tm-hero .wrap { position: relative; z-index: 2; padding-top: 16px; padding-bottom: 120px; }
+@media (max-width: 899px) { .tm-hero .scene { height: 170px; } }
 @media (min-width: 900px) { .tm-hero .wrap { padding-top: 32px; padding-bottom: 380px; } }
 .back { display: inline-flex; align-items: center; gap: 6px; padding: 10px 0; font-size: 17px; color: var(--text-2) !important; text-decoration: none; }
 .back:hover { color: var(--lichen) !important; }
@@ -281,6 +282,7 @@
 .theme-tuman .site-footer .wrap { color: var(--text-3); }
 .theme-tuman .site-footer a { color: var(--text-2); }
 </style>
+<script src="../../assets/analytics.js" defer></script>
 </head>
 <body class="theme-tuman">
 <a class="skip" href="#main">К содержанию</a>
@@ -296,7 +298,7 @@
       <a href="#how">Как проходит</a>
       <a href="#spots">Что увидите</a>
       <a href="#faq">Вопросы</a>
-      <a class="btn tm-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank">Узнать о запуске</a>
+      <a class="btn tm-btn" href="#buy">Взять дело</a>
     </nav>
   </div>
 </header>
@@ -334,8 +336,8 @@
     <p class="intro">Говорят, туман в Голосовом овраге путает время. Сегодня он поднялся снова и оставил на тропе <b>человека, который не помнит, из какого он века</b>.</p>
     <p class="intro">Он помнит только, что видел вокруг. Остальное вам предстоит выяснить по храмам, воротам и камням Коломенского — и проводить его домой.</p>
     <span class="badge">Квест готовится к запуску</span>
-    <div class="tm-cta">
-      <a class="tm-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4 3 11l6 2 2 6 3-4 5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Узнать о запуске</a>
+    <div class="tm-cta" data-cta>
+      <a class="tm-btn" href="#buy">Взять дело</a>
       <a href="#how">Как устроен квест</a>
     </div>
   </div>
@@ -423,7 +425,6 @@
   <div class="wrap">
     <h2 id="h-spots" class="tm-h" style="color:var(--ink)">Что вы <em>увидите</em></h2>
     <p class="lead2">Шесть мест из десяти. Остальные откроются по ходу квеста.</p>
-    <ul class="pgal pgal--tm" aria-label="Виды района"><li><figure><img src="../../assets/ill/case-03.svg" alt="Синий час в Коломенском: на высоком берегу белая шатровая церковь Вознесения в тёплой подсветке, справа внизу Москва-река и огни дальнего берега, слева туман поднимается из оврага; по тропинке среди старых яблонь идут взрослый и ребёнок." width="1200" height="900" loading="lazy"><figcaption>Коломенское: шатёр над рекой и туман в овраге</figcaption></figure></li><li><figure><img src="../../assets/ill/scene-kolomenskoe-1.svg" alt="Голосов овраг в Коломенском: между крутыми склонами, поросшими деревьями, течёт ручей, в котором отражается вечернее небо, через ручей перекинут деревянный мостик, по дну оврага стелется туман; на мостике стоят взрослый и ребёнок с фонариком." width="1200" height="900" loading="lazy"><figcaption>Голосов овраг в сумерках</figcaption></figure></li><li><figure><img src="../../assets/ill/scene-kolomenskoe-2.svg" alt="Деревянный царский дворец в Коломенском вечером: десятки срубов разной высоты под шатровыми, бочковыми и четырёхскатными крышами с узором чешуи, резные наличники и тёплые окна; перед дворцом аллея с фонарями и гуляющие люди." width="1200" height="900" loading="lazy"><figcaption>Деревянный дворец в Коломенском</figcaption></figure></li><li><figure><img src="../../assets/ill/scene-kolomenskoe-3.svg" alt="Старый яблоневый сад в Коломенском весенним вечером: ряды цветущих яблонь в белых и розовых цветах уходят вдаль, между ними травяная дорожка, вдали над деревьями белеет шатёр церкви; под яблонями гуляют взрослый с ребёнком." width="1200" height="900" loading="lazy"><figcaption>Яблоневый сад в Коломенском</figcaption></figure></li></ul>
     <ul class="cards" data-shuffle>
       <li class="card"><div class="ph"><svg viewBox="0 0 400 300" role="img" aria-label="Рисунок: белая шатровая церковь на высоком берегу в тумане"><rect width="400" height="300" fill="#9DAEA4"/><path d="M0 220 Q200 190 400 214 V300 H0z" fill="#7E9288"/><g fill="#EEF1EC"><path d="M176 220 h48 v-96 h-48z"/><path d="M180 124 L200 36 L220 124z"/><path d="M198 36 h4 v-20 h-4z"/><path d="M160 220 h80 v-30 h-80z"/></g><g fill="#C8D2C9"><path d="M186 140 h6 v20 h-6zM208 140 h6 v20 h-6z"/></g></svg></div><div class="body"><h3>Белый шатёр над рекой</h3><p>Церковь Вознесения видна издалека. Ради чего её поставили, вспомнит Странник — но не сразу.</p></div></li>
       <li class="card"><div class="ph"><svg viewBox="0 0 400 300" role="img" aria-label="Рисунок: глубокий овраг с ручьём, над дном стелется туман"><rect width="400" height="300" fill="#8FA197"/><path d="M0 80 Q120 90 160 200 Q200 270 240 200 Q280 90 400 80 V0 H0z" fill="#5E7268"/><path d="M0 80 Q120 90 160 200 Q200 270 240 200 Q280 90 400 80 V300 H0z" fill="#4A5D53" opacity=".6"/><path d="M170 238 q30 16 60 0" stroke="#DDE3DD" stroke-width="3" fill="none"/><g fill="#3E5047"><path d="M40 80 l14-40 14 40z"/><path d="M330 84 l16-46 16 46z"/><path d="M300 92 l12-30 12 30z"/></g></svg></div><div class="body"><h3>Голосов овраг</h3><p>Здесь, по преданию, теряли время. Спуститесь на дно и проверьте одну из версий, откуда у оврага такое имя.</p></div></li>
@@ -514,7 +515,6 @@
         <p>Квест начинается у&nbsp;метро «Коломенская». На&nbsp;маршруте есть спуск в&nbsp;овраг и&nbsp;подъём, так что наденьте удобную обувь. Квест готовится к&nbsp;запуску, дату объявим в&nbsp;Telegram-канале «Дворами».</p>
       </div>
     </div>
-    <p class="seo-src">Факты сверены по&nbsp;источникам: <a href="https://en.wikipedia.org/wiki/Kolomenskoye" rel="noopener" target="_blank">Wikipedia — Kolomenskoye</a>, <a href="https://rg.ru/2026/08/01/reg-cfo/kak-vygliadit-cerkov-vozneseniia-gospodnia-v-kolomenskom-posle-restavracii.html" rel="noopener" target="_blank">«Российская газета» — церковь Вознесения после реставрации</a>, <a href="https://www.culture.ru/materials/153294/rekord-davno-minuvshikh-dnei-samye-samye-zdaniya-rossii" rel="noopener" target="_blank">Культура.РФ</a>, <a href="https://www.mos.ru/news/item/150127073/" rel="noopener" target="_blank">mos.ru — дворец Алексея Михайловича</a>, <a href="https://en.wikipedia.org/wiki/Golosov_Ravine" rel="noopener" target="_blank">Wikipedia — Golosov Ravine</a>, <a href="https://www.m24.ru/articles/146246" rel="noopener" target="_blank">m24.ru — Голосов овраг</a>, <a href="https://vm.ru/technology/521171-mezhdu-vremenem-i-prostranstvom" rel="noopener" target="_blank">«Вечерняя Москва»</a>, <a href="https://travelto.ru/blog/chto-posmotret-v-kolomenskom/" rel="noopener" target="_blank">Travelto</a>.</p>
   </div>
 </section>
 <!-- seo:end -->
@@ -533,15 +533,35 @@
   </div>
 </section>
 
-<section class="tm-sec launch dark" aria-labelledby="h-launch">
+<section id="buy" class="tm-sec launch dark" aria-labelledby="h-launch">
   <div class="fogband" aria-hidden="true"></div>
   <div class="wrap">
     <h2 id="h-launch" class="tm-h">Туман <em>ещё вернётся</em></h2>
-    <p>Квест готовится к запуску. Напишем в Telegram, как только Странника можно будет проводить домой.</p>
-    <a class="tm-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank">Узнать о запуске</a>
+    <p>Квест готовится к запуску, и купить дело можно будет здесь. Напишем в Telegram, как только Странника можно будет проводить домой.</p>
+    <a class="tm-btn" data-cta href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank">Узнать о запуске</a>
+  </div>
+</section>
+<section class="src-sec" aria-label="Источники">
+  <div class="wrap">
+    <details class="sources">
+      <summary>Источники</summary>
+      <p>Исторические факты на&nbsp;этой странице сверены по&nbsp;публикациям:</p>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/Kolomenskoye" rel="noopener" target="_blank">Wikipedia — Kolomenskoye</a></li>
+        <li><a href="https://rg.ru/2026/08/01/reg-cfo/kak-vygliadit-cerkov-vozneseniia-gospodnia-v-kolomenskom-posle-restavracii.html" rel="noopener" target="_blank">«Российская газета» — церковь Вознесения после реставрации</a></li>
+        <li><a href="https://www.culture.ru/materials/153294/rekord-davno-minuvshikh-dnei-samye-samye-zdaniya-rossii" rel="noopener" target="_blank">Культура.РФ</a></li>
+        <li><a href="https://www.mos.ru/news/item/150127073/" rel="noopener" target="_blank">mos.ru — дворец Алексея Михайловича</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Golosov_Ravine" rel="noopener" target="_blank">Wikipedia — Golosov Ravine</a></li>
+        <li><a href="https://www.m24.ru/articles/146246" rel="noopener" target="_blank">m24.ru — Голосов овраг</a></li>
+        <li><a href="https://vm.ru/technology/521171-mezhdu-vremenem-i-prostranstvom" rel="noopener" target="_blank">«Вечерняя Москва»</a></li>
+        <li><a href="https://travelto.ru/blog/chto-posmotret-v-kolomenskom/" rel="noopener" target="_blank">Travelto</a></li>
+      </ul>
+    </details>
   </div>
 </section>
 </main>
+
+<a class="fab" id="fab" href="#buy" aria-hidden="true" tabindex="-1">Взять дело<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 
 <footer class="site-footer">
   <div class="wrap">

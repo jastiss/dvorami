@@ -2,7 +2,9 @@
    Читает quest.json из папки страницы (формат как у scripts/quest_bot.py) и повторяет логику бота:
    вступление → точки по порядку (дорога → «Мы на месте» → сцена → шаги) → улика → финал.
    ?field=1 — режим полевого теста: «что проверить», тайминг, ошибки, подсказки, заметки, отчёт.
-   Прогресс — в localStorage (если доступен). Без внешних зависимостей. */
+   Прогресс — в localStorage (если доступен). Без внешних зависимостей.
+   «Что-то не так?» на каждой точке: категория + текст → копия в буфер → игровой бот (docs/feedback-bot.md).
+   Аналитика: window.dvoramiTrack из site/assets/analytics.js (если подключён и задан счётчик). */
 (function () {
   'use strict';
 
@@ -15,6 +17,21 @@
   var Q = null;   // квест
   var S = null;   // состояние игрока
   var sheetKind = null;
+
+  // Игровой бот — то же имя, что BOT в site/assets/site.js (без @). Пусто — ссылки ведут в канал.
+  var BOT = '';
+  var CHANNEL = 'https://t.me/dvorami_quest';
+  // Ключи категорий совпадают с REPORT_CATS в scripts/feedback_bot.py
+  var ISSUE_CATS = [['fact', 'Факт не тот'], ['riddle', 'Загадка не решается'], ['place', 'Место или объект не там'],
+    ['hint', 'Подсказка не помогла'], ['tech', 'Техническая ошибка'], ['other', 'Другое']];
+  function botLink(start) { return BOT ? 'https://t.me/' + BOT + '?start=' + start : CHANNEL; }
+
+  // ---------- аналитика: события прохождения → цели Метрики ----------
+  var GOALS = { start: 'quest_start', arrive: 'point_arrive', done: 'point_done', hint: 'hint_open',
+    reveal: 'answer_reveal', skip: 'step_skip', finish: 'quest_finish', stop: 'quest_pause', resume: 'quest_resume' };
+  function track(goal, params) {
+    try { if (typeof window.dvoramiTrack === 'function') window.dvoramiTrack(goal, params || {}); } catch (e) { /* без аналитики */ }
+  }
 
   // ---------- хранилище (может быть недоступно) ----------
   var store = {
@@ -139,6 +156,14 @@
     var e = { t: Date.now(), kind: kind, point: curN() };
     if (extra) for (var k in extra) e[k] = extra[k];
     S.events.push(e);
+    if (GOALS[kind]) {
+      var gp = { quest: QID, field: S.field ? 1 : 0 };
+      if (e.point) gp.point = e.point;
+      if (e.step) gp.step = e.step;
+      if (e.level) gp.level = e.level;
+      if (kind === 'finish' && S.t_start) gp.minutes = Math.round((S.t_end - S.t_start) / 60000);
+      track(GOALS[kind], gp);
+    }
   }
 
   // ---------- ход квеста ----------
@@ -292,6 +317,9 @@
     if (st.optional || st.type === 'free' || !hints.length) h += '<button type="button" class="pl-skip" data-act="skip">Пропустить</button>';
     return h + '</section>';
   }
+  function issueBtn() {
+    return '<button type="button" class="pl-issue" data-act="issue">Что-то не так? Напишите нам</button>';
+  }
   function boardHtml(inSheet) {
     var b = S.board.slice();
     if (!b.length) return '<p class="pl-empty">Доска улик пока пуста. Первая улика — на точке 1.</p>';
@@ -349,29 +377,32 @@
         '<section class="pl-card"><span class="pl-label">Как дойти</span>' +
         (p.walk_m ? '<div class="pl-dist">≈ ' + p.walk_m + ' м</div>' : '') +
         '<div class="pl-prose">' + prose(p.walk) + '</div>' +
-        '<a class="pl-maplink" href="' + esc(link) + '" target="_blank" rel="noopener">Открыть в Яндекс Картах</a></section>' +
+        '<a class="pl-maplink" href="' + esc(link) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + p.n + '">Открыть в Яндекс Картах</a></section>' +
         checkBlock(p, false) +
-        '<div class="pl-actions"><button class="pl-btn" type="button" data-act="here">Мы на месте</button></div>';
+        '<div class="pl-actions"><button class="pl-btn" type="button" data-act="here">Мы на месте</button></div>' + issueBtn();
     } else if (S.phase === 'step') {
       var p2 = pt();
       h = head(p2) + '<section class="pl-card"><span class="pl-label">Сцена</span><div class="pl-prose">' + prose(p2.scene) + '</div></section>';
       for (var k = 0; k < S.k; k++) h += doneStep(p2.steps[k], S.res[k], k);
       h += activeStep(p2.steps[S.k]);
       h += checkBlock(p2, true);
+      h += issueBtn();
     } else if (S.phase === 'point_done') {
       var p3 = pt();
       var last = S.p + 1 >= n;
       h = head(p3, 'пройдена');
       if (p3.clue) h += '<span class="pl-label" id="active" style="margin-top:16px">Улика № ' + S.board.length + '</span>' + clueCard(p3.clue, true);
       if (p3.outro) h += '<section class="pl-card"' + (p3.clue ? '' : ' id="active"') + '><div class="pl-prose">' + prose(p3.outro) + '</div></section>';
-      h += '<div class="pl-actions"><button class="pl-btn" type="button" data-act="nextpoint">' + (last ? 'К финалу' : 'К точке ' + (S.p + 2)) + '</button></div>';
+      h += '<div class="pl-actions"><button class="pl-btn" type="button" data-act="nextpoint">' + (last ? 'К финалу' : 'К точке ' + (S.p + 2)) + '</button></div>' + issueBtn();
     } else if (S.phase === 'done') {
       h = '<header class="pl-head" id="top">' + SHAPES[1] + '<div class="pl-num">Финал</div><h1>Дело закрыто</h1></header>' +
         (Q.finale || []).map(function (m) { return '<section class="pl-card"><div class="pl-prose">' + prose(m) + '</div></section>'; }).join('') +
         '<section class="pl-card"><span class="pl-label">Время прохождения</span><div class="pl-dist" style="font-size:28px">' + dur((S.t_end || Date.now()) - S.t_start) + '</div></section>' +
         (S.field ? '<section class="pl-card pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
           '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="note">Заметка</button><button class="pl-btn" type="button" data-act="report">Отправить отчёт</button></div></section>' : '') +
-        '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>';
+        '<section class="pl-card"><span class="pl-label">Как вам дело?</span><p class="pl-small">Минута в Telegram: оценка и пара слов. Честный отзыв помогает нам больше всего — особенно если где-то было непонятно.</p>' +
+          '<div class="pl-actions"><a class="pl-btn" href="' + esc(botLink('review-' + QID)) + '" target="_blank" rel="noopener" data-track="review_click" data-track-quest="' + esc(QID) + '">Оценить квест</a></div></section>' +
+        '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>' + issueBtn();
     }
     app.innerHTML = h;
     var sun = document.documentElement.dataset.theme === 'sun';
@@ -415,9 +446,31 @@
       body = '<div class="pl-menu">' +
         '<button class="pl-btn pl-btn--ghost" type="button" data-act="theme">' + (sun ? 'Тёмная тема' : 'Светлая тема — для яркого солнца') + '</button>' +
         (S.field ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт</button>' : '') +
+        '<button class="pl-btn pl-btn--ghost" type="button" data-act="issue">Что-то не так?</button>' +
         (S.phase !== 'idle' && S.phase !== 'done' ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="stop">Закончить</button>' : '') +
         '<button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>' +
         '<p class="pl-small" style="margin-top:16px">Прогресс хранится только на этом телефоне и в этом браузере.</p>';
+    } else if (kind === 'issue') {
+      title = 'Что-то не так?';
+      var w = issueWhere();
+      body = '<p class="pl-small">' + (w.point ? 'Точка ' + w.point + ' «' + esc(plain(pt().title)) + '»' + (w.step ? ', шаг ' + w.step : '') : 'Квест «' + esc(plain(Q.title)) + '»') +
+        ' — это мы подставим сами. Квест не прервётся.</p>' +
+        '<fieldset class="pl-cats"><legend class="pl-label">Что случилось</legend>' +
+        ISSUE_CATS.map(function (c) {
+          return '<label class="pl-cat"><input type="radio" name="issue-cat" value="' + c[0] + '"' + (issueCat === c[0] ? ' checked' : '') + '><span>' + c[1] + '</span></label>';
+        }).join('') + '</fieldset>' +
+        '<label class="pl-label" for="issue-text" style="margin-top:16px">Что именно (по желанию)</label>' +
+        '<textarea class="pl-textarea" id="issue-text" placeholder="Например: табличка висит на соседнем доме">' + esc(issueDraft) + '</textarea>' +
+        '<div class="pl-actions"><a class="pl-btn" id="issue-send" href="' + esc(CHANNEL) + '" target="_blank" rel="noopener" data-issue-send data-track="issue_send" data-track-quest="' + esc(QID) + '"' +
+        (w.point ? ' data-track-point="' + w.point + '"' : '') + (issueCat ? ' data-track-category="' + issueCat + '"' : '') + '>Отправить в Telegram</a></div>' +
+        '<p class="pl-small">Текст скопируется сам: в Telegram ' + (BOT ? 'нажмите «Запустить», затем ' : '') + 'вставьте его в чат (долгое нажатие → «Вставить») и отправьте.</p>';
+    } else if (kind === 'issue_sent') {
+      title = 'Почти готово';
+      body = '<p>Текст скопирован. В Telegram ' + (BOT ? 'нажмите «Запустить», ' : '') + 'вставьте его в чат и отправьте — мы получим сразу с номером точки.</p>' +
+        '<p class="pl-small">Telegram не открылся или текст не вставляется?</p>' +
+        '<div class="pl-row"><button class="pl-btn pl-btn--ghost pl-btn--sm" type="button" data-act="issuecopy">Скопировать снова</button>' +
+        '<a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + esc(issueLink()) + '" target="_blank" rel="noopener">Открыть Telegram</a></div>' +
+        '<div class="pl-actions"><button class="pl-btn" type="button" data-act="close">Вернуться к квесту</button></div>';
     } else if (kind === 'report') {
       title = 'Отчёт';
       body = '<p class="pl-small">Нажмите «Отправить» и выберите Telegram. Если не получается, нажмите «Скопировать» и вставьте текст в чат с ботом.</p>' +
@@ -434,12 +487,35 @@
     var ta = document.getElementById('note-text');
     if (ta) ta.focus();
   }
+
+  // ---------- «Что-то не так?» ----------
+  var issueCat = '', issueDraft = '', issueLast = '';
+  function issueWhere() {
+    var n = curN();
+    return { point: n, step: n && S.phase === 'step' ? S.k + 1 : null };
+  }
+  function issueName(key) { for (var i = 0; i < ISSUE_CATS.length; i++) if (ISSUE_CATS[i][0] === key) return ISSUE_CATS[i][1]; return ''; }
+  function issueLink() {
+    var w = issueWhere();
+    return botLink(['report', QID, w.point || 0, w.step || 0, issueCat || 'other'].join('-'));
+  }
+  function issueText(text) {
+    var w = issueWhere();
+    var where = w.point ? 'Точка ' + w.point + ' «' + plain(pt().title) + '»' + (w.step ? ', шаг ' + w.step : '') : 'Не на точке (' + S.phase + ')';
+    return 'Что-то не так · ' + plain(Q.title) + '\n' +
+      'Категория: ' + issueName(issueCat) + '\n' + where + '\n' +
+      (text ? 'Что именно: ' + text + '\n' : '') +
+      '[report ' + QID + '/' + (w.point || 0) + '/' + (w.step || 0) + '/' + issueCat + ']';
+  }
   function closeSheet() {
     sheetKind = null;
     if (typeof sheet.close === 'function' && sheet.open) sheet.close(); else sheet.removeAttribute('open');
   }
   function toast(msg) {
     var t = document.getElementById('toast');
+    // Открытая шторка (dialog) лежит в верхнем слое над всей страницей — тост переносим внутрь неё, иначе его не видно
+    var host = sheet.open ? sheet : document.body;
+    if (t.parentNode !== host) host.appendChild(t);
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toast.tm);
@@ -497,6 +573,14 @@
       out.push('- ' + hm(e.t) + ' · т.' + e.point + ' шаг ' + e.step + ': ' + (e.kind === 'free' ? 'свободный ответ' : 'верно') + ' «' + e.text + '»' +
         (e.hints ? ' (после ' + e.hints + ' подск.)' : ''));
     });
+    var issues = ev.filter(function (e) { return e.kind === 'issue'; });
+    if (issues.length) {
+      out.push('');
+      out.push('«ЧТО-ТО НЕ ТАК»');
+      issues.forEach(function (e) {
+        out.push('- ' + hm(e.t) + ' · ' + (e.point ? 'т.' + e.point + (e.step ? ' шаг ' + e.step : '') : 'вне точки') + ' · ' + issueName(e.category) + (e.text ? ': ' + e.text : ''));
+      });
+    }
     var pauses = ev.filter(function (e) { return e.kind === 'stop' || e.kind === 'resume' || e.kind === 'reload'; });
     if (pauses.length) {
       out.push('');
@@ -577,6 +661,8 @@
     note: function () { openSheet('note'); },
     menu: function () { openSheet('menu'); },
     report: function () { openSheet('report'); },
+    issue: function () { issueCat = ''; issueDraft = ''; openSheet('issue'); },
+    issuecopy: function () { copyText(issueLast).then(function (ok) { toast(ok ? 'Скопировано — вставьте в Telegram' : 'Не получилось скопировать'); }); },
     close: closeSheet,
     sort: function (el) { sortMode = el.dataset.mode; openSheet('board'); },
     repeat: function () {
@@ -630,6 +716,33 @@
       closeSheet();
       toast(curN() ? 'Заметка сохранена к точке ' + curN() : 'Заметка сохранена');
     }
+  });
+  sheet.addEventListener('change', function (e) {
+    if (e.target.name !== 'issue-cat') return;
+    issueCat = e.target.value;
+    var a = document.getElementById('issue-send');
+    if (a) a.setAttribute('data-track-category', issueCat);
+  });
+  sheet.addEventListener('input', function (e) { if (e.target.id === 'issue-text') issueDraft = e.target.value; });
+  // Ссылка «Отправить в Telegram»: не перехватываем переход, только копируем текст и меняем адрес до перехода
+  sheet.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-issue-send]');
+    if (!a || !Q) return;
+    if (!issueCat) {
+      e.preventDefault();
+      toast('Выберите, что случилось');
+      var first = sheet.querySelector('input[name="issue-cat"]');
+      if (first) first.focus();
+      return;
+    }
+    var text = issueDraft.trim().slice(0, 1500);
+    issueLast = issueText(text);
+    a.href = issueLink();
+    copyText(issueLast);
+    var w = issueWhere();
+    log('issue', { category: issueCat, step: w.step, text: text });
+    save();
+    setTimeout(function () { openSheet('issue_sent'); }, 300);
   });
   sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
   sheet.addEventListener('close', function () { sheetKind = null; });

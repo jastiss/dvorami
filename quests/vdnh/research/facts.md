@@ -34,3 +34,11 @@
 - Территория ВДНХ свободного входа; павильоны, музеи, «Москвариум», аттракционы — платные или с собственными правилами — только снаружи.
 - Фонтаны работают сезонно: загадки по фигурам и форме, а не по струям воды.
 - Маршрут длинный: держать в пределах 4–5 км; электрокары/самокаты не обещать.
+
+## Добавлено 22.11.2026 (сценарий v1, переплетения с миром)
+
+| # | Факт | Видно? | Статус | Источник |
+|---|---|---|---|---|
+| 15 | На выставке в Париже 1937 г. советский павильон с «Рабочим и колхозницей» стоял напротив немецкого, павильоны соперничали | 📜 | ✅ суть | [Ведомости, 30.04.2014: как соперничали советский и немецкий павильоны](https://www.vedomosti.ru/lifestyle/articles/2014/04/30/kak-sopernichali-sovetskij-i-nemeckij-pavilony-na-vsemirnoj); [Wikipedia: Worker and Kolkhoz Woman](https://wikipedia.com/wiki/Worker_and_Kolkhoz_Woman) |
+| 16 | Карело-Финская ССР образована в 1940 г. (31 марта) после советско-финской войны | 📜 | ✅ / 🔶 точная дата | [Газета.ру, 31.03.2020](https://www.gazeta.ru/science/2020/03/31_a_13029313.shtml); [Rambler: как СССР «отбил» Карелию](https://weekend.rambler.ru/read/41829701-kak-sssr-otbil-kareliyu-u-finlyandii/); [Wikipedia: Karelo-Finnish SSR](https://Www.wikipedia.org/wiki/Soviet_Karelia) |
+| 17 | Монумент «Покорителям космоса» у метро «ВДНХ» открыт в 1964 г. в честь первых успехов в освоении космоса (запуск первого спутника); высота около 107 м, облицовка титаном | 👁 | ✅ (год, назначение) / 🔶 высота, материал | [Wikipedia: Monument to the Conquerors of Space](https://en.wikipedia.org/wiki/Monument_to_the_Conquerors_of_Space); [Techinsider: загадки монумента](https://www.techinsider.ru/technologies/1636601-zagadki-monumenta-pokoritelyam-kosmosa-ili-kak-sssr-otmetil-zapusk-pervogo-sputnika/); [Знание: Покорителям космоса](https://znanierussia.ru/articles/%D0%9F%D0%BE%D0%BA%D0%BE%D1%80%D0%B8%D1%82%D0%B5%D0%BB%D1%8F%D0%BC_%D0%BA%D0%BE%D1%81%D0%BC%D0%BE%D1%81%D0%B0) |

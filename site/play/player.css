@@ -229,6 +229,19 @@ code {
 details.pl-field summary { cursor: pointer; font: 500 15px/1.2 var(--font-display); text-transform: uppercase; letter-spacing: .1em; color: var(--accent-text); min-height: 24px; }
 details.pl-field[open] summary { margin-bottom: 10px; }
 
+/* «Что-то не так?» — тихая ссылка под действиями точки, не спорит с основной кнопкой */
+.pl-issue { display: block; margin: 20px auto 0; min-height: 44px; padding: 10px 4px; background: none; border: 0; cursor: pointer;
+  color: var(--text-3); font-size: 15px; text-decoration: underline; text-underline-offset: 3px; }
+.pl-issue:active { color: var(--text); }
+.pl-cats { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pl-cats legend { padding: 0; }
+.pl-cat { display: block; cursor: pointer; }
+.pl-cat input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pl-cat span { display: flex; align-items: center; min-height: 48px; padding: 10px 14px; border: 2px solid var(--line); font-size: 17px; }
+.pl-cat input:checked + span { border-color: var(--text); background: var(--surface-2); font-weight: 600; }
+.pl-cat input:checked + span::before { content: '✓'; margin-right: 10px; color: var(--accent-text); }
+.pl-cat input:focus-visible + span { outline: 3px solid var(--text); outline-offset: 2px; }
+
 /* Нижние вкладки */
 .pl-tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;

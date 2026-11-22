@@ -15,13 +15,13 @@
 <meta property="og:site_name" content="Дворами">
 <meta property="og:locale" content="ru_RU">
 <meta property="og:title" content="Квесты-прогулки по Москве — Дворами">
-<meta property="og:description" content="Детективные квесты-прогулки по районам Москвы без гида. 990 ₽ на компанию до 5 человек.">
+<meta property="og:description" content="Детективные квесты-прогулки по районам Москвы без гида. 990 ₽ — один код на всю компанию.">
 <meta property="og:url" content="https://dvorami.ru/moscow/">
 <meta property="og:image" content="https://dvorami.ru/assets/og/main.png">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Golos+Text:wght@400;500;600;700&family=Caveat:wght@700&family=Oswald:wght@700&family=Cormorant:wght@700&display=swap">
+<link rel="preload" href="../assets/fonts/unbounded-cyrillic-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/golos-text-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../assets/fonts.css">
 <link rel="stylesheet" href="../assets/style.css">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
@@ -42,10 +42,10 @@
      { "@type": "ListItem", "position": 1, "url": "https://dvorami.ru/moscow/zilart-sinyaya-ptica/", "name": "Дело о Синей птице — квест-прогулка по ЗИЛАРТу" },
      { "@type": "ListItem", "position": 2, "url": "https://dvorami.ru/moscow/chistye-prudy-bashnya/", "name": "Дело о башне выше Ивана Великого — Чистые пруды и Покровка" },
      { "@type": "ListItem", "position": 3, "url": "https://dvorami.ru/moscow/kolomenskoe-tuman/", "name": "Дело о тумане в овраге — Коломенское" },
-     { "@type": "ListItem", "position": 4, "url": "https://dvorami.ru/moscow/#case-4", "name": "Дело о стёртых именах — Красная площадь и Александровский сад" },
-     { "@type": "ListItem", "position": 5, "url": "https://dvorami.ru/moscow/#case-5", "name": "Дело о фальшивом листе — Китай-город" },
-     { "@type": "ListItem", "position": 6, "url": "https://dvorami.ru/moscow/#case-6", "name": "Дело о грустном Гоголе — Арбат" },
-     { "@type": "ListItem", "position": 7, "url": "https://dvorami.ru/moscow/#case-7", "name": "Дело о шестнадцатой сестре — ВДНХ" }
+     { "@type": "ListItem", "position": 4, "url": "https://dvorami.ru/moscow/krasnaya-ploshchad-imena/", "name": "Дело о стёртых именах — Красная площадь и Александровский сад" },
+     { "@type": "ListItem", "position": 5, "url": "https://dvorami.ru/moscow/kitay-gorod-list/", "name": "Дело о фальшивом листе — Китай-город" },
+     { "@type": "ListItem", "position": 6, "url": "https://dvorami.ru/moscow/arbat-gogol/", "name": "Дело о грустном Гоголе — Арбат" },
+     { "@type": "ListItem", "position": 7, "url": "https://dvorami.ru/moscow/vdnh-sestra/", "name": "Дело о шестнадцатой сестре — ВДНХ" }
     ]
    }
   },
@@ -59,6 +59,7 @@
  ]
 }
 </script>
+<script src="../assets/analytics.js" defer></script>
 </head>
 <body class="theme-platform">
 <a class="skip" href="#main">К содержанию</a>
@@ -102,7 +103,7 @@
     <div class="page-head">
       <nav class="crumbs" aria-label="Хлебные крошки"><ol><li><a href="../">Главная</a></li><li aria-current="page">Квесты по Москве</li></ol></nav>
       <h1 id="h1">Квесты-прогулки по Москве</h1>
-      <p class="lead">Каждый квест — отдельный район, своя история и своя тайна. Гид и расписание не нужны: вы играете в браузере телефона, когда удобно. 990 ₽ на компанию до 5 человек.</p>
+      <p class="lead">Каждый квест — отдельный район, своя история и своя тайна. Гид и расписание не нужны: вы играете в браузере телефона, когда удобно. 990 ₽ — один код на всю компанию.</p>
     </div>
 
     <div class="qfilter" data-filter-group="qgrid" role="group" aria-label="Показать дела">
@@ -113,8 +114,8 @@
     <ul class="qgrid qgrid--stack" id="qgrid">
       <li class="qcard" id="case-1" data-status="soon" data-case="1">
         <span class="qc-cover"><img src="../assets/ill/case-01.svg" width="1200" height="900" alt="Иллюстрация к делу №1: ЗИЛАРТ"></span>
-        <span class="qc-where">ЗИЛАРТ · юг Москвы</span>
         <h2 class="qc-title"><span class="qc-no">Дело №1 ·</span> Синяя птица</h2>
+        <span class="qc-where">ЗИЛАРТ · юг Москвы</span>
         <p>Телеграмма без подписи: «Синяя птица дома тчк встречайте». У&nbsp;десяти свидетелей десять версий. Кто её отправил?</p>
         <p class="qc-meta">Метро «ЗИЛ» · 12&nbsp;точек · 2,8&nbsp;км · 2,5–3&nbsp;часа · 0+</p>
         <div class="qc-foot"><span class="qc-badge qc-badge--soon">Скоро в&nbsp;продаже</span><span class="qc-price"><b>990&nbsp;₽</b> на&nbsp;компанию</span></div>
@@ -122,8 +123,8 @@
       </li>
       <li class="qcard" id="case-2" data-status="dev" data-case="2">
         <span class="qc-cover"><img src="../assets/ill/case-02.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №2: Чистые пруды и Покровка"></span>
-        <span class="qc-where">Чистые пруды и&nbsp;Покровка</span>
         <h2 class="qc-title"><span class="qc-no">Дело №2 ·</span> Башня выше Ивана Великого</h2>
+        <span class="qc-where">Чистые пруды и&nbsp;Покровка</span>
         <p>Говорили, что она выше колокольни Ивана Великого, а&nbsp;через шестнадцать лет в&nbsp;шпиль ударила молния. Случайность?</p>
         <p class="qc-meta">Меншикова башня · Чистые пруды · Покровка</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
@@ -131,8 +132,8 @@
       </li>
       <li class="qcard" id="case-3" data-status="dev" data-case="3">
         <span class="qc-cover"><img src="../assets/ill/case-03.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №3: Коломенское"></span>
-        <span class="qc-where">Коломенское</span>
         <h2 class="qc-title"><span class="qc-no">Дело №3 ·</span> Туман в&nbsp;овраге</h2>
+        <span class="qc-where">Коломенское</span>
         <p>По легенде, туман в&nbsp;Голосовом овраге путает время. Свидетели называют разные годы.</p>
         <p class="qc-meta">Церковь Вознесения · Голосов овраг</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
@@ -140,39 +141,39 @@
       </li>
       <li class="qcard" id="case-4" data-status="dev" data-case="4">
         <span class="qc-cover"><img src="../assets/ill/case-04.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №4: Красная площадь"></span>
-        <span class="qc-where">Красная площадь и&nbsp;Александровский сад</span>
         <h2 class="qc-title"><span class="qc-no">Дело №4 ·</span> Стёртые имена</h2>
+        <span class="qc-where">Красная площадь и&nbsp;Александровский сад</span>
         <p>С&nbsp;этой площади убирали ворота, собор и&nbsp;даже имена. Проверьте, что вернулось на&nbsp;место.</p>
-        <p class="qc-meta">Красная площадь · Александровский сад · Зарядье</p>
+        <p class="qc-meta">Красная площадь · Александровский сад</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn qc-btn--want" data-tg="want" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Хочу это дело</a>
+        <a class="qc-btn" href="krasnaya-ploshchad-imena/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard" id="case-5" data-status="dev" data-case="5">
         <span class="qc-cover"><img src="../assets/ill/case-05.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №5: Китай-город"></span>
-        <span class="qc-where">Китай-город</span>
         <h2 class="qc-title"><span class="qc-no">Дело №5 ·</span> Фальшивый лист</h2>
+        <span class="qc-where">Китай-город</span>
         <p>Лист с&nbsp;единорогом обрушил цены на&nbsp;бирже. Найдите, кто его напечатал.</p>
         <p class="qc-meta">Никольская · Ильинка · Варварка</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn qc-btn--want" data-tg="want" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Хочу это дело</a>
+        <a class="qc-btn" href="kitay-gorod-list/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard" id="case-6" data-status="dev" data-case="6">
         <span class="qc-cover"><img src="../assets/ill/case-06.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №6: Арбат"></span>
-        <span class="qc-where">Арбат и&nbsp;арбатские переулки</span>
         <h2 class="qc-title"><span class="qc-no">Дело №6 ·</span> Грустный Гоголь</h2>
+        <span class="qc-where">Арбат и&nbsp;арбатские переулки</span>
         <p>В&nbsp;1952&nbsp;году Гоголь исчез с&nbsp;Арбатской площади. Найдите, куда он ушёл и&nbsp;почему.</p>
         <p class="qc-meta">Арбат · переулки · Никитский бульвар</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn qc-btn--want" data-tg="want" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Хочу это дело</a>
+        <a class="qc-btn" href="arbat-gogol/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard" id="case-7" data-status="dev" data-case="7">
         <span class="qc-cover"><img src="../assets/ill/case-07.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №7: ВДНХ"></span>
-        <span class="qc-where">ВДНХ · север Москвы</span>
         <h2 class="qc-title"><span class="qc-no">Дело №7 ·</span> Шестнадцатая сестра</h2>
+        <span class="qc-where">ВДНХ · север Москвы</span>
         <p>Республик пятнадцать, а&nbsp;золотых сестёр у&nbsp;фонтана шестнадцать. Кто из&nbsp;них лишняя?</p>
         <p class="qc-meta">ВДНХ · фонтан «Дружба народов»</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn qc-btn--want" data-tg="want" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Хочу это дело</a>
+        <a class="qc-btn" href="vdnh-sestra/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard qcard--suggest">
         <span class="tile tile--lg" aria-hidden="true"><svg class="ico"><use href="#i-route"/></svg></span>
@@ -187,7 +188,7 @@
       <figure class="city-map">
         <svg viewBox="40 30 440 470" role="img" aria-labelledby="map-title map-desc" focusable="false">
           <title id="map-title">Схема Москвы с квестами «Дворами»</title>
-          <desc id="map-desc">Схема внутри МКАД: центр крупнее, окраины сжаты. Москва-река течёт с северо-запада на юго-восток. Красная площадь — у восточной стены Кремля, Китай-город — сразу к востоку от неё, Арбат — к западу от Кремля, Чистые пруды — к северо-востоку, все внутри Третьего транспортного кольца. ЗИЛАРТ — к югу от центра, сразу за кольцом, на излучине реки. Коломенское — на юго-востоке, на берегу реки. ВДНХ — на севере, между кольцом и МКАД.</desc>
+          <desc id="map-desc">Схема Москвы внутри МКАД. Москва-река течёт с северо-запада на юго-восток. Красная площадь — у восточной стены Кремля, Китай-город — сразу к востоку от неё, Арбат — к западу от Кремля, Чистые пруды — к северо-востоку, все внутри Третьего транспортного кольца. ЗИЛАРТ — к югу от центра, сразу за кольцом, на излучине реки. Коломенское — на юго-востоке, на берегу реки. ВДНХ — на севере, между кольцом и МКАД.</desc>
           <path class="map-mkad" d="M241.6 52.3 C266.9 49.3 289.2 58.2 310.0 65.6 C330.8 73.0 345.9 80.7 366.5 96.6 C387.1 112.5 420.0 135.5 433.5 161.1 C447.0 186.7 446.9 221.1 447.5 250.3 C448.1 279.5 444.1 309.6 437.3 336.5 C430.5 363.4 421.2 389.7 406.5 411.4 C391.8 433.1 370.4 454.2 349.0 466.5 C327.6 478.8 304.1 484.9 277.9 485.4 C251.7 485.8 216.5 481.0 191.8 469.2 C167.1 457.4 147.5 437.0 129.6 414.8 C111.7 392.6 94.7 365.4 84.2 335.8 C73.8 306.2 65.6 268.8 66.9 236.9 C68.2 205.0 76.8 169.8 92.0 144.2 C107.2 118.6 133.3 98.9 158.2 83.6 C183.1 68.3 216.3 55.3 241.6 52.3 Z"/>
           <path class="map-ring" d="M224.3 165.6 C237.0 161.1 249.8 158.4 265.2 159.9 C280.6 161.4 302.2 167.8 316.5 174.4 C330.8 181.1 342.4 188.3 351.2 199.8 C360.0 211.3 365.2 230.6 369.2 243.6 C373.1 256.6 376.4 265.7 374.9 277.8 C373.4 289.9 368.9 304.0 360.4 316.1 C351.9 328.2 336.6 342.6 323.9 350.3 C311.2 358.0 298.2 360.6 284.2 362.4 C270.1 364.2 252.2 362.9 239.6 361.0 C227.0 359.1 217.8 356.7 208.4 350.7 C199.0 344.7 190.0 335.7 182.9 325.0 C175.8 314.3 170.0 298.8 165.8 286.6 C161.6 274.4 157.5 263.4 157.9 252.0 C158.3 240.6 163.1 228.9 168.3 218.0 C173.5 207.1 179.9 195.5 189.2 186.8 C198.5 178.1 211.6 170.1 224.3 165.6 Z"/>
           <path class="map-river" d="M69.8 201.8 C72.6 199.7 81.7 189.1 86.4 188.9 C91.1 188.7 97.0 194.9 98.2 200.6 C99.4 206.3 94.0 216.4 93.8 223.2 C93.6 230.0 94.2 239.9 97.3 241.2 C100.3 242.5 108.4 228.9 112.1 231.2 C115.8 233.4 116.9 248.3 119.5 254.7 C122.1 261.1 124.1 270.1 127.6 269.6 C131.1 269.1 136.6 257.0 140.6 251.7 C144.6 246.4 148.9 237.0 151.5 237.9 C154.1 238.8 153.2 250.8 156.0 257.4 C158.8 263.9 164.3 272.2 168.5 277.2 C172.7 282.1 179.4 281.6 181.3 287.1 C183.2 292.6 181.2 303.1 180.1 310.1 C178.9 317.1 173.7 322.6 174.4 329.2 C175.1 335.8 179.9 344.9 184.5 349.5 C189.1 354.1 196.4 356.8 201.8 356.9 C207.2 357.0 212.4 354.4 217.2 350.2 C222.0 346.0 227.1 338.7 230.5 331.6 C233.9 324.5 234.7 314.8 237.5 307.7 C240.3 300.6 238.4 293.6 247.6 288.9 C256.8 284.1 281.6 279.9 292.6 279.2 C303.6 278.5 308.7 280.2 313.4 284.6 C318.1 289.0 320.0 298.4 320.9 305.8 C321.8 313.2 321.6 321.8 318.8 329.3 C316.0 336.8 309.4 344.4 304.3 350.7 C299.2 356.9 292.3 362.0 288.3 366.8 C284.3 371.6 281.9 375.5 280.3 379.7 C278.8 383.9 278.4 387.3 279.0 392.0 C279.6 396.7 280.5 404.2 284.0 408.0 C287.5 411.8 294.7 415.3 300.0 415.0 C305.3 414.7 311.3 409.5 316.0 406.0 C320.7 402.5 323.8 395.5 328.0 394.0 C332.2 392.5 337.5 394.3 341.0 397.0 C344.5 399.7 345.5 405.5 349.0 410.0 C352.5 414.5 356.5 420.8 362.0 424.0 C367.5 427.2 375.0 428.7 382.0 429.0 C389.0 429.3 400.3 426.5 404.0 426.0"/>
@@ -196,25 +197,24 @@
           <text class="map-label" x="372" y="78">МКАД</text>
           <text class="map-label map-label--ttk" x="352" y="182">ТТК</text>
           <g class="map-kremlin" aria-hidden="true"><path d="M256 254 l7 12 h-14z"/><text x="256" y="288" text-anchor="middle">Кремль</text></g>
-          <g class="map-lead" aria-hidden="true"><path d="M283 264 L302 276"/><path d="M299 249 L306 250"/></g>
-          <g class="map-pin map-pin--soon map-pin--sm"><circle class="dot" cx="276" cy="260" r="8"/><text class="name" x="305" y="287">Красная площадь</text></g>
-          <g class="map-pin map-pin--soon map-pin--sm"><circle class="dot" cx="292" cy="248" r="8"/><text class="name" x="310" y="256">Китай-город</text></g>
-          <g class="map-pin map-pin--soon map-pin--sm"><circle class="dot" cx="222" cy="266" r="8"/><text class="name" x="208" y="250" text-anchor="end">Арбат</text></g>
+          <g class="map-lead" aria-hidden="true"><path d="M283 264 L298 280"/><path d="M299 249 L306 250"/></g>
+          <g class="map-pin map-pin--soon"><circle class="dot" cx="276" cy="260" r="10"/><text class="name name--sm" x="300" y="291">Красная площадь</text></g>
+          <g class="map-pin map-pin--soon"><circle class="dot" cx="292" cy="248" r="10"/><text class="name name--sm" x="310" y="256">Китай-город</text></g>
+          <g class="map-pin map-pin--soon"><circle class="dot" cx="222" cy="266" r="10"/><text class="name name--sm" x="208" y="250" text-anchor="end">Арбат</text></g>
           <g class="map-pin map-pin--soon"><circle class="dot" cx="302.7" cy="220" r="10"/><text class="name" x="318" y="214">Чистые пруды</text></g>
           <g class="map-pin map-pin--soon"><circle class="dot" cx="274" cy="116" r="10"/><text class="name" x="290" y="123">ВДНХ</text></g>
-          <g class="map-pin map-pin--live"><circle class="pulse" cx="291.4" cy="375.4" r="20" fill="none" stroke="#FFC53D" stroke-width="3"/><circle class="dot" cx="291.4" cy="375.4" r="15"/><text class="num" x="291.4" y="380.4" text-anchor="middle">★</text><text class="name" x="268" y="372" text-anchor="end">ЗИЛАРТ</text></g>
+          <g class="map-pin map-pin--live"><circle class="dot" cx="291.4" cy="375.4" r="10"/><text class="name" x="274" y="381" text-anchor="end">ЗИЛАРТ</text></g>
           <g class="map-pin map-pin--soon"><circle class="dot" cx="314" cy="410" r="10"/><text class="name" x="330" y="432">Коломенское</text></g>
         </svg>
       </figure>
       <div class="map-legend">
         <span class="hand">где искать</span>
         <ul>
-          <li><span class="lg lg--live" aria-hidden="true">★</span><b>ЗИЛАРТ</b> — бывший автозавод за&nbsp;Третьим кольцом. <span class="lg-st lg-st--soon">скоро в&nbsp;продаже</span></li>
+          <li><span class="lg lg--live" aria-hidden="true"></span><b>ЗИЛАРТ</b> — бывший автозавод за&nbsp;Третьим кольцом. <span class="lg-st lg-st--soon">скоро в&nbsp;продаже</span></li>
           <li><span class="lg" aria-hidden="true"></span><b>Красная площадь</b> и&nbsp;<b>Китай-город</b> — самое сердце города, у&nbsp;стен Кремля.</li>
           <li><span class="lg" aria-hidden="true"></span><b>Арбат</b> — к&nbsp;западу от&nbsp;Кремля, <b>Чистые пруды</b> — к&nbsp;северо-востоку.</li>
           <li><span class="lg" aria-hidden="true"></span><b>ВДНХ</b> на&nbsp;севере и&nbsp;<b>Коломенское</b> на&nbsp;юго-востоке, у&nbsp;реки.</li>
         </ul>
-        <p class="small">Центр на&nbsp;схеме увеличен, окраины сжаты. Стороны света и&nbsp;взаимное положение мест — настоящие.</p>
         </div>
     </div>
   </div>

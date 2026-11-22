@@ -1330,3 +1330,91 @@ img.is-broken { visibility: hidden; }
   .who .tile { grid-row: 1 / span 2; align-self: start; margin: 0; }
   .who p { grid-column: 2; }
 }
+
+/* ===== Правки по замечаниям владельца 22.11 (итерация 9) ===== */
+/* Отступ снизу под плавающую кнопку: она не закрывает конец страницы */
+@media (max-width: 899px) { body:has(#fab) { padding-bottom: 84px; } }
+.theme-avangard .fab { background: var(--accent-btn); color: var(--on-accent); box-shadow: 4px 4px 0 var(--paper); border-radius: 0; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.theme-avangard .fab:hover { background: var(--accent); color: var(--on-accent); }
+.theme-gravura .fab { box-shadow: 0 4px 0 #5E240C, 0 14px 30px -8px rgba(42,26,14,.5); }
+.theme-tuman .fab { box-shadow: 0 4px 0 #6E8279, 0 14px 30px -8px rgba(0,0,0,.6); }
+/* Якоря: заголовок блока не уходит под край экрана */
+#qgrid, #buy, #quests { scroll-margin-top: 12px; }
+
+/* Карточки дел: заголовок сразу под обложкой — у всех на одной высоте; район — под заголовком */
+.qgrid .qcard .qc-title { margin-top: 4px; }
+.qgrid .qcard .qc-where { margin-top: -6px; }
+/* Телефон: карточка целиком (с кнопкой) помещается в экран 393×852 */
+@media (max-width: 699px) {
+  .quests-sec { padding-top: 40px; }
+  .quests-head { margin-bottom: 20px; }
+  .qgrid .qcard .qc-cover { aspect-ratio: 16 / 9; }
+  .qgrid .qcard { gap: 10px; }
+  .qgrid .qcard:not(.qcard--suggest) p { font-size: 16px; line-height: 1.45; }
+  .qgrid .qcard .qc-foot { padding-top: 12px; }
+}
+
+/* Карта: все точки одного размера, статус — цветом и подписью в легенде */
+.map-pin circle.dot { r: 10px; }
+.map-pin--live circle.dot { stroke: var(--accent); stroke-width: 2.5; }
+.lg--live { font-size: 0; }
+.map-legend .map-btn { align-self: flex-start; margin-top: 6px; }
+
+/* Экраны квеста: номер третьего экрана — справа, его не закрывает средний; средний экран крупнее */
+.fan-phone:nth-child(3) .fan-n { left: auto; right: 6px; }
+.fan-phone:nth-child(2) { width: 47%; left: 26.5%; top: 0; }
+@media (min-width: 900px) { .fan { max-width: 640px; } }
+@media (min-width: 1300px) { .screens-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); } .fan { max-width: 700px; } }
+
+/* «Квест в цифрах» на телефоне: строки «иконка — текст», длинные слова не вылезают */
+@media (max-width: 559px) {
+  .guide-stats { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .guide-stats li { display: grid; grid-template-columns: 52px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; align-items: center; padding: 14px 16px; }
+  .guide-stats .tile { grid-row: 1 / span 2; margin: 0; }
+  .guide-stats b { font-size: 18px; }
+}
+.guide-stats b, .guide-stats span { overflow-wrap: anywhere; hyphens: auto; }
+
+/* Отзыв: кнопка в одну строку на 360 */
+.honest .btn-tg { white-space: nowrap; }
+
+/* Источники на страницах дел — свёрнутый блок внизу */
+.src-sec { padding: 8px 0 40px; }
+.sources { border-top: 1px solid currentColor; padding-top: 14px; font-size: 15px; line-height: 1.5; opacity: .9; }
+.sources summary { cursor: pointer; font-weight: 600; font-size: 16px; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.sources summary::marker { content: ""; }
+.sources summary::before { content: "+"; display: inline-grid; place-items: center; width: 26px; height: 26px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 18px; line-height: 1; }
+.sources[open] summary::before { content: "−"; }
+.sources ul { margin: 8px 0 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.sources p { margin-top: 4px; }
+.sources a { color: inherit; }
+.theme-avangard .src-sec { background: var(--bg); color: var(--text-2, #C9C5BC); }
+
+/* ЗИЛАРТ «Искусство вокруг»: все карточки одного вида — сплошная рамка, тёмный фон, знак-эмблема */
+.art--type, .art--lent { background: var(--bg); border: 3px solid var(--paper); }
+.art--lent h3 { color: var(--text); } .art--lent p { color: var(--text-2); } .art--lent .credit { color: var(--text-3); } .art--lent .credit a { color: var(--text-2); }
+.art--kand, .art--lis { transform: none; }
+.art-shards i:nth-child(2) { background: var(--paper); }
+.art-shards i:nth-child(4) { border-color: var(--paper); }
+.art-grid .art h3 { font-size: 20px; }
+@media (min-width: 1100px) { .art-grid .art { grid-column: span 3; } }
+.art-emb { display: block; position: relative; height: 88px; }
+.art-emb i { position: absolute; display: block; }
+.art-spiral i { left: 0; top: 4px; width: 76px; height: 76px; border: 6px solid var(--paper); border-radius: 50%; border-right-color: transparent; transform: rotate(-30deg); }
+.art-spiral i:nth-child(2) { left: 16px; top: 20px; width: 44px; height: 44px; border-color: var(--accent); border-right-color: transparent; transform: rotate(60deg); }
+.art-spiral i:nth-child(3) { left: 84px; top: 0; width: 8px; height: 88px; border: 0; border-radius: 0; background: var(--paper); transform: rotate(24deg); }
+.art-fly i:nth-child(1) { left: 0; top: 10px; width: 120px; height: 10px; background: var(--paper); transform: rotate(-14deg); }
+.art-fly i:nth-child(2) { left: 12px; top: 44px; width: 30px; height: 30px; background: var(--accent); border-radius: 50%; }
+.art-fly i:nth-child(3) { left: 50px; top: 38px; width: 70px; height: 34px; background: var(--paper); clip-path: polygon(0 60%, 100% 0, 80% 100%); }
+.art-lens i:nth-child(1) { left: 0; top: 4px; width: 80px; height: 80px; border-radius: 50%; border: 6px solid var(--paper); }
+.art-lens i:nth-child(2) { left: 24px; top: 28px; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); box-shadow: 70px -24px 0 -8px var(--paper); }
+.art-cloth i { top: 8px; width: 24px; height: 72px; }
+.art-cloth i:nth-child(1) { left: 0; background: var(--accent); }
+.art-cloth i:nth-child(2) { left: 30px; background: repeating-linear-gradient(0deg, var(--paper) 0 8px, transparent 8px 16px); }
+.art-cloth i:nth-child(3) { left: 60px; background: var(--paper); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.art-cloth i:nth-child(4) { left: 90px; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 12px); }
+.art.has-img .art-emb, .art.has-img .art-hex { display: none; }
+/* Ревью итерации 9: подписи в центре карты мельче, чтобы не упираться в край; блок «Куда пойти» без пустоты сверху */
+.map-pin .name--sm { font-size: 17px; }
+@media (min-width: 900px) { .about-head { align-self: start; } }
+@media (max-width: 899px) { .fab.is-on.is-away { transform: translate(-50%, 140%); opacity: 0; pointer-events: none; } }

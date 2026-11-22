@@ -237,6 +237,68 @@ class FeedbackBotTest(unittest.TestCase):
         self.assertNotIn("квест", json.dumps(rec, ensure_ascii=False))
         self.assertEqual(len(self.tg.owner_msgs()), 1)
 
+    # ---------- «Что-то не так?» из плеера ----------
+
+    def test_report_from_player_deeplink(self):
+        self.tg.text("/start report-zilart-3-2-fact")
+        self.step()
+        ask = self.tg.sent()[-1]["text"]
+        self.assertIn("точка 3, шаг 2", ask)
+        self.assertIn("факт не тот", ask)
+        # игрок вставил текст из буфера — с меткой и контактом
+        self.tg.text("Что-то не так · Дело о Синей птице\nТабличка висит на другом доме, пишите anna@mail.ru\n"
+                     "[report zilart/3/2/fact]")
+        self.step()
+        self.assertIn("поправим", self.tg.sent()[-1]["text"])
+        [rec] = self.records()
+        self.assertEqual((rec["kind"], rec["quest"], rec["point"], rec["step"], rec["category"]),
+                         ("report", "zilart", 3, 2, "fact"))
+        self.assertTrue(rec["complete"])
+        self.assertNotIn("[report", rec["text"])
+        self.assertNotIn("anna@mail.ru", rec["text"])   # в публичный файл — без контактов
+        self.assertIn("[почта]", rec["text"])
+        [note] = self.tg.owner_msgs()                   # владельцу — сразу и полностью
+        self.assertIn("Что-то не так: Факт не тот", note["text"])
+        self.assertIn("anna@mail.ru", note["text"])
+
+    def test_report_without_category_asks_buttons(self):
+        self.tg.text("/start report-zilart-5")
+        self.step()
+        self.assertIn("Что случилось", self.tg.sent()[-1]["text"])
+        self.assertEqual(len(self.tg.last_buttons()), len(fb.REPORT_CATS))
+        self.press_button("c|riddle|")
+        self.step()
+        self.press_button("skip|report_text|")
+        self.step()
+        [rec] = self.records()
+        self.assertEqual((rec["point"], rec["category"], rec["text"]), (5, "riddle", ""))
+        self.assertNotIn("step", rec)
+
+    def test_report_tag_without_start_is_report_not_message(self):
+        self.tg.text("Загадка не решается: нет такой цифры\n[report zilart/4/0/riddle]")
+        self.step()
+        [rec] = self.records()
+        self.assertEqual((rec["kind"], rec["point"], rec["category"]), ("report", 4, "riddle"))
+        self.assertEqual(rec["text"], "Загадка не решается: нет такой цифры")
+
+    def test_report_tag_keeps_open_review(self):
+        self.tg.text("/start review")
+        self.step()
+        self.tg.text("[report zilart/1/1/tech] не грузится карта")
+        self.step()
+        state = json.loads((self.root / ".telegram" / "feedback-state.json").read_text())
+        [d] = state["dialogs"].values()
+        self.assertEqual((d["flow"], d["step"]), ("review", "rating"))
+        self.assertEqual(self.records()[0]["category"], "tech")
+
+    def test_abandoned_report_kept_with_category(self):
+        self.tg.text("/start report-zilart-2-0-place")
+        self.step()
+        with mock.patch.object(fb, "now", return_value=fb.time.time() + fb.EXPIRE + 60):
+            self.step()
+        [rec] = self.records()
+        self.assertEqual((rec["category"], rec["point"], rec["complete"]), ("place", 2, False))
+
     # ---------- служебное ----------
 
     def test_group_messages_ignored_and_offset_saved(self):

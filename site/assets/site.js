@@ -152,6 +152,14 @@
       fab.tabIndex = on ? 0 : -1;
     }, { threshold: 0 });
     cta.forEach(function (el) { fo.observe(el); });
+    // Пока читатель листает вниз, кнопка уходит и не закрывает текст; остановился или листает вверх — возвращается
+    var lastY = window.scrollY, idle;
+    window.addEventListener('scroll', function () {
+      var y = window.scrollY;
+      if (y > lastY + 4) fab.classList.add('is-away'); else if (y < lastY - 4) fab.classList.remove('is-away');
+      lastY = y; clearTimeout(idle);
+      idle = setTimeout(function () { fab.classList.remove('is-away'); }, 900);
+    }, { passive: true });
   }
 })();
 

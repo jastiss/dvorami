@@ -37,3 +37,14 @@
 ## Важно для маршрута
 - Красную площадь, Воскресенские ворота и Васильевский спуск перекрывают на парады, репетиции, концерты и по режимным причинам — нужен запасной путь (см. draft-v0).
 - Мавзолей, Спасские ворота, Могилу Неизвестного солдата (почётный караул) — не делаем точками с долгой остановкой и загадками.
+
+## Добавлено 22.11.2026 (сценарий v1, переплетения с миром)
+
+Статус по той же шкале: найдена страница по теме (заголовок/адрес прямо о факте), текст страниц не открывался.
+
+| # | Факт | Видно? | Статус | Источник |
+|---|---|---|---|---|
+| 18 | Икона Иверской часовни — список (копия) с иконы Иверского монастыря на Афоне (Греция), привезённый в Москву в 1648 г. | 📜 (👁 часовня 📍) | ✅ суть / 🔶 год сверить по тексту | [Азбука веры: Иверская икона](https://azbyka.ru/otechnik/Spravochniki/moja-tserkov/263); [OCA: Translation of the Iveron Icon to Moscow](https://oca.org/saints/lives/2016/10/13/102962-translation-of-the-iveron-icon-of-the-mother-of-god-to-moscow); [Wikipedia: Panagia Portaitissa](https://en.wikipedia.com/wiki/Panagia_Portaitissa) |
+| 19 | Среди имён, высеченных на обелиске в 1918 г., — Томмазо Кампанелла (Италия) и Томас Мор (Англия) | 📜 | ✅ (имена) / 🔶 общее число | [Wikipedia: Alexander Garden Obelisk](https://en.wikipedia.org/wiki/Alexander_Garden_Obelisk); [RG.ru, 19.07.2013](https://rg.ru/2013/07/19/pamyatnik.html) |
+| 20 | Агустин Бетанкур — испанский инженер на русской службе | 📜 | ✅ | [Wikipedia: Agustín de Betancourt](https://en.wikipedia.com/wiki/Agust%C3%ADn_de_Betancourt); [ПНП: зачем построили Манеж](https://www.pnp.ru/social/zachem-postroili-moskovskiy-manezh.html) |
+| 21 | На постаменте Минина и Пожарского барельефы; по распространённому рассказу, Мартос изобразил на одном из них себя и сыновей | 👁 📍 | 🔶 / ⚠️ (рассказ, не использовать как ответ) | [Rambler: интересные факты о памятнике](https://weekend.rambler.ru/read/52545174-pamyatnik-mininu-i-pozharskomu-v-moskve-istoriya-kto-sozdal-interesnye-fakty/); [Tripster](https://experience.tripster.ru/journal/articles/pamyatnik-mininu-i-pozharskomu/) |
