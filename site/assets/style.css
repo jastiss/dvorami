@@ -134,7 +134,7 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 .case {
   position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
   padding: 28px 20px 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0;
-  box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); transform: rotate(.6deg);
+  box-shadow: 0 20px 40px -24px rgba(0,0,0,.6);
 }
 @media (min-width: 600px) { .case { padding: 32px 28px 28px; } }
 .tape { position: absolute; top: -12px; width: 96px; height: 26px; background: rgba(255,197,61,.85); transform: rotate(-4deg); left: 28px; box-shadow: 0 2px 4px rgba(0,0,0,.25); }
@@ -199,31 +199,8 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 
 /* --- Главная: четыре блока с разным ритмом --- */
 
-/* 1. Коротко о нас — асимметрия: огромный заголовок, текст сбоку, крупная фраза-цитата со смещением */
-.about { display: grid; gap: 24px; }
-.about-head { display: flex; flex-direction: column; gap: 10px; }
-.about-h { font: 800 clamp(32px, 5.4vw, 72px)/1.02 var(--font-display); letter-spacing: -0.02em; max-width: 12em; }
-.about-p { color: var(--text-2); font-size: 19px; max-width: 32em; }
-.about-side { display: flex; flex-direction: column; gap: 16px; }
-.about-q { position: relative; font: 600 clamp(24px, 2.6vw, 34px)/1.22 var(--font-display); color: var(--text); padding-left: 56px; transform: rotate(-1deg); transform-origin: left; }
-.about-mark { position: absolute; left: 0; top: -10px; font: 800 80px/1 var(--font-display); color: var(--accent); }
-.about-p2 { color: var(--text-2); font-size: 19px; padding-left: 56px; max-width: 28em; }
-@media (min-width: 900px) {
-  .about { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px 32px; }
-  .about-head { grid-column: 1 / 10; }
-  .about-p { grid-column: 1 / 6; grid-row: 2; padding-top: 8px; border-top: 2px solid var(--line); padding-top: 20px; }
-  .about-side { grid-column: 7 / 13; grid-row: 2 / 4; margin-top: -24px; }
-}
-
 /* 2. Мини-дело — папка-досье на всю ширину; заголовок справа, лид слева */
-.hook-head { display: flex; flex-direction: column-reverse; gap: 16px; margin-bottom: 64px; }
-.hook-title { display: flex; flex-direction: column; gap: 10px; }
-@media (min-width: 900px) {
-  .hook-head { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: end; }
-  .hook-head .lead { font-size: 18px; border-left: 3px solid var(--sky); padding-left: 18px; }
-  .hook-title { text-align: right; align-items: flex-end; }
-  .hook-title .hand { transform: rotate(2deg); transform-origin: right center; }
-}
+.hook-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 56px; max-width: 40em; }
 .dossier {
   position: relative; background: var(--accent); color: var(--on-accent);
   border-radius: 0 10px 10px 10px; padding: 30px 20px 24px; margin-top: 30px;
@@ -901,3 +878,209 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 .art .img-credit { display: none; } .art.has-img .img-credit { display: inline; }
 .nav .btn { white-space: nowrap; }
 @media (max-width: 999px) { .nav { column-gap: 10px; } }
+
+/* =====================================================================
+   Главная, итерация 22.11 (3): первый экран, карусель дел, «почему мы»,
+   каталог-лента, мобильные наложения.
+   ===================================================================== */
+
+/* Шапка: на узких экранах логотип, Telegram и кнопка не наезжают друг на друга */
+.site-header .wrap { gap: 10px; }
+.logo { min-width: 0; }
+.nav { flex: none; }
+@media (max-width: 400px) {
+  .site-header .wrap { padding-top: 12px; padding-bottom: 12px; }
+  .logo { font-size: 19px; gap: 7px; }
+  .logo svg { width: 28px; height: 28px; }
+  .nav { column-gap: 4px; }
+  .nav a.nav-tg { min-width: 44px; }
+  .nav .btn { padding: 8px 14px; font-size: 15px; }
+  .theme-avangard .logo { font-size: 22px; letter-spacing: .02em; }
+  .theme-avangard .nav .av-btn--sm { font-size: 15px; padding: 8px 12px; box-shadow: 3px 3px 0 var(--edge); margin-right: 3px; }
+  body.theme-tuman .site-header .nav .btn.tm-btn,
+  body.theme-gravura .site-header .nav .btn.gv-btn { padding: 8px 12px; font-size: 14px; }
+  body.theme-tuman .logo, body.theme-gravura .logo { font-size: 21px; letter-spacing: .01em; }
+}
+
+/* Первый экран: коротко и разными элементами */
+.hero-text { gap: 18px; }
+@media (min-width: 900px) { .hero-text { gap: 22px; } }
+.promise { font-size: 19px; line-height: 1.42; color: var(--text); max-width: 25em; }
+@media (min-width: 900px) { .promise { font-size: 22px; } }
+.hero-proof { gap: 8px; }
+.hero-proof li { border: 1.5px dashed var(--control); border-radius: 999px; padding: 5px 12px; font-size: 15px; line-height: 1.3; }
+.hero-proof li.proof-seal { border: 2px solid var(--sky); color: var(--text); font-weight: 600; transform: rotate(-1.5deg); }
+.hero-proof li.proof-seal::before { display: none; }
+.hero-proof li.proof-seal svg { width: 18px; height: 18px; color: var(--sky); flex: none; }
+.hero .wrap { gap: 32px; }
+@media (min-width: 1100px) { .hero .wrap { gap: 56px; } }
+
+/* Карусель дел */
+.cases { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.cases-track {
+  position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 100%; gap: 14px;
+  overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; padding: 6px 2px 10px; margin: -6px -2px 0;
+}
+.cases-track::-webkit-scrollbar { display: none; }
+.cases.is-carousel .cases-track { grid-auto-columns: 88%; }
+@media (min-width: 600px) and (max-width: 1099px) { .cases.is-carousel .cases-track { grid-auto-columns: 74%; } }
+@media (min-width: 1100px) { .cases.is-carousel .cases-track { grid-auto-columns: 100%; } }
+.cases-track > .case { scroll-snap-align: start; scroll-snap-stop: always; overflow: hidden; height: 100%; }
+.cases-track:focus-visible { outline-offset: 2px; border-radius: 22px; }
+.cases-ctrl { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.cases-ctrl[hidden] { display: none; }
+.cases-arrow {
+  width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--control); background: transparent; color: var(--text);
+  display: grid; place-items: center; cursor: pointer; transition: border-color .15s ease, transform .15s ease;
+}
+.cases-arrow svg { width: 22px; height: 22px; }
+.cases-arrow:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.cases-arrow:disabled { opacity: .35; cursor: default; }
+.cases-dots { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; min-width: 0; }
+.cases-arrow { flex-shrink: 0; }
+.cases-dots:has(> :nth-child(9)) .cases-dot { width: 18px; height: 28px; }
+.cases-dot { width: 32px; height: 44px; border: 0; background: transparent; padding: 0; cursor: pointer; display: grid; place-items: center; }
+.cases-dot::before { content: ""; width: 10px; height: 10px; border-radius: 999px; background: var(--control); transition: width .2s ease, background-color .2s ease; }
+.cases-dot[aria-current="true"]::before { width: 24px; background: var(--accent); }
+
+/* Слайд дела: общая рамка + скин квеста */
+.case { gap: 14px; padding: 24px 20px 20px; }
+.case::before { content: ""; position: absolute; pointer-events: none; }
+.case > * { position: relative; z-index: 1; }
+.case-where { font-size: 15px; font-weight: 600; color: var(--sky); padding-right: 64px; }
+.case-title { font: 600 24px/1.15 var(--font-display); padding-right: 40px; }
+@media (min-width: 600px) { .case-title { font-size: 28px; } }
+.case-no { white-space: nowrap; }
+.case-sep { opacity: .6; }
+.case-hook { color: var(--text-2); font-size: 17px; }
+.case-foot { margin-top: auto; }
+.case-badge { display: inline-block; font: 700 22px/1 var(--font-hand); border: 2px solid currentColor; border-radius: 6px; padding: 2px 8px; transform: rotate(-4deg); }
+.case-btn { min-height: 48px; padding: 12px 22px; font-size: 17px; }
+.case .wire { transform: rotate(-1deg); padding-bottom: 16px; }
+
+.case--avangard { background: #141414; color: #F2EFE8; border: 3px solid #F2EFE8; border-radius: 4px; }
+.case--avangard::before { right: -46px; top: -46px; width: 120px; height: 120px; border-radius: 50%; background: #E1251B; }
+.case--avangard .case-where { color: #FF5A4E; font-family: 'Oswald', 'Arial Narrow', sans-serif; text-transform: uppercase; letter-spacing: .03em; font-size: 16px; }
+.case--avangard .case-title { font: 700 30px/1.02 'Oswald', 'Arial Narrow', sans-serif; text-transform: uppercase; letter-spacing: .01em; }
+.case--avangard .case-no { color: #FF5A4E; }
+.case--avangard .case-hook { color: #C9C5BC; }
+.case--avangard .case-foot { border-top: 3px solid #E1251B; }
+.case--avangard .case-badge { color: #FF5A4E; }
+.case--avangard .case-btn { background: #C81E17; color: #F2EFE8; border-radius: 0; box-shadow: 5px 5px 0 #F2EFE8; margin-right: 5px; }
+.case--avangard .case-btn:hover { background: #E1251B; color: #F2EFE8; box-shadow: 7px 7px 0 #F2EFE8; }
+.case--avangard .wire { background: #F2EFE8; }
+
+.case--baroque { background: #EFE3C8 radial-gradient(120% 80% at 100% 0, #F7EED9 0, #E6D4AE 100%); color: #3B1F14; border: 2px solid #8E5A2B; outline: 4px double #8E5A2B; outline-offset: -10px; border-radius: 4px; padding: 30px 26px 26px; }
+.case--baroque::before { right: 18px; top: 18px; width: 34px; height: 60px; background: #C9A46A; clip-path: polygon(50% 0, 62% 30%, 70% 30%, 70% 60%, 85% 60%, 85% 100%, 15% 100%, 15% 60%, 30% 60%, 30% 30%, 38% 30%); opacity: .9; }
+.case--baroque .case-where { color: #8E2B1C; font: italic 600 19px/1.2 'Cormorant', Georgia, serif; }
+.case--baroque .case-title { font: 700 30px/1.04 'Cormorant', Georgia, serif; }
+.case--baroque .case-no { color: #8E2B1C; }
+.case--baroque .case-hook { color: #4A2A1C; }
+.case--baroque .case-foot { border-top: 1px solid #8E5A2B; }
+.case--baroque .case-badge { color: #8E2B1C; }
+.case--baroque .case-btn { background: #7A2E1F; color: #F7EED9; box-shadow: none; border-radius: 999px 999px 6px 6px; }
+.case--baroque .case-btn:hover { background: #5E2216; color: #F7EED9; box-shadow: none; }
+.case--baroque :focus-visible { outline-color: #3B1F14; }
+
+.case--fog { background: linear-gradient(180deg, #2C3B35 0, #3F5148 60%, #6E8279 100%); color: #EEF2EC; border: 0; border-radius: 26px 26px 26px 6px; }
+.case--fog::before { left: -20%; right: -20%; bottom: -30px; height: 120px; border-radius: 50%; background: rgba(230,238,232,.2); filter: blur(18px); }
+.case--fog .case-where { color: #CFE3C8; font: 700 24px/1 var(--font-hand); }
+.case--fog .case-title { font: 700 28px/1.1 var(--font-display); }
+.case--fog .case-no { color: #CFE3C8; }
+.case--fog .case-hook { color: #DDE6DA; }
+.case--fog .case-foot { border-top: 1px dashed rgba(238,242,236,.5); }
+.case--fog .case-badge { color: #EEF2EC; }
+.case--fog .case-btn { background: #EEF2EC; color: #23302B; border-radius: 14px; box-shadow: none; }
+.case--fog .case-btn:hover { background: #FFFFFF; color: #23302B; box-shadow: none; }
+
+/* «Коротко о нас»: заголовок-манифест + три разные «улики» */
+.why { display: grid; gap: 36px; }
+.why-head { display: flex; flex-direction: column; gap: 14px; }
+.why-h { font: 800 clamp(30px, 4.6vw, 60px)/1.04 var(--font-display); letter-spacing: -0.02em; }
+.why-p { color: var(--text-2); font-size: 18px; max-width: 32em; }
+.why-list { list-style: none; padding: 0; display: grid; gap: 24px; }
+.why-i { position: relative; display: flex; flex-direction: column; gap: 8px; }
+.why-i h3 { font: 700 21px/1.2 var(--font-display); }
+.why-i p { font-size: 17px; color: var(--text-2); }
+.why-i--quote { padding: 10px 0 4px 52px; }
+.why-mark { position: absolute; left: 0; top: -6px; font: 800 72px/1 var(--font-display); color: var(--accent); }
+.why-i--card { background: #F3F1EA; color: var(--on-accent); padding: 22px 20px 22px; border-radius: 4px; transform: rotate(-1deg); box-shadow: 0 18px 30px -18px rgba(0,0,0,.8); }
+.why-i--card p { color: #34437A; }
+.why-i--card .hand { font-size: 24px; }
+.why-i--seal { border: 2px solid var(--sky); border-radius: 18px; padding: 22px 20px 22px 86px; min-height: 104px; }
+.why-seal { position: absolute; left: 18px; top: 20px; width: 52px; height: 52px; border-radius: 50%; background: var(--sky); color: var(--on-accent); display: grid; place-items: center; transform: rotate(-10deg); box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--sky); }
+.why-seal svg { width: 28px; height: 28px; }
+@media (min-width: 900px) {
+  .why { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; }
+  .why-list { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+  .why-i--quote { grid-column: 1 / -1; padding-left: 72px; }
+  .why-mark { font-size: 96px; top: -14px; }
+  .why-i--quote h3 { font-size: 26px; }
+  .why-i--seal { margin-top: 36px; }
+}
+
+/* Мини-дело: заголовок одной колонкой над папкой */
+.hook-head .hand { color: var(--accent); }
+.hook-sec { padding-top: 8px; }
+
+/* Каталог: номер дела в заголовке */
+.qc-no { white-space: nowrap; }
+.qcard--avangard .qc-no { color: #FF5A4E; }
+.qcard--baroque .qc-no { color: #8E2B1C; }
+.qcard--fog .qc-no { color: #CFE3C8; }
+.qcard--avangard .qc-title { max-width: none; }
+.qcard--baroque .qc-title, .qcard--fog .qc-title { max-width: none; }
+
+/* Каталог при 5–25 делах: лента на телефоне, сетка на планшете и десктопе, «Показать все» после 6 */
+.qlane-hint { display: none; }
+.qmore {
+  display: block; margin: 28px auto 0; font: 600 17px var(--font-text); color: var(--text); background: transparent;
+  border: 2px solid var(--accent); border-radius: 999px; padding: 12px 26px; min-height: 48px; cursor: pointer;
+}
+.qmore:hover { background: var(--accent); color: var(--on-accent); }
+.qmore[hidden] { display: none; }
+@media (max-width: 699px) {
+  .js .qgrid {
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 86%; gap: 16px;
+    overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scroll-padding-left: var(--pad);
+    margin-left: calc(-1 * var(--pad)); margin-right: calc(-1 * var(--pad)); padding: 14px var(--pad) 22px;
+  }
+  .js .qgrid > li { scroll-snap-align: start; min-height: 0; }
+  .js .qgrid > .qcard--suggest { margin-right: var(--pad); }
+  .js .qlane-hint { display: block; text-align: right; color: var(--text-3); font-size: 24px; margin-top: -6px; transform: rotate(-1deg); transform-origin: right; }
+  .js .qgrid.qgrid--one { grid-auto-columns: 86%; }
+}
+
+/* Страницы квестов: плашка «Дело №N · Название» */
+.case-plaque { display: inline-block; margin-top: 18px; font: 700 15px/1.2 var(--font-text); letter-spacing: .02em; padding: 6px 12px; border: 2px solid currentColor; border-radius: 4px; transform: rotate(-1.5deg); transform-origin: left; }
+.theme-gravura .case-plaque { color: var(--copper); background: rgba(255,255,255,.35); }
+.theme-tuman .case-plaque { color: var(--lichen); }
+.brief .stamp { white-space: nowrap; }
+@media (max-width: 420px) { .brief .stamp { font-size: 13px; right: 8px; } }
+@media (max-width: 899px) {
+  .why-i--seal { padding: 26px 20px 22px; min-height: 0; margin-top: 14px; }
+  .why-i--seal h3 { padding-right: 56px; }
+  .why-seal { left: auto; right: 16px; top: -22px; }
+}
+
+/* Страница ЗИЛАРТа: декоративные фигуры не заходят на текст (22.11) */
+.nav > a { flex: none; }
+.av-btn--sm { white-space: nowrap; }
+@media (max-width: 899px) {
+  .av-section--red .s1 { right: -236px; top: -236px; }
+  .buy .s2 { top: 8px; right: 12px; width: 40px; height: 40px; }
+}
+.nav a.av-btn--sm { padding: 10px 16px; }
+@media (max-width: 400px) { .theme-avangard .nav a.av-btn--sm { padding: 8px 11px; } }
+/* Мини-дело на телефоне: колонка не шире папки */
+@media (max-width: 899px) { .dossier { grid-template-columns: minmax(0, 1fr); } }
+/* Карточка ЗИЛАРТа: фигуры не заходят на заголовок «Дело №1 · …» */
+.qcard--avangard .qc-shapes i:nth-child(2) { right: -6px; top: 100px; width: 90px; height: 12px; }
+.qcard--avangard .qc-shapes i:nth-child(3) { right: 26px; top: 142px; }
+.qc-btn { white-space: nowrap; }
+.qcard--avangard .qc-shapes i:nth-child(1) { right: -40px; top: -40px; width: 124px; height: 124px; }
+.qcard--avangard .qc-shapes i:nth-child(2) { right: -4px; top: 34px; width: 74px; height: 10px; }
+.qcard--avangard .qc-shapes i:nth-child(3) { right: 40px; top: 50px; border-left-width: 15px; border-right-width: 15px; border-bottom-width: 26px; }
+.qcard--baroque .qc-where, .qcard--fog .qc-where, .qcard--fog .qc-title { padding-right: 72px; }
+.brief { margin-top: 14px; }
