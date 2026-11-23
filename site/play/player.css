@@ -16,8 +16,8 @@
   --accent-btn: #C81E17;
   --on-accent: #F2EFE8;
   --ok: #7CC47F;
-  --font-display: 'Oswald', 'Arial Narrow', system-ui, sans-serif;
-  --font-text: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Oswald', 'Oswald Fallback', 'Arial Narrow', system-ui, sans-serif;
+  --font-text: 'Onest', 'Onest Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --radius: 0;
   --top-h: 56px;
   --tabs-h: 64px;

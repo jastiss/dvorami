@@ -1,7 +1,7 @@
 """Забирает сообщения владельца из Telegram и складывает их в DIRECTIVES.md.
 
 Принимаются сообщения только из чата TELEGRAM_CHAT_ID. Остальные пропускаются.
-Команды: /quest, /status, /approvals, /help. Любой другой текст — указание команде.
+Команды: /status, /approvals, /help. Любой другой текст — указание команде.
 """
 
 import datetime
@@ -25,10 +25,9 @@ HELP = (
     "<b>Дворами — бот команды</b>\n\n"
     "Любое сообщение — указание команде. Оно попадёт в DIRECTIVES.md, "
     "команда учтёт его в следующей итерации.\n"
-    "Можно начать с метки: <code>дизайн:</code>, <code>сценарий:</code>, <code>сайт:</code>, <code>квест:</code>. Фото и скриншоты — через бота квеста.\n\n"
+    "Можно начать с метки: <code>дизайн:</code>, <code>сценарий:</code>, <code>сайт:</code>, <code>квест:</code>.\n\n"
     "Ответ на вопрос из отчёта: <code>A-3 да</code> или <code>A-3 нет, лучше …</code>\n"
     "Остаток лимита Claude для отчётов: <code>лимит 40%</code>\n\n"
-    "/quest — пройти квест в браузере телефона (ссылка на плеер)\n"
     "/status — где мы сейчас\n"
     "/approvals — что ждёт вашего решения\n"
     "/run — запустить команду сейчас (можно с пояснением: /run займитесь дизайном)\n"
@@ -121,7 +120,7 @@ def main():
             continue
         cmd = text.split()[0].split("@")[0].lower()
         if cmd == "/quest":
-            tg.send(token, chat_id, QUEST_MSG, reply_to=mid)
+            tg.send(token, chat_id, "Квесты теперь в боте для игроков @dvorami_bot. Этот бот — только для команды.", reply_to=mid)
         elif cmd in ("/start", "/help"):
             tg.send(token, chat_id, HELP, reply_to=mid)
         elif cmd == "/status":

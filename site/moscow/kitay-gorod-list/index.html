@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Квест по Китай-городу без гида: Фальшивый лист | Дворами</title>
-<meta name="description" content="Квест-прогулка без гида по Никольской, Ильинке и Варварке: 9 точек, около 2,5 км, 1,5–2 часа. 990 ₽, один код на всю компанию.">
+<title>Квест по Китай-городу без гида: «Дело о фальшивом листе» | Дворами</title>
+<meta name="description" content="Квест-прогулка по Никольской, Ильинке и Варварке: вы — наборщик 1887 года и печатаете шуточный лист о сбежавшем единороге. 9 точек, около 2,5 км, старт у стены Китай-города. Квест в разработке.">
 <!-- ТЕСТОВЫЙ СТЕНД: снять noindex при выкладке на боевой домен -->
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://dvorami.ru/moscow/kitay-gorod-list/">
-<meta name="theme-color" content="#10202A">
+<meta name="theme-color" content="#F1E6CF">
 <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Дворами">
 <meta property="og:locale" content="ru_RU">
 <meta property="og:title" content="Дело о фальшивом листе — квест-прогулка по Китай-городу">
-<meta property="og:description" content="1887 год. Лист со львом и единорогом обрушил цены на бирже. Найдите, кто его напечатал. Квест-прогулка без гида по Китай-городу.">
+<meta property="og:description" content="С фасада типографии сбежал единорог. Напечатайте об этом лист — и не соврите ни в одной подробности. Квест-прогулка без гида по Китай-городу.">
 <meta property="og:url" content="https://dvorami.ru/moscow/kitay-gorod-list/">
 <meta property="og:image" content="https://dvorami.ru/assets/og/main.png">
 <meta property="og:image:width" content="1200">
@@ -24,9 +24,12 @@
 <meta name="twitter:title" content="Дело о фальшивом листе — квест-прогулка по Китай-городу">
 <meta name="twitter:image" content="https://dvorami.ru/assets/og/main.png">
 <link rel="preload" href="../../assets/fonts/alegreya-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="../../assets/fonts/alegreya-sans-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../assets/fonts/pt-serif-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../assets/fonts/alegreya-cyrillic-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../assets/fonts/caveat-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/fonts.css">
 <link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="../../assets/case.css">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
 {
@@ -39,12 +42,21 @@
    "url": "https://dvorami.ru/"
   },
   {
-   "@type": "TouristTrip",
+   "@type": [
+    "TouristTrip",
+    "Product"
+   ],
    "@id": "https://dvorami.ru/moscow/kitay-gorod-list/#quest",
    "name": "Дело о фальшивом листе — квест-прогулка по Китай-городу",
-   "description": "Детективный квест-прогулка без гида по Китай-городу: 9 точек, около 2,5 км, 1,5–2 часа. Квест открывается в браузере телефона, один код на всю компанию. Готовится к запуску.",
+   "description": "Квест-прогулка без гида по Китай-городу: Никольская, Ильинка, Варварка и парк «Зарядье». 9 точек, около 2,5 км, 1,5–2 часа. Старт у стены Китай-города рядом с гостиницей «Метрополь», финиш на Парящем мосту в «Зарядье», около 10 минут до метро «Китай-город». Квест в разработке.",
    "url": "https://dvorami.ru/moscow/kitay-gorod-list/",
+   "image": [
+    "https://dvorami.ru/assets/og/main.png"
+   ],
    "inLanguage": "ru",
+   "brand": {
+    "@id": "https://dvorami.ru/#org"
+   },
    "provider": {
     "@id": "https://dvorami.ru/#org"
    },
@@ -70,18 +82,27 @@
     {
      "@type": "Place",
      "name": "Варварка"
+    },
+    {
+     "@type": "Place",
+     "name": "Парк «Зарядье»"
+    },
+    {
+     "@type": "Person",
+     "name": "Иван Фёдоров"
     }
    ],
    "itinerary": {
     "@type": "ItemList",
     "itemListOrder": "https://schema.org/ItemListUnordered",
+    "numberOfItems": 9,
     "itemListElement": [
      {
       "@type": "ListItem",
       "position": 1,
       "item": {
        "@type": "Place",
-       "name": "Стена Китай-города у «Метрополя»"
+       "name": "Стена Китай-города у гостиницы «Метрополь» — старт"
       }
      },
      {
@@ -89,7 +110,7 @@
       "position": 2,
       "item": {
        "@type": "Place",
-       "name": "Третьяковский проезд"
+       "name": "Никольская улица"
       }
      },
      {
@@ -97,7 +118,7 @@
       "position": 3,
       "item": {
        "@type": "Place",
-       "name": "Никольская улица"
+       "name": "Варварка"
       }
      },
      {
@@ -105,31 +126,7 @@
       "position": 4,
       "item": {
        "@type": "Place",
-       "name": "Ильинка"
-      }
-     },
-     {
-      "@type": "ListItem",
-      "position": 5,
-      "item": {
-       "@type": "Place",
-       "name": "Часовня-памятник героям Плевны"
-      }
-     },
-     {
-      "@type": "ListItem",
-      "position": 6,
-      "item": {
-       "@type": "Place",
-       "name": "Варварка"
-      }
-     },
-     {
-      "@type": "ListItem",
-      "position": 7,
-      "item": {
-       "@type": "Place",
-       "name": "Парк «Зарядье»"
+       "name": "Парящий мост в парке «Зарядье» — финиш"
       }
      }
     ]
@@ -139,7 +136,7 @@
     "price": "990",
     "priceCurrency": "RUB",
     "url": "https://dvorami.ru/moscow/kitay-gorod-list/",
-    "description": "Цена за квест, один код доступа на всю компанию. Продажи скоро откроются.",
+    "description": "Цена за квест, один код доступа на всю компанию. Квест в разработке.",
     "seller": {
      "@id": "https://dvorami.ru/#org"
     }
@@ -174,18 +171,10 @@
    "mainEntity": [
     {
      "@type": "Question",
-     "name": "Сколько стоит квест?",
+     "name": "Где начинается и заканчивается квест?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "990 ₽ за квест. Один код на всю компанию: играть можно одному, вдвоём, с друзьями или семьёй. Продажи ещё не открыты, о старте объявим в Telegram-канале «Дворами»."
-     }
-    },
-    {
-     "@type": "Question",
-     "name": "Где начинается и где заканчивается квест?",
-     "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Начинается у стены Китай-города рядом с гостиницей «Метрополь», в трёх минутах от метро «Театральная». Заканчивается в парке «Зарядье», откуда около 10 минут пешком до метро «Китай-город»."
+      "text": "Старт у фрагмента стены Китай-города рядом с гостиницей «Метрополь», в трёх минутах от метро «Театральная». Финиш на Парящем мосту в «Зарядье», до метро «Китай-город» около 10 минут."
      }
     },
     {
@@ -198,26 +187,58 @@
     },
     {
      "@type": "Question",
-     "name": "Нужно ли покупать билеты в музеи?",
-     "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Нет. Музеи на Варварке и павильоны «Зарядья» платные, но для квеста они не нужны: все загадки решаются снаружи."
-     }
-    },
-    {
-     "@type": "Question",
-     "name": "Где можно передохнуть по дороге?",
-     "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Примерно на середине маршрута вы пройдёте по Никольской, там много кафе. В конце квеста можно отдохнуть в парке «Зарядье»."
-     }
-    },
-    {
-     "@type": "Question",
      "name": "Можно ли пройти квест с детьми?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "Да. Основные загадки рассчитаны на взрослых и подростков, а для младших есть задания по желанию. Страшных сцен в квесте нет."
+      "text": "Да. Основные загадки рассчитаны на взрослых и подростков, для младших есть задания по желанию: найти, сосчитать, рассмотреть."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Сколько стоит квест и сколько человек может играть?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "990 ₽ за квест: один код доступа на всю компанию. Хватит одного телефона."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Когда можно будет пройти квест?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Квест в разработке. Дату запуска объявим в Telegram-канале «Дворами»."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Нужно ли заходить в музеи или платные павильоны?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Нет. Все загадки решаются снаружи: по стенам, фасадам и надписям."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Что будет, если Парящий мост закрыт?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Тогда финал пройдёт у реки в парке: квест подскажет, куда встать."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Нужен ли интернет?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Да. Квест открывается в браузере телефона, дорогу к точкам показывает карта. Зарядите телефон перед стартом."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Что делать, если не получается разгадать загадку?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Открыть правку на полях. Подсказок три, и последняя — это ответ."
      }
     }
    ]
@@ -225,299 +246,175 @@
  ]
 }
 </script>
-<style>
-.theme-delo{--bg:#10202A;--bg2:#173040;--paper:#EEF2EC;--ink:#14211D;--ink2:#3B4A45;--acc:#5FC2A4;--acc2:#8FDCC4;
- --text:#F4F1EA;--text-2:#D3D6E2;--text-3:#AAB0C6;--line:rgba(255,255,255,.16);--accent:var(--acc);--accent-hover:var(--acc2);--on-accent:#14121E;--sky:var(--acc2);
- --font-display:'Alegreya',Georgia,serif;--font-text:'Alegreya Sans',system-ui,sans-serif;--font-hand:'Neucha','Segoe Print',cursive;
- background:var(--bg);background-image:none;color:var(--text);font-family:var(--font-text);font-size:19px}
-.theme-delo .logo{font-family:var(--font-display);font-weight:700;font-size:25px;letter-spacing:.02em}
-.theme-delo .nav a:not(.btn){color:var(--text-2)}
-.theme-delo .nav a:not(.btn):hover{color:var(--acc2)}
-.d-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:12px 26px;border-radius:999px;background:var(--acc);color:var(--on-accent)!important;text-decoration:none;font-weight:700;font-size:18px;transition:background .2s,transform .2s}
-.d-btn:hover{background:var(--acc2);transform:translateY(-2px)}
-.theme-delo .nav .btn.d-btn{min-height:44px;padding:8px 18px;font-size:16px}
-.d-btn svg{width:20px;height:20px;flex:none}
-.d-h{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,5vw,54px);line-height:1.06}
-.d-h em{font-weight:500;font-style:italic;color:var(--acc2)}
-.d-light .d-h em{color:var(--ink2)}
-.d-sec{padding:60px 0}
-@media(min-width:900px){.d-sec{padding:96px 0}}
-.d-light{background:var(--paper);color:var(--ink)}
-.d-light p,.d-light li{color:var(--ink2)}
-.d-light a{color:var(--ink)}
-.d-light :focus-visible{outline-color:var(--ink)}
-/* hero */
-.d-hero{background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);overflow:hidden}
-.d-hero .wrap{display:grid;gap:28px;padding-top:8px;padding-bottom:48px}
-@media(min-width:1000px){.d-hero .wrap{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);align-items:center;gap:56px;padding-bottom:80px}}
-.theme-delo .crumbs a{color:var(--text-2)}
-.theme-delo .case-plaque{color:var(--acc2)}
-.d-hero h1{margin-top:14px;font-family:var(--font-display);font-weight:700;line-height:1.02;color:#fff}
-.d-hero h1 .k{display:block;font-family:var(--font-text);font-weight:500;font-size:clamp(18px,2.2vw,22px);line-height:1.3;color:var(--acc2);margin-bottom:10px}
-.d-hero h1 .t{display:block;font-size:clamp(40px,8vw,84px);overflow-wrap:anywhere}
-.d-hero .intro{margin-top:20px;font-size:20px;max-width:32em;color:var(--text-2)}
-.d-hero .intro b{color:#fff;font-weight:500}
-.d-cta{margin-top:28px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px}
-.d-cta .alt{color:var(--acc2)}
-.d-note{margin-top:12px;font-size:16px;color:var(--text-3);max-width:30em}
-.d-art{margin:0;border-radius:22px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(0,0,0,.7);border:1px solid var(--line)}
-.d-art img{width:100%;height:auto;aspect-ratio:4/3;display:block}
-.d-art figcaption{padding:10px 16px;font-size:15px;color:var(--text-3);background:rgba(0,0,0,.25)}
-/* stats */
-.d-stats{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.d-stats ul{list-style:none;margin:0;padding:22px 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-@media(min-width:900px){.d-stats ul{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.d-stats li{padding:14px 16px;border-left:3px solid var(--acc);color:var(--text-2);font-size:16px;line-height:1.3}
-.d-stats .n{display:block;font-family:var(--font-display);font-weight:700;font-size:32px;color:#fff;line-height:1.05}
-/* story */
-.d-story .grid{display:grid;gap:32px;margin-top:22px}
-@media(min-width:960px){.d-story .grid{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:56px}}
-.d-story p{font-size:20px;max-width:34em}
-.d-story p+p{margin-top:14px}
-.d-file{background:#fff;border-radius:6px 22px 22px 22px;padding:24px 22px;box-shadow:0 18px 40px -28px rgba(0,0,0,.5);border-top:6px solid var(--acc)}
-.d-file h3{font-family:var(--font-display);font-size:24px;color:var(--ink)}
-.d-file dl{margin:12px 0 0}
-.d-file dt{margin-top:14px;font-weight:700;color:var(--ink)}
-.d-file dd{margin:2px 0 0;color:var(--ink2);font-size:18px}
-/* how */
-.d-steps{list-style:none;padding:0;margin:36px 0 0;display:grid;gap:18px;counter-reset:s}
-@media(min-width:900px){.d-steps{grid-template-columns:repeat(5,minmax(0,1fr))}}
-.d-steps li{counter-increment:s;padding:20px 18px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.03)}
-.d-steps li::before{content:counter(s);display:inline-grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--acc);color:var(--on-accent);font-weight:700;font-family:var(--font-display);font-size:20px}
-.d-steps h3{margin-top:12px;font-family:var(--font-display);font-size:22px;line-height:1.15;color:#fff}
-.d-steps p{margin-top:6px;font-size:17px;color:var(--text-2)}
-/* spots */
-.d-spots .lead2{margin-top:14px;font-size:19px;max-width:36em}
-.d-cards{list-style:none;padding:0;margin:32px 0 0;display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
-@media(min-width:700px){.d-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(min-width:1100px){.d-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.d-cards li{background:#fff;border-radius:16px;padding:20px 20px 22px;border-left:5px solid var(--acc);box-shadow:0 14px 30px -24px rgba(0,0,0,.45)}
-.d-cards h3{font-family:var(--font-display);font-size:24px;color:var(--ink);line-height:1.15}
-.d-cards p{margin-top:6px;font-size:18px}
-/* world */
-.d-world ul{list-style:none;padding:0;margin:30px 0 0;display:grid;gap:16px}
-@media(min-width:900px){.d-world ul{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 40px}}
-.d-world li{position:relative;padding-left:34px;font-size:19px;color:var(--text-2)}
-.d-world li::before{content:"";position:absolute;left:0;top:.45em;width:16px;height:16px;border-radius:50%;border:3px solid var(--acc)}
-/* who */
-.d-who .grid{display:grid;gap:24px;margin-top:26px}
-@media(min-width:900px){.d-who .grid{grid-template-columns:1.3fr 1fr;gap:48px}}
-.d-who p{font-size:19px}
-.d-who p+p{margin-top:12px}
-.d-who .tip{padding:22px;border-radius:18px;background:#fff;border:1px solid rgba(0,0,0,.08)}
-.d-who .tip h3{font-family:var(--font-display);font-size:23px;color:var(--ink)}
-.d-who .tip p{margin-top:8px;font-size:18px}
-/* faq */
-.theme-delo .faq{margin-top:28px;max-width:860px}
-.theme-delo .d-light .faq details{border-color:rgba(0,0,0,.14)}
-.theme-delo .d-light .faq summary h3{font-size:20px;font-weight:700;color:var(--ink)}
-.theme-delo .d-light .faq summary::after{color:var(--ink);font-family:var(--font-display)}
-.theme-delo .d-light .faq p{padding:0 0 20px;font-size:18px;max-width:44em}
-/* buy */
-.d-buy{text-align:center}
-.d-buy .price{display:block;margin-top:14px;font-family:var(--font-display);font-weight:700;font-size:56px;color:#fff;line-height:1}
-.d-buy .per{display:block;margin-top:6px;color:var(--text-2);font-size:19px}
-.d-buy .d-btn{margin-top:26px}
-.d-buy .d-note{margin:14px auto 0}
-/* sources */
-.d-src{background:var(--bg);padding:28px 0 40px}
-.d-src details{border-top:1px solid var(--line);padding-top:12px;max-width:60em}
-.d-src summary{cursor:pointer;color:var(--text-2);font-size:17px;padding:8px 0;min-height:44px;display:flex;align-items:center}
-.d-src ul{margin:8px 0 0;padding-left:1.2em;font-size:15px;color:var(--text-3);display:grid;gap:6px}
-.d-src a{color:var(--text-2);overflow-wrap:anywhere}
-.d-src p{font-size:15px;color:var(--text-3);margin-top:10px}
-.theme-delo .site-footer{border-top:1px solid var(--line)}
-.theme-delo .site-footer .wrap{color:var(--text-3)}
-.theme-delo .site-footer a{color:var(--text-2)}
-</style>
 <script src="../../assets/analytics.js" defer></script>
 </head>
-<body class="theme-delo">
+<body class="case-page t-nabor">
 <a class="skip" href="#main">К содержанию</a>
 
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="../../" aria-label="Дворами — на главную">
-      <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F4F1EA" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F4F1EA" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#5FC2A4"/></svg>
-      <span>ДВОРАМИ</span>
-    </a>
+    <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F2EFE8" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F2EFE8" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#E1251B"/></svg><span>ДВОРАМИ</span></a>
     <nav class="nav" aria-label="Навигация по странице">
       <a href="#story">Сюжет</a>
-      <a href="#how">Как проходит</a>
       <a href="#spots">Что увидите</a>
-      <a href="#faq">Вопросы</a>
-      <a class="btn d-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank">Купить · 990 ₽</a>
+      <a href="#how">Загадки</a>
+      <a href="#practical">Что нужно знать</a>
+      <a class="nav-tg" data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener" aria-label="Telegram-канал «Дворами»"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.5 3.6 2.9 10.8c-1.3.5-1.3 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM8.8 13.4l9.6-6c.5-.3.9-.1.5.2l-8 7.3-.3 3.4-1.8-4.9z" fill="currentColor"/></svg><span>Telegram</span></a>
+      <a class="c-btn c-btn--sm" href="#buy">Взять дело</a>
     </nav>
   </div>
 </header>
 
 <main id="main">
-<section class="d-hero" aria-labelledby="h1">
+<section id="top" class="c-hero" aria-labelledby="h1">
+  
   <div class="wrap">
     <div>
-      <nav class="crumbs" aria-label="Хлебные крошки">
-        <ol>
-          <li><a href="../../">Главная</a></li>
-          <li><a href="../">Квесты по Москве</a></li>
-          <li aria-current="page">Дело №5 · Фальшивый лист</li>
-        </ol>
-      </nav>
-      <span class="case-plaque">Дело №5 · Фальшивый лист</span>
-      <h1 id="h1"><span class="k">Квест-прогулка по Китай-городу:</span> <span class="t">Дело №5 «Фальшивый лист»</span></h1>
-      <p class="intro">1887 год. По лавкам Никольской ходит печатный лист со львом и единорогом: <b>«Англичане возвращаются. Биржу — закрыть»</b>. Купцы в панике, цены падают.</p>
-      <p class="intro">Корректор типографии уверен: лист поддельный. Подозреваемых трое. Сверьте лист с улицами Китай-города и найдите, кто его напечатал.</p>
-      <div class="d-cta" data-cta>
-        <a class="d-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2 10h11l2-7H7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/><circle cx="9" cy="19" r="1.6" fill="currentColor"/><circle cx="17" cy="19" r="1.6" fill="currentColor"/></svg>Купить квест · 990 ₽</a>
-        <a class="alt" href="#how">Как устроен квест</a>
+      <nav class="c-crumbs" aria-label="Хлебные крошки"><ol><li><a href="../../">Главная</a></li><li><a href="../">Квесты по Москве</a></li><li aria-current="page">Дело №5 · Фальшивый лист</li></ol></nav>
+      <span class="c-plaque">Дело №5 · Фальшивый лист</span>
+      <h1 id="h1"><span class="pre">Квест-прогулка по&nbsp;Никольской, Ильинке и&nbsp;Варварке</span><span class="big">Дело о&nbsp;фальшивом листе</span></h1>
+      <p class="c-intro">1887&nbsp;год, типография на&nbsp;Никольской. Новичок-наборщик должен напечатать шуточный лист, и&nbsp;если старый корректор не&nbsp;найдёт в&nbsp;нём ни&nbsp;одной ошибки, его примут в&nbsp;цех.</p><p class="c-intro">Шутка такая: <b>с&nbsp;фасада типографии сбежал единорог</b>. Невероятно — но&nbsp;каждая подробность в&nbsp;листе должна быть правдой.</p>
+      <div class="c-cta" data-cta>
+        <a class="c-btn" href="#buy">Взять дело · <span class="p">990&nbsp;₽</span></a>
+        <a class="c-link" href="#how">Как устроен квест</a>
+        <p class="c-status">В разработке. 990&nbsp;₽ — один код доступа на&nbsp;всю компанию.</p>
       </div>
-      <p class="d-note">Один код на всю компанию. Продажи скоро откроются. Пока кнопка ведёт в наш Telegram-канал: там мы первыми объявим старт.</p>
     </div>
-    <figure class="d-art">
-      <img src="../../assets/ill/case-05.svg" alt="Вечер в Китай-городе: красная зубчатая стена с круглой башней, за ней белые и красные церкви с золотыми куполами, по улице идут люди." width="1200" height="900" fetchpriority="high">
-      <figcaption>Китай-город</figcaption>
-    </figure>
+    <figure class="c-cover"><img src="../../assets/ill/hero-kitay.svg" alt="Гравюра в две краски: красный единорог встаёт на дыбы перед зубчатой стеной Китай-города, над стеной красное солнце." width="1200" height="900" fetchpriority="high"></figure>
   </div>
 </section>
 
-<section class="d-stats" aria-label="Квест в цифрах">
-  <div class="wrap">
-    <ul>
-      <li><span class="n">9</span>точек</li>
-      <li><span class="n">≈2,5 км</span>пешком</li>
-      <li><span class="n">1,5–2 ч</span>в своём темпе</li>
-      <li><span class="n">М</span>старт у метро «Театральная»</li>
-    </ul>
-  </div>
+<section id="facts" class="c-facts" aria-label="Квест в цифрах">
+  <div class="wrap"><ul><li><span class="n">9</span>точек</li><li><span class="n">≈2,5&nbsp;км</span>пешком</li><li><span class="n">1,5–2&nbsp;ч</span>в&nbsp;своём темпе</li><li><span class="n">0+</span>младшим — задания по&nbsp;желанию</li><li><span class="n">М</span>старт у&nbsp;метро «Театральная»</li></ul></div>
 </section>
 
-<section id="story" class="d-sec d-light d-story" aria-labelledby="h-story">
+<section id="story" class="c-sec on-paper" aria-labelledby="h-story">
   <div class="wrap">
-    <h2 id="h-story" class="d-h">Лист <em>с единорогом</em></h2>
-    <div class="grid">
-      <div>
-        <p>Подделка всегда выдаёт себя деталью: не тем зверем, не той датой, не той табличкой. Корректор Аким Ферапонтович ловит такие ошибки в книгах, а вы будете ловить их на фасадах, табличках и стенах.</p>
-        <p>Молва Никольской подскажет простые ответы: «это китайцы!», «это англичане!». Не верьте ей на слово, проверьте.</p>
-      </div>
-      <div class="d-file">
-        <h3>Кто есть кто</h3>
-        <dl>
-          <dt>Корректор</dt><dd>ведёт дело и подсказывает вопросом: «А вы на фасад смотрели или на лист?»</dd>
-          <dt>Молва</dt><dd>разносит слухи по Никольской. Каждый слух можно проверить на месте.</dd>
-          <dt>Подозреваемые</dt><dd>наборщик, маклер и подрядчик. У каждого своя версия той ночи.</dd>
-        </dl>
-      </div>
+    <div class="c-head"><span class="c-kicker">сюжет</span><h2 id="h-story" class="c-h">Гранка с&nbsp;пропусками</h2></div>
+    <div class="c-story-grid">
+      <div class="c-prose"><p>Сенька, подмастерье на&nbsp;год старше вас, уже набрал лист «Сбежал единорог!». Единорога «видели» у&nbsp;стены, у&nbsp;ворот, у&nbsp;биржи, у&nbsp;часовни и&nbsp;у&nbsp;Английского двора. Только подробности Сенька оставил пустыми.</p><p>Вы идёте по&nbsp;Китай-городу и&nbsp;заполняете пропуски тем, что прочитали или насчитали на&nbsp;месте. Ошибётесь хоть в&nbsp;одной детали — корректор отправит лист в&nbsp;корзину.</p><p class="c-cliff">А&nbsp;ещё Сенька любит пошутить и&nbsp;над вами. Читайте гранку внимательно.</p></div>
+      <div class="c-artifact" data-reveal><div class="granka"><p class="head">Сбежал единорог!</p>
+<p>Ночью с&nbsp;фасада Синодальной типографии, где время показывают <span class="gap"></span>, ушёл каменный единорог.</p>
+<p>Его видели у&nbsp;стены Китай-города, которой <span class="gap"></span> лет, — он перескочил её, не&nbsp;задев зубцов. Потом он прошёл под воротами с&nbsp;<span class="gap"></span> башенками…</p>
+<p>Последний раз его видели над рекой.</p>
+<p class="imprint">Печатано в&nbsp;Синодальной типографии. Подлинность подробностей подтверждаем.</p>
+<span class="margin">пропуски — на&nbsp;месте, не&nbsp;выдумывай! С.</span></div></div>
     </div>
   </div>
 </section>
 
-<section id="how" class="d-sec" aria-labelledby="h-how">
+<section id="cast" class="c-sec" aria-labelledby="h-cast">
   <div class="wrap">
-    <h2 id="h-how" class="d-h">Как проходит <em>квест</em></h2>
-    <ol class="d-steps">
-      <li><h3>Приходите к «Метрополю»</h3><p>Откройте квест в браузере телефона. Одного телефона хватит на всю компанию.</p></li>
-      <li><h3>Слушайте свидетелей</h3><p>На каждой точке вас ждут короткая сцена и одна деталь, которую можно сверить с листом.</p></li>
-      <li><h3>Проверяйте на месте</h3><p>Загадки разные: опровергнуть слух, прочитать табличку, поймать подозреваемого на неточности, сосчитать.</p></li>
-      <li><h3>Застряли — спросите корректора</h3><p>У каждой загадки три подсказки, третья — ответ. Проиграть нельзя.</p></li>
-      <li><h3>Назовите виновного</h3><p>В финале вы сведёте улики и скажете, кто напечатал лист и зачем.</p></li>
-    </ol>
+    <div class="c-head"><span class="c-kicker">кто ведёт дело</span><h2 id="h-cast" class="c-h">Наборщик, подмастерье и&nbsp;корректор</h2></div>
+    <div class="c-cast"><blockquote class="c-quote">«Аким Ферапонтович очки протирает дважды. Если протёр трижды — пиши пропало»<footer>Сенька, подмастерье</footer></blockquote><dl class="c-people"><div><dt>Вы — новичок-наборщик</dt><dd>Синодальная типография, 1887&nbsp;год. Ваш шуточный лист — экзамен на&nbsp;вступление в&nbsp;цех.</dd></div><div><dt>Сенька</dt><dd>подмастерье и&nbsp;сообщник по&nbsp;розыгрышу (персонаж вымышленный). Подсказывает «правкой на&nbsp;полях»: черкает карандашом прямо по&nbsp;гранке.</dd></div><div><dt>Аким Ферапонтович</dt><dd>старый корректор (персонаж вымышленный). Строгий, но&nbsp;справедливый. Появится в&nbsp;финале с&nbsp;готовым листом.</dd></div></dl></div>
   </div>
 </section>
 
-<section id="spots" class="d-sec d-light d-spots" aria-labelledby="h-spots">
+<section id="spots" class="c-sec on-paper" aria-labelledby="h-spots">
   <div class="wrap">
-    <h2 id="h-spots" class="d-h">Что вы <em>увидите</em></h2>
-    <p class="lead2">Шесть мест с маршрута, не по порядку. Куда идти дальше, квест подскажет на месте.</p>
-    <ul class="d-cards">
-      <li><h3>Стена Китай-города</h3><p>Молва уверена, что её строили китайцы. Посмотрите сами.</p></li>
-      <li><h3>Ворота Третьяковского проезда</h3><p>Похожи на крепость XVI века. Похожи — не значит древние.</p></li>
-      <li><h3>Никольская улица</h3><p>Где-то на её фасадах прячутся лев и единорог. Найдите их.</p></li>
-      <li><h3>Ильинка</h3><p>Улица, которую называли «московским Сити».</p></li>
-      <li><h3>Часовня у Ильинских ворот</h3><p>Памятник, на который деньги собирали не из казны.</p></li>
-      <li><h3>Варварка</h3><p>Белые палаты, которые царь отдал иностранцам.</p></li>
-    </ul>
-  </div>
-</section>
-
-<section class="d-sec d-world" aria-labelledby="h-world">
-  <div class="wrap">
-    <h2 id="h-world" class="d-h">Что узнаете <em>по дороге</em></h2>
-    <ul>
-      <li>В 1553 году английский корабль, искавший северный путь в Китай и Индию, пришёл в Белое море. Так началась торговля Москвы с Англией.</li>
-      <li>Часовня у Ильинских ворот хранит память о боях 1877 года под Плевной — сегодня это болгарский город Плевен.</li>
-      <li>На Никольской в 1564 году напечатали «Апостол» — первую точно датированную русскую печатную книгу.</li>
-      <li>Парк «Зарядье» разбит на месте гостиницы «Россия», одной из самых больших в мире.</li>
-    </ul>
-  </div>
-</section>
-
-<section class="d-sec d-light d-who" aria-labelledby="h-who">
-  <div class="wrap">
-    <h2 id="h-who" class="d-h">Для кого <em>этот квест</em></h2>
-    <div class="grid">
-      <div>
-        <p>Для тех, кто ходит по Никольской под гирляндами и не знает, кто сидит на её фасадах, для любителей детективов и старой Москвы.</p>
-        <p>Играть можно одному, вдвоём, с друзьями или семьёй. Знать историю заранее не нужно: всё, что понадобится для разгадки, вы увидите по дороге.</p>
-      </div>
-      <div class="tip">
-        <h3>Если с вами младшие</h3>
-        <p>Для них есть задания по желанию: найти зверя на фасаде, сосчитать, рассмотреть. На разгадку они не влияют.</p>
+    <div class="c-head"><span class="c-kicker">что увидите</span><h2 id="h-spots" class="c-h">Что вы увидите</h2><p class="c-lead">Шесть мест из&nbsp;девяти, не&nbsp;по&nbsp;порядку — в&nbsp;оттисках с&nbsp;наших досок. Куда идти дальше, подскажет квест.</p></div>
+    <div class="c-carousel" data-carousel>
+      <ul class="c-track" data-shuffle tabindex="0" aria-label="Места на маршруте, листаются вбок"><li class="c-spot"><figure><img src="../../assets/ill/spots/kg-stena.svg" alt="Гравюра: длинная зубчатая стена с круглой башней под красной кровлей." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Стена Китай-города</h3><p>Старая крепостная стена у&nbsp;гостиницы «Метрополь». Сколько ей было лет в&nbsp;1887&nbsp;году?</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/kg-lev.svg" alt="Гравюра: геральдический щит, слева чёрный лев, справа красный единорог." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Лев и&nbsp;единорог</h3><p>Звери с&nbsp;фасада на&nbsp;Никольской. По&nbsp;нашей шутке, один из&nbsp;них этой ночью сбежал.</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/kg-monastyr.svg" alt="Гравюра: каменный корпус с арочными окнами и высокая колокольня." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Монастырь на&nbsp;Никольской</h3><p>Сенька набрал его строку в&nbsp;трёх вариантах и&nbsp;не&nbsp;помнит, какой верный.</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/kg-birzha.svg" alt="Гравюра: торжественное здание с колоннами и треугольным фронтоном." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Биржа на&nbsp;Ильинке</h3><p>Здесь торговали и&nbsp;спорили о&nbsp;ценах. А&nbsp;кто сидит в&nbsp;этом здании теперь?</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/kg-troica.svg" alt="Гравюра: нарядная церковь с рядами красных кокошников, тремя главами и шатровой колокольней." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Узорная церковь в&nbsp;переулке</h3><p>Ещё одна строка в&nbsp;трёх вариантах. Где&nbsp;же она стоит?</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/kg-most.svg" alt="Гравюра: над рекой вылетает вперёд консольный мост, вдали башни, красное солнце." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Мост над рекой</h3><p>Последний раз единорога видели здесь.</p></li></ul>
+      <div class="c-car-nav">
+        <button type="button" data-dir="-1" aria-label="Предыдущее место"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H6M11 6.5 5.5 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" data-dir="1" aria-label="Следующее место"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span class="c-car-count" aria-live="polite"></span>
+        <span class="c-car-hint" aria-hidden="true">листайте вбок</span>
       </div>
     </div>
   </div>
 </section>
 
-<section id="faq" class="d-sec d-light" aria-labelledby="h-faq" style="padding-top:0">
+<section id="learn" class="c-sec" aria-labelledby="h-learn">
   <div class="wrap">
-    <h2 id="h-faq" class="d-h">Вопросы <em>и ответы</em></h2>
-    <div class="faq">
-      <details><summary><h3>Сколько стоит квест?</h3></summary><p>990 ₽ за квест. Один код на всю компанию: играть можно одному, вдвоём, с друзьями или семьёй. Продажи ещё не открыты, о старте объявим в Telegram-канале «Дворами».</p></details>
-      <details><summary><h3>Где начинается и где заканчивается квест?</h3></summary><p>Начинается у стены Китай-города рядом с гостиницей «Метрополь», в трёх минутах от метро «Театральная». Заканчивается в парке «Зарядье», откуда около 10 минут пешком до метро «Китай-город».</p></details>
-      <details><summary><h3>Сколько длится квест и сколько придётся идти?</h3></summary><p>По нашей оценке, 1,5–2 часа: 9 точек и около 2,5 км пешком.</p></details>
-      <details><summary><h3>Нужно ли покупать билеты в музеи?</h3></summary><p>Нет. Музеи на Варварке и павильоны «Зарядья» платные, но для квеста они не нужны: все загадки решаются снаружи.</p></details>
-      <details><summary><h3>Где можно передохнуть по дороге?</h3></summary><p>Примерно на середине маршрута вы пройдёте по Никольской, там много кафе. В конце квеста можно отдохнуть в парке «Зарядье».</p></details>
-      <details><summary><h3>Можно ли пройти квест с детьми?</h3></summary><p>Да. Основные загадки рассчитаны на взрослых и подростков, а для младших есть задания по желанию. Страшных сцен в квесте нет.</p></details>
+    <div class="c-head"><span class="c-kicker">что узнаете по дороге</span><h2 id="h-learn" class="c-h">Что узнаете по&nbsp;дороге</h2></div>
+    <ol class="c-learn"><li>Почему Китай-город так называется, если Китай здесь ни&nbsp;при&nbsp;чём.</li><li>Откуда на&nbsp;Никольской лев и&nbsp;единорог.</li><li>Какие ворота выглядят как крепость, а&nbsp;построены купцами.</li><li>Кто искал путь в&nbsp;Китай, а&nbsp;пришёл на&nbsp;Варварку.</li><li>На&nbsp;чьи деньги поставили часовню у&nbsp;Ильинских ворот.</li></ol>
+  </div>
+</section>
+
+<section id="how" class="c-sec on-alt" aria-labelledby="h-how">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">как устроены загадки</span><h2 id="h-how" class="c-h">Шутка должна пройти корректора</h2></div>
+    <div class="c-how">
+      <div class="c-prose"><p>Это не&nbsp;детектив: никого не&nbsp;ловят и&nbsp;никого не&nbsp;подозревают. Вы сами делаете фальшивку — и&nbsp;поэтому ошибаться в&nbsp;деталях нельзя вам.</p><p>На&nbsp;каждой точке в&nbsp;гранке пропуск: дата, число, деталь фасада, надпись. Дважды Сенька набрал строку в&nbsp;трёх вариантах — выберите верный. Застряли — смотрите правку на&nbsp;полях: подсказок три, третья — ответ.</p></div>
+      <ol class="c-steps"><li><h3>Берёте дело</h3><p>Один код доступа на&nbsp;всю компанию. Квест в&nbsp;разработке, о&nbsp;старте объявим в&nbsp;Telegram.</p></li><li><h3>Приходите к&nbsp;стене у&nbsp;«Метрополя»</h3><p>Три минуты от&nbsp;метро «Театральная» и&nbsp;«Площадь Революции». Квест открывается в&nbsp;браузере телефона.</p></li><li><h3>Заполняете гранку</h3><p>Каждая точка — пропуск в&nbsp;листе, который вы заполняете тем, что видно на&nbsp;месте.</p></li><li><h3>Сдаёте корректору</h3><p>В&nbsp;финале лист напечатан. В&nbsp;нём одна ошибка — найдите её по&nbsp;памяти.</p></li></ol>
     </div>
   </div>
 </section>
 
-<section id="buy" class="d-sec d-buy" data-cta aria-labelledby="h-buy">
+<section id="world" class="c-sec on-paper" aria-labelledby="h-world">
   <div class="wrap">
-    <h2 id="h-buy" class="d-h">Дело о фальшивом листе</h2>
-    <span class="price">990 ₽</span>
-    <span class="per">за квест · один код на всю компанию</span>
-    <a class="d-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2 10h11l2-7H7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/><circle cx="9" cy="19" r="1.6" fill="currentColor"/><circle cx="17" cy="19" r="1.6" fill="currentColor"/></svg>Купить квест</a>
-    <p class="d-note">Продажи скоро откроются. Пока кнопка ведёт в наш Telegram-канал: там мы первыми объявим старт.</p>
+    <div class="c-head"><span class="c-kicker">вокруг дела</span><h2 id="h-world" class="c-h">Китай-город и&nbsp;весь мир</h2><p class="c-lead">В&nbsp;паре кварталов от&nbsp;Кремля сходятся истории из&nbsp;Англии, Италии и&nbsp;Болгарии.</p></div>
+    <div class="c-world-grid">
+<article class="c-world-card"><span class="yr">1553</span><h3>Англичане искали Китай</h3><p>Корабль Ричарда Ченслера искал северный путь в&nbsp;Китай и&nbsp;Индию, а&nbsp;пришёл в&nbsp;Белое море. Капитан добрался до&nbsp;Москвы, и&nbsp;началась торговля с&nbsp;Англией.</p></article>
+<article class="c-world-card"><span class="yr">1556</span><h3>…и&nbsp;пришли в&nbsp;Китай-город</h3><p>Иван Грозный отдал палаты на&nbsp;Варварке английской Московской компании. Теперь это Старый Английский двор.</p></article>
+<article class="c-world-card"><span class="yr">1564</span><h3>Первая точно датированная книга</h3><p>На&nbsp;Печатном дворе на&nbsp;Никольской Иван Фёдоров и&nbsp;Пётр Мстиславец закончили «Апостол» — первую точно датированную русскую печатную книгу.</p></article>
+<article class="c-world-card"><span class="yr">1877</span><h3>Плевна</h3><p>Под Плевной, нынешним Плевеном в&nbsp;Болгарии, шло одно из&nbsp;главных сражений Русско-турецкой войны. Память о&nbsp;нём стоит у&nbsp;Ильинских ворот.</p></article>
+<article class="c-world-card"><span class="yr">XVI</span><h3>Итальянский мастер</h3><p>Стену Китай-города, как и&nbsp;многое в&nbsp;Кремле, строил мастер из&nbsp;Италии.</p></article>
+</div>
+  </div>
+</section>
+
+<section id="practical" class="c-sec" aria-labelledby="h-practical">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">что нужно знать</span><h2 id="h-practical" class="c-h">Что нужно знать</h2></div>
+    <dl class="c-practical"><div><dt>Старт</dt><dd>Фрагмент стены Китай-города у&nbsp;гостиницы «Метрополь», 3&nbsp;минуты от&nbsp;метро «Театральная» и&nbsp;«Площадь Революции».</dd></div><div><dt>Финиш</dt><dd>Парящий мост в&nbsp;парке «Зарядье». До&nbsp;метро «Китай-город» около 10&nbsp;минут. Если мост закрыт, финал — у&nbsp;реки в&nbsp;парке.</dd></div><div><dt>Маршрут</dt><dd>9&nbsp;точек, около 2,5&nbsp;км пешком (длину уточним на&nbsp;полевом тесте).</dd></div><div><dt>Время</dt><dd>1,5–2 часа в&nbsp;своём темпе.</dd></div><div><dt>Возраст</dt><dd>0+. Основные загадки — для взрослых и&nbsp;подростков, для младших — задания по&nbsp;желанию.</dd></div><div><dt>Как играть</dt><dd>В&nbsp;браузере телефона, одного достаточно на&nbsp;всю компанию. Нужен мобильный интернет.</dd></div><div><dt>Перерыв</dt><dd>Кафе на&nbsp;Никольской и&nbsp;в&nbsp;«Зарядье».</dd></div><div><dt>Погода и&nbsp;сезон</dt><dd>Днём и&nbsp;вечером в&nbsp;любое время года: задания — по&nbsp;стенам, фасадам и&nbsp;надписям.</dd></div><div><dt>Дорога</dt><dd>Тротуары и&nbsp;дорожки парка. Музеи на&nbsp;Варварке и&nbsp;павильоны «Зарядья» платные, но&nbsp;заходить в&nbsp;них не&nbsp;нужно.</dd></div></dl>
+  </div>
+</section>
+
+<!-- seo:start -->
+<section id="about-place" class="c-sec on-paper seo-ref" aria-labelledby="h-seo">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">справка о районе</span><h2 id="h-seo" class="c-h">Китай-город: справка</h2></div>
+    <p class="seo-lead">Китай-город — старый торговый квартал сразу к&nbsp;востоку от&nbsp;Кремля: Никольская, Ильинка и&nbsp;Варварка, а&nbsp;у&nbsp;реки — парк «Зарядье». К&nbsp;Китаю название отношения не&nbsp;имеет.</p>
+    <div class="seo-grid"><div><h3>Откуда название</h3><p>Версий несколько. По&nbsp;одной, от&nbsp;«кита» — плетёнки из&nbsp;жердей, которой укрепляли вал. По&nbsp;другой, от&nbsp;тюркского «кытай» — «срединная крепость». Точного ответа нет, но&nbsp;Китай здесь ни&nbsp;при&nbsp;чём.</p></div>
+<div><h3>Никольская</h3><ul><li>Здание Синодальной типографии (Никольская,&nbsp;15) стоит на&nbsp;месте Государева печатного двора. На&nbsp;фасаде — лев и&nbsp;единорог, эмблема Печатного двора.</li><li>Здесь в&nbsp;1564&nbsp;году Иван Фёдоров и&nbsp;Пётр Мстиславец напечатали «Апостол».</li><li>Третьяковский проезд с&nbsp;воротами-крепостью пробили в&nbsp;1870–1871&nbsp;годах на&nbsp;деньги братьев Третьяковых.</li></ul></div>
+<div><h3>Ильинка и&nbsp;Варварка</h3><ul><li>На&nbsp;Ильинке стоит здание Московской биржи.</li><li>Часовню-памятник героям Плевны у&nbsp;Ильинских ворот поставили в&nbsp;1887&nbsp;году на&nbsp;пожертвования.</li><li>Старый Английский двор на&nbsp;Варварке — одно из&nbsp;старейших гражданских каменных зданий Москвы.</li></ul></div>
+<div><h3>Зарядье и&nbsp;как добраться</h3><p>С&nbsp;1967 по&nbsp;2006&nbsp;год в&nbsp;Зарядье стояла гостиница «Россия», а&nbsp;в&nbsp;2017&nbsp;году здесь открыли парк. Его Парящий мост вылетает над набережной примерно на&nbsp;70&nbsp;метров без опоры на&nbsp;конце.</p><p>Квест начинается у&nbsp;метро «Театральная», а&nbsp;заканчивается в&nbsp;«Зарядье», в&nbsp;10&nbsp;минутах от&nbsp;метро «Китай-город».</p></div></div>
+  </div>
+</section>
+<!-- seo:end -->
+
+<section id="faq" class="c-sec" aria-labelledby="h-faq">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">спрашивают</span><h2 id="h-faq" class="c-h">Частые вопросы</h2></div>
+    <div class="c-faq"><details open><summary><h3>Где начинается и&nbsp;заканчивается квест?</h3></summary><p>Старт у&nbsp;фрагмента стены Китай-города рядом с&nbsp;гостиницей «Метрополь», в&nbsp;трёх минутах от&nbsp;метро «Театральная». Финиш на&nbsp;Парящем мосту в&nbsp;«Зарядье», до&nbsp;метро «Китай-город» около 10&nbsp;минут.</p></details><details><summary><h3>Сколько длится квест и&nbsp;сколько придётся идти?</h3></summary><p>По&nbsp;нашей оценке, 1,5–2 часа: 9&nbsp;точек и&nbsp;около 2,5&nbsp;км пешком.</p></details><details><summary><h3>Можно ли пройти квест с&nbsp;детьми?</h3></summary><p>Да. Основные загадки рассчитаны на&nbsp;взрослых и&nbsp;подростков, для младших есть задания по&nbsp;желанию: найти, сосчитать, рассмотреть.</p></details><details><summary><h3>Сколько стоит квест и&nbsp;сколько человек может играть?</h3></summary><p>990&nbsp;₽ за&nbsp;квест: один код доступа на&nbsp;всю компанию. Хватит одного телефона.</p></details><details><summary><h3>Когда можно будет пройти квест?</h3></summary><p>Квест в&nbsp;разработке. Дату запуска объявим в&nbsp;Telegram-канале «Дворами».</p></details><details><summary><h3>Нужно ли заходить в&nbsp;музеи или платные павильоны?</h3></summary><p>Нет. Все загадки решаются снаружи: по&nbsp;стенам, фасадам и&nbsp;надписям.</p></details><details><summary><h3>Что будет, если Парящий мост закрыт?</h3></summary><p>Тогда финал пройдёт у&nbsp;реки в&nbsp;парке: квест подскажет, куда встать.</p></details><details><summary><h3>Нужен ли интернет?</h3></summary><p>Да. Квест открывается в&nbsp;браузере телефона, дорогу к&nbsp;точкам показывает карта. Зарядите телефон перед стартом.</p></details><details><summary><h3>Что делать, если не&nbsp;получается разгадать загадку?</h3></summary><p>Открыть правку на&nbsp;полях. Подсказок три, и&nbsp;последняя — это ответ.</p></details></div>
+  </div>
+</section>
+
+<section id="buy" class="c-sec on-alt" aria-labelledby="h-buy">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">взять дело</span><h2 id="h-buy" class="c-h">Гранка ждёт наборщика</h2></div>
+    <div class="c-buy-card" data-cta>
+      <span class="price">990&nbsp;₽</span>
+      <span class="per">за квест, один код доступа на&nbsp;всю компанию</span>
+      <span class="status">В разработке</span>
+      <p>Квест в&nbsp;разработке, взять дело можно будет здесь. Напишем в&nbsp;Telegram, как только лист можно будет набирать.</p>
+      <div class="c-buy-actions">
+        <a class="c-btn" data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.5 3.6 2.9 10.8c-1.3.5-1.3 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM8.8 13.4l9.6-6c.5-.3.9-.1.5.2l-8 7.3-.3 3.4-1.8-4.9z" fill="currentColor"/></svg>Узнать о старте продаж</a>
+        <a class="c-link" href="#how">Как устроен квест</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="sources" class="c-sources" aria-label="Источники">
+  <div class="wrap">
+    <details>
+      <summary>Источники</summary>
+      <p>Исторические факты на&nbsp;этой странице сверены по&nbsp;публикациям:</p>
+      <ul><li><a href="https://weekend.rambler.ru/read/56505697-kak-v-moskve-poyavilsya-kitay-gorod/" rel="noopener" target="_blank">Рамблер — откуда название Китай-города</a></li><li><a href="https://um.mos.ru/places/tretyakovskiy-proezd/" rel="noopener" target="_blank">Узнай Москву — Третьяковский проезд</a></li><li><a href="https://www.mos.ru/news/item/96221073/" rel="noopener" target="_blank">mos.ru — Синодальная типография</a></li><li><a href="https://www.pnp.ru/social/pochemu-apostol-stal-pervoy-na-rusi-pechatnoy-knigoy.html" rel="noopener" target="_blank">«Парламентская газета» — «Апостол»</a></li><li><a href="https://www.mos.ru/news/item/44115073/" rel="noopener" target="_blank">mos.ru — часовня героям Плевны</a></li><li><a href="https://w.histrf.ru/articles/plevny-osada-1877-goda" rel="noopener" target="_blank">История.РФ — осада Плевны</a></li><li><a href="https://moskvichmag.ru/?p=235356" rel="noopener" target="_blank">Москвич Mag — Старый Английский двор</a></li><li><a href="https://bigenc.ru/geography/text/4681877" rel="noopener" target="_blank">Большая российская энциклопедия — Ричард Ченслер</a></li><li><a href="https://www.zaryadyepark.ru/history/" rel="noopener" target="_blank">Парк «Зарядье» — история места</a></li></ul>
+    </details>
   </div>
 </section>
 </main>
 
-<a class="fab" id="fab" href="#buy" aria-hidden="true" tabindex="-1">Купить · 990 ₽<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-
-<aside class="d-src" aria-label="Источники">
-  <div class="wrap">
-    <details>
-      <summary>Источники фактов</summary>
-      <ul>
-        <li><a href="https://bigenc.ru/fine_art/text/3136700" rel="noopener" target="_blank">Большая российская энциклопедия — Петрок Малый</a></li>
-        <li><a href="https://um.mos.ru/places/tretyakovskiy-proezd/" rel="noopener" target="_blank">Узнай Москву — Третьяковский проезд</a></li>
-        <li><a href="https://www.mos.ru/news/item/96221073/" rel="noopener" target="_blank">mos.ru — лев и&nbsp;единорог на&nbsp;Никольской</a></li>
-        <li><a href="https://en.scientificrussia.ru/historical-events/v-1564-godu-s-gosudareva-pecatnogo-dvora-vysla-pervaa-datirovannaa-russkaa-pecatnaa-kniga-apostol-2" rel="noopener" target="_blank">«Научная Россия» — «Апостол» 1564 года</a></li>
-        <li><a href="https://moskvichmag.ru/?p=345533" rel="noopener" target="_blank">Москвич Mag — здание биржи на Ильинке</a></li>
-        <li><a href="https://www.mos.ru/news/item/44115073/" rel="noopener" target="_blank">mos.ru — реставрация памятника героям Плевны</a></li>
-        <li><a href="https://w.histrf.ru/articles/plevny-osada-1877-goda" rel="noopener" target="_blank">Российское историческое общество (histrf.ru) — осада Плевны 1877&nbsp;года</a></li>
-        <li><a href="https://moskvichmag.ru/?p=235356" rel="noopener" target="_blank">Москвич Mag — палаты Старого Английского двора</a></li>
-        <li><a href="https://bigenc.ru/geography/text/4681877" rel="noopener" target="_blank">Большая российская энциклопедия — Ченслер</a></li>
-        <li><a href="https://www.zaryadyepark.ru/history/" rel="noopener" target="_blank">парк «Зарядье» — история Зарядья</a></li>
-      </ul>
-      <p>Персонажи и сюжет дела придуманы. Исторические факты на этой странице и в квесте сверены по источникам.</p>
-    </details>
-  </div>
-</aside>
+<a class="fab" id="fab" href="#buy" aria-hidden="true" tabindex="-1">Взять дело · 990&nbsp;₽<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 
 <footer class="site-footer">
   <div class="wrap">
-    <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F4F1EA" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F4F1EA" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#5FC2A4"/></svg><span>ДВОРАМИ</span></a>
-    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../#faq">Вопросы</a><a href="../../#contact">Связаться</a></nav>
+    <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F2EFE8" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F2EFE8" stroke-width="2.5"/><path d="M24 27.5l6 10.5H18z" fill="#E1251B"/></svg><span>ДВОРАМИ</span></a>
+    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../#faq">Вопросы</a><a href="../../#reviews">Отзывы</a><a data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Telegram-канал @dvorami_quest</a></nav>
   </div>
 </footer>
 <script src="../../assets/site.js" defer></script>

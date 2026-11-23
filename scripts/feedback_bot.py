@@ -48,6 +48,8 @@ OFFSET_FILE = ROOT / ".telegram" / "feedback-offset"
 MSK = ZoneInfo("Europe/Moscow")
 
 CHANNEL = "https://t.me/dvorami_quest"
+# Квесты для игроков живут в этом боте (указание владельца 22.11: бот команды — только для команды)
+QUESTS_URL = "https://jastiss.github.io/dvorami/moscow/"
 SITE = "https://jastiss.github.io/dvorami/"
 EXPIRE = 24 * 3600   # незаконченный диалог живёт сутки
 LOW = 3              # оценка не выше этой — сразу владельцу
@@ -72,6 +74,7 @@ _PII = [(re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"), "[почта]"),
 
 T = {
     "menu": "Здравствуйте! Это бот <b>Дворами</b> — квестов-прогулок по городу.\nЧем помочь?",
+    "menu_quests": "🕊 Выбрать квест",
     "menu_review": "⭐ Оставить отзыв",
     "menu_suggest": "🗺 Предложить район",
     "menu_question": "✉️ Вопрос команде",
@@ -226,7 +229,8 @@ class Bot:
     # ---------- диалоги ----------
 
     def menu(self, chat):
-        b = [[self.btn(T[f"menu_{f}"], "m", f, 0)] for f in FLOWS]
+        b = [[{"text": T["menu_quests"], "url": QUESTS_URL}]]
+        b += [[self.btn(T[f"menu_{f}"], "m", f, 0)] for f in FLOWS]
         self.send(chat, T["menu"], b)
 
     def begin(self, chat, user, flow, quest=None, data=None):

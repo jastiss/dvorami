@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Квест по Красной площади без гида: Стёртые имена | Дворами</title>
-<meta name="description" content="Квест-прогулка без гида по Красной площади и Александровскому саду: 9 точек, около 2 км, 1,5–2 часа. 990 ₽, один код на всю компанию.">
+<title>Квест по Красной площади без гида: «Дело о стёртых именах» | Дворами</title>
+<meta name="description" content="Квест-прогулка по Красной площади и Александровскому саду с обмерной ведомостью 1936 года: перемерьте площадь и решите, что вернуть. 9 точек, около 2 км, старт у Кутафьей башни. Квест в разработке.">
 <!-- ТЕСТОВЫЙ СТЕНД: снять noindex при выкладке на боевой домен -->
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://dvorami.ru/moscow/krasnaya-ploshchad-imena/">
-<meta name="theme-color" content="#141A33">
+<meta name="theme-color" content="#123E6E">
 <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Дворами">
 <meta property="og:locale" content="ru_RU">
 <meta property="og:title" content="Дело о стёртых именах — квест-прогулка по Красной площади">
-<meta property="og:description" content="С этой площади убирали ворота, собор и даже имена. Проверьте по тетради каменотёса, что вернулось на место. Квест-прогулка без гида.">
+<meta property="og:description" content="С этой площади убирали реку, ворота, собор и памятник. Перемерьте за бригадой 1936 года и решите, что вернуть. Квест-прогулка без гида.">
 <meta property="og:url" content="https://dvorami.ru/moscow/krasnaya-ploshchad-imena/">
 <meta property="og:image" content="https://dvorami.ru/assets/og/main.png">
 <meta property="og:image:width" content="1200">
@@ -23,10 +23,12 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Дело о стёртых именах — квест-прогулка по Красной площади">
 <meta name="twitter:image" content="https://dvorami.ru/assets/og/main.png">
-<link rel="preload" href="../../assets/fonts/alegreya-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="../../assets/fonts/alegreya-sans-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../assets/fonts/golos-text-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../assets/fonts/golos-text-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../assets/fonts/neucha-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/fonts.css">
 <link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="../../assets/case.css">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
 {
@@ -39,12 +41,21 @@
    "url": "https://dvorami.ru/"
   },
   {
-   "@type": "TouristTrip",
+   "@type": [
+    "TouristTrip",
+    "Product"
+   ],
    "@id": "https://dvorami.ru/moscow/krasnaya-ploshchad-imena/#quest",
    "name": "Дело о стёртых именах — квест-прогулка по Красной площади",
-   "description": "Детективный квест-прогулка без гида по Красной площади: 9 точек, около 2 км, 1,5–2 часа. Квест открывается в браузере телефона, один код на всю компанию. Готовится к запуску.",
+   "description": "Квест-прогулка без гида по Красной площади и Александровскому саду: 9 точек, около 2 км, 1,5–2 часа. Старт у Кутафьей башни, в 3 минутах от метро «Александровский сад», финиш у памятника Минину и Пожарскому, около 10 минут до метро «Площадь Революции». Квест в разработке.",
    "url": "https://dvorami.ru/moscow/krasnaya-ploshchad-imena/",
+   "image": [
+    "https://dvorami.ru/assets/og/main.png"
+   ],
    "inLanguage": "ru",
+   "brand": {
+    "@id": "https://dvorami.ru/#org"
+   },
    "provider": {
     "@id": "https://dvorami.ru/#org"
    },
@@ -68,20 +79,25 @@
      "name": "Александровский сад"
     },
     {
+     "@type": "Place",
+     "name": "Казанский собор на Красной площади"
+    },
+    {
      "@type": "Person",
-     "name": "Кузьма Минин"
+     "name": "Пётр Барановский"
     }
    ],
    "itinerary": {
     "@type": "ItemList",
     "itemListOrder": "https://schema.org/ItemListUnordered",
+    "numberOfItems": 9,
     "itemListElement": [
      {
       "@type": "ListItem",
       "position": 1,
       "item": {
        "@type": "Place",
-       "name": "Кутафья башня"
+       "name": "Кутафья башня — старт"
       }
      },
      {
@@ -89,7 +105,7 @@
       "position": 2,
       "item": {
        "@type": "Place",
-       "name": "Манеж"
+       "name": "Александровский сад"
       }
      },
      {
@@ -97,7 +113,7 @@
       "position": 3,
       "item": {
        "@type": "Place",
-       "name": "Александровский сад"
+       "name": "Казанский собор"
       }
      },
      {
@@ -105,23 +121,7 @@
       "position": 4,
       "item": {
        "@type": "Place",
-       "name": "Воскресенские ворота"
-      }
-     },
-     {
-      "@type": "ListItem",
-      "position": 5,
-      "item": {
-       "@type": "Place",
-       "name": "Казанский собор"
-      }
-     },
-     {
-      "@type": "ListItem",
-      "position": 6,
-      "item": {
-       "@type": "Place",
-       "name": "Лобное место"
+       "name": "Памятник Минину и Пожарскому — финиш"
       }
      }
     ]
@@ -131,7 +131,7 @@
     "price": "990",
     "priceCurrency": "RUB",
     "url": "https://dvorami.ru/moscow/krasnaya-ploshchad-imena/",
-    "description": "Цена за квест, один код доступа на всю компанию. Продажи скоро откроются.",
+    "description": "Цена за квест, один код доступа на всю компанию. Квест в разработке.",
     "seller": {
      "@id": "https://dvorami.ru/#org"
     }
@@ -166,18 +166,10 @@
    "mainEntity": [
     {
      "@type": "Question",
-     "name": "Сколько стоит квест?",
+     "name": "Где начинается и заканчивается квест?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "990 ₽ за квест. Один код на всю компанию: играть можно одному, вдвоём, с друзьями или семьёй. Продажи ещё не открыты, о старте объявим в Telegram-канале «Дворами»."
-     }
-    },
-    {
-     "@type": "Question",
-     "name": "Где начинается и где заканчивается квест?",
-     "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Начинается у Кутафьей башни, в трёх минутах от метро «Александровский сад». Заканчивается на Красной площади, откуда около 10 минут пешком до метро «Площадь Революции»."
+      "text": "Старт у Кутафьей башни, в трёх минутах от метро «Александровский сад». Финиш у памятника Минину и Пожарскому на Красной площади: до метро «Площадь Революции» около 10 минут."
      }
     },
     {
@@ -190,10 +182,26 @@
     },
     {
      "@type": "Question",
-     "name": "Что будет, если Красную площадь перекроют?",
+     "name": "Можно ли пройти квест с детьми?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "Площадь иногда закрывают на парады, репетиции и концерты. Первая половина квеста проходит у Кремля и в Александровском саду, а финал — на самой площади. Если площадь закрыта, выберите для квеста другой день."
+      "text": "Да. Основные загадки рассчитаны на взрослых и подростков, для младших есть задания по желанию. Страшных сцен в квесте нет."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Сколько стоит квест и сколько человек может играть?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "990 ₽ за квест: один код доступа на всю компанию. Хватит одного телефона."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Когда можно будет пройти квест?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Квест в разработке. Дату запуска объявим в Telegram-канале «Дворами»."
      }
     },
     {
@@ -206,10 +214,26 @@
     },
     {
      "@type": "Question",
-     "name": "Можно ли пройти квест с детьми?",
+     "name": "Что будет, если Красную площадь перекроют?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "Да. Основные загадки рассчитаны на взрослых и подростков, а для младших есть задания по желанию. Страшных сцен в квесте нет."
+      "text": "Площадь иногда закрывают на парады, репетиции и концерты. Первая половина квеста проходит у Кремля и в саду, а финал — на самой площади. Если она закрыта, вторую половину лучше пройти в другой день."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Нужен ли интернет?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Да. Квест открывается в браузере телефона, дорогу к точкам показывает карта. Зарядите телефон перед стартом."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Что делать, если не получается разгадать загадку?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Открыть приём обмерщика. Их три, и третий — готовый ответ с объяснением."
      }
     }
    ]
@@ -217,299 +241,175 @@
  ]
 }
 </script>
-<style>
-.theme-delo{--bg:#141A33;--bg2:#1E2547;--paper:#F4EEE6;--ink:#231C1A;--ink2:#4A3F3B;--acc:#E8705F;--acc2:#F39A8C;
- --text:#F4F1EA;--text-2:#D3D6E2;--text-3:#AAB0C6;--line:rgba(255,255,255,.16);--accent:var(--acc);--accent-hover:var(--acc2);--on-accent:#14121E;--sky:var(--acc2);
- --font-display:'Alegreya',Georgia,serif;--font-text:'Alegreya Sans',system-ui,sans-serif;--font-hand:'Neucha','Segoe Print',cursive;
- background:var(--bg);background-image:none;color:var(--text);font-family:var(--font-text);font-size:19px}
-.theme-delo .logo{font-family:var(--font-display);font-weight:700;font-size:25px;letter-spacing:.02em}
-.theme-delo .nav a:not(.btn){color:var(--text-2)}
-.theme-delo .nav a:not(.btn):hover{color:var(--acc2)}
-.d-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:12px 26px;border-radius:999px;background:var(--acc);color:var(--on-accent)!important;text-decoration:none;font-weight:700;font-size:18px;transition:background .2s,transform .2s}
-.d-btn:hover{background:var(--acc2);transform:translateY(-2px)}
-.theme-delo .nav .btn.d-btn{min-height:44px;padding:8px 18px;font-size:16px}
-.d-btn svg{width:20px;height:20px;flex:none}
-.d-h{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,5vw,54px);line-height:1.06}
-.d-h em{font-weight:500;font-style:italic;color:var(--acc2)}
-.d-light .d-h em{color:var(--ink2)}
-.d-sec{padding:60px 0}
-@media(min-width:900px){.d-sec{padding:96px 0}}
-.d-light{background:var(--paper);color:var(--ink)}
-.d-light p,.d-light li{color:var(--ink2)}
-.d-light a{color:var(--ink)}
-.d-light :focus-visible{outline-color:var(--ink)}
-/* hero */
-.d-hero{background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);overflow:hidden}
-.d-hero .wrap{display:grid;gap:28px;padding-top:8px;padding-bottom:48px}
-@media(min-width:1000px){.d-hero .wrap{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);align-items:center;gap:56px;padding-bottom:80px}}
-.theme-delo .crumbs a{color:var(--text-2)}
-.theme-delo .case-plaque{color:var(--acc2)}
-.d-hero h1{margin-top:14px;font-family:var(--font-display);font-weight:700;line-height:1.02;color:#fff}
-.d-hero h1 .k{display:block;font-family:var(--font-text);font-weight:500;font-size:clamp(18px,2.2vw,22px);line-height:1.3;color:var(--acc2);margin-bottom:10px}
-.d-hero h1 .t{display:block;font-size:clamp(40px,8vw,84px);overflow-wrap:anywhere}
-.d-hero .intro{margin-top:20px;font-size:20px;max-width:32em;color:var(--text-2)}
-.d-hero .intro b{color:#fff;font-weight:500}
-.d-cta{margin-top:28px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px}
-.d-cta .alt{color:var(--acc2)}
-.d-note{margin-top:12px;font-size:16px;color:var(--text-3);max-width:30em}
-.d-art{margin:0;border-radius:22px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(0,0,0,.7);border:1px solid var(--line)}
-.d-art img{width:100%;height:auto;aspect-ratio:4/3;display:block}
-.d-art figcaption{padding:10px 16px;font-size:15px;color:var(--text-3);background:rgba(0,0,0,.25)}
-/* stats */
-.d-stats{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.d-stats ul{list-style:none;margin:0;padding:22px 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-@media(min-width:900px){.d-stats ul{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.d-stats li{padding:14px 16px;border-left:3px solid var(--acc);color:var(--text-2);font-size:16px;line-height:1.3}
-.d-stats .n{display:block;font-family:var(--font-display);font-weight:700;font-size:32px;color:#fff;line-height:1.05}
-/* story */
-.d-story .grid{display:grid;gap:32px;margin-top:22px}
-@media(min-width:960px){.d-story .grid{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:56px}}
-.d-story p{font-size:20px;max-width:34em}
-.d-story p+p{margin-top:14px}
-.d-file{background:#fff;border-radius:6px 22px 22px 22px;padding:24px 22px;box-shadow:0 18px 40px -28px rgba(0,0,0,.5);border-top:6px solid var(--acc)}
-.d-file h3{font-family:var(--font-display);font-size:24px;color:var(--ink)}
-.d-file dl{margin:12px 0 0}
-.d-file dt{margin-top:14px;font-weight:700;color:var(--ink)}
-.d-file dd{margin:2px 0 0;color:var(--ink2);font-size:18px}
-/* how */
-.d-steps{list-style:none;padding:0;margin:36px 0 0;display:grid;gap:18px;counter-reset:s}
-@media(min-width:900px){.d-steps{grid-template-columns:repeat(5,minmax(0,1fr))}}
-.d-steps li{counter-increment:s;padding:20px 18px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.03)}
-.d-steps li::before{content:counter(s);display:inline-grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--acc);color:var(--on-accent);font-weight:700;font-family:var(--font-display);font-size:20px}
-.d-steps h3{margin-top:12px;font-family:var(--font-display);font-size:22px;line-height:1.15;color:#fff}
-.d-steps p{margin-top:6px;font-size:17px;color:var(--text-2)}
-/* spots */
-.d-spots .lead2{margin-top:14px;font-size:19px;max-width:36em}
-.d-cards{list-style:none;padding:0;margin:32px 0 0;display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
-@media(min-width:700px){.d-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(min-width:1100px){.d-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.d-cards li{background:#fff;border-radius:16px;padding:20px 20px 22px;border-left:5px solid var(--acc);box-shadow:0 14px 30px -24px rgba(0,0,0,.45)}
-.d-cards h3{font-family:var(--font-display);font-size:24px;color:var(--ink);line-height:1.15}
-.d-cards p{margin-top:6px;font-size:18px}
-/* world */
-.d-world ul{list-style:none;padding:0;margin:30px 0 0;display:grid;gap:16px}
-@media(min-width:900px){.d-world ul{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 40px}}
-.d-world li{position:relative;padding-left:34px;font-size:19px;color:var(--text-2)}
-.d-world li::before{content:"";position:absolute;left:0;top:.45em;width:16px;height:16px;border-radius:50%;border:3px solid var(--acc)}
-/* who */
-.d-who .grid{display:grid;gap:24px;margin-top:26px}
-@media(min-width:900px){.d-who .grid{grid-template-columns:1.3fr 1fr;gap:48px}}
-.d-who p{font-size:19px}
-.d-who p+p{margin-top:12px}
-.d-who .tip{padding:22px;border-radius:18px;background:#fff;border:1px solid rgba(0,0,0,.08)}
-.d-who .tip h3{font-family:var(--font-display);font-size:23px;color:var(--ink)}
-.d-who .tip p{margin-top:8px;font-size:18px}
-/* faq */
-.theme-delo .faq{margin-top:28px;max-width:860px}
-.theme-delo .d-light .faq details{border-color:rgba(0,0,0,.14)}
-.theme-delo .d-light .faq summary h3{font-size:20px;font-weight:700;color:var(--ink)}
-.theme-delo .d-light .faq summary::after{color:var(--ink);font-family:var(--font-display)}
-.theme-delo .d-light .faq p{padding:0 0 20px;font-size:18px;max-width:44em}
-/* buy */
-.d-buy{text-align:center}
-.d-buy .price{display:block;margin-top:14px;font-family:var(--font-display);font-weight:700;font-size:56px;color:#fff;line-height:1}
-.d-buy .per{display:block;margin-top:6px;color:var(--text-2);font-size:19px}
-.d-buy .d-btn{margin-top:26px}
-.d-buy .d-note{margin:14px auto 0}
-/* sources */
-.d-src{background:var(--bg);padding:28px 0 40px}
-.d-src details{border-top:1px solid var(--line);padding-top:12px;max-width:60em}
-.d-src summary{cursor:pointer;color:var(--text-2);font-size:17px;padding:8px 0;min-height:44px;display:flex;align-items:center}
-.d-src ul{margin:8px 0 0;padding-left:1.2em;font-size:15px;color:var(--text-3);display:grid;gap:6px}
-.d-src a{color:var(--text-2);overflow-wrap:anywhere}
-.d-src p{font-size:15px;color:var(--text-3);margin-top:10px}
-.theme-delo .site-footer{border-top:1px solid var(--line)}
-.theme-delo .site-footer .wrap{color:var(--text-3)}
-.theme-delo .site-footer a{color:var(--text-2)}
-</style>
 <script src="../../assets/analytics.js" defer></script>
 </head>
-<body class="theme-delo">
+<body class="case-page t-chertezh">
 <a class="skip" href="#main">К содержанию</a>
 
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="../../" aria-label="Дворами — на главную">
-      <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F4F1EA" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F4F1EA" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#E8705F"/></svg>
-      <span>ДВОРАМИ</span>
-    </a>
+    <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F2EFE8" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F2EFE8" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#E1251B"/></svg><span>ДВОРАМИ</span></a>
     <nav class="nav" aria-label="Навигация по странице">
       <a href="#story">Сюжет</a>
-      <a href="#how">Как проходит</a>
       <a href="#spots">Что увидите</a>
-      <a href="#faq">Вопросы</a>
-      <a class="btn d-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank">Купить · 990 ₽</a>
+      <a href="#how">Загадки</a>
+      <a href="#practical">Что нужно знать</a>
+      <a class="nav-tg" data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener" aria-label="Telegram-канал «Дворами»"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.5 3.6 2.9 10.8c-1.3.5-1.3 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM8.8 13.4l9.6-6c.5-.3.9-.1.5.2l-8 7.3-.3 3.4-1.8-4.9z" fill="currentColor"/></svg><span>Telegram</span></a>
+      <a class="c-btn c-btn--sm" href="#buy">Взять дело</a>
     </nav>
   </div>
 </header>
 
 <main id="main">
-<section class="d-hero" aria-labelledby="h1">
+<section id="top" class="c-hero" aria-labelledby="h1">
+  
   <div class="wrap">
     <div>
-      <nav class="crumbs" aria-label="Хлебные крошки">
-        <ol>
-          <li><a href="../../">Главная</a></li>
-          <li><a href="../">Квесты по Москве</a></li>
-          <li aria-current="page">Дело №4 · Стёртые имена</li>
-        </ol>
-      </nav>
-      <span class="case-plaque">Дело №4 · Стёртые имена</span>
-      <h1 id="h1"><span class="k">Квест-прогулка по Красной площади:</span> <span class="t">Дело №4 «Стёртые имена»</span></h1>
-      <p class="intro">1918 год. Каменотёс Фрол стёсывает с обелиска в Александровском саду царские имена и записывает в тетрадь всё, что с этой площади уберут. Внизу он приписывает: <b>«Всё вернётся, кроме одного»</b>.</p>
-      <p class="intro">Прошло больше ста лет. Проверьте его список на месте: что вернулось, что переехало и что так и не вернулось.</p>
-      <div class="d-cta" data-cta>
-        <a class="d-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2 10h11l2-7H7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/><circle cx="9" cy="19" r="1.6" fill="currentColor"/><circle cx="17" cy="19" r="1.6" fill="currentColor"/></svg>Купить квест · 990 ₽</a>
-        <a class="alt" href="#how">Как устроен квест</a>
+      <nav class="c-crumbs" aria-label="Хлебные крошки"><ol><li><a href="../../">Главная</a></li><li><a href="../">Квесты по Москве</a></li><li aria-current="page">Дело №4 · Стёртые имена</li></ol></nav>
+      <span class="c-plaque">Дело №4 · Стёртые имена</span>
+      <h1 id="h1"><span class="pre">Квест-прогулка по Красной площади и&nbsp;Александровскому саду</span><span class="big">Дело о&nbsp;стёртых именах</span></h1>
+      <p class="c-intro">С&nbsp;этой площади убирали реку, ворота, собор и&nbsp;памятник. В&nbsp;1936&nbsp;году бригада обмерщиков меряла всё, что успевала: <b>что измерено, то&nbsp;можно поставить снова</b>.</p><p class="c-intro">Перемерьте площадь за&nbsp;бригадой по&nbsp;её ведомости — и&nbsp;решите сами, что вернуть.</p>
+      <div class="c-cta" data-cta>
+        <a class="c-btn" href="#buy">Взять дело · <span class="p">990&nbsp;₽</span></a>
+        <a class="c-link" href="#how">Как устроен квест</a>
+        <p class="c-status">В разработке. 990&nbsp;₽ — один код доступа на&nbsp;всю компанию.</p>
       </div>
-      <p class="d-note">Один код на всю компанию. Продажи скоро откроются. Пока кнопка ведёт в наш Telegram-канал: там мы первыми объявим старт.</p>
     </div>
-    <figure class="d-art">
-      <img src="../../assets/ill/case-04.svg" alt="Красная площадь: слева длинный фасад ГУМа с огнями, в глубине Покровский собор с разноцветными куполами и Спасская башня со звездой, по площади гуляют люди." width="1200" height="900" fetchpriority="high">
-      <figcaption>Красная площадь</figcaption>
-    </figure>
+    <figure class="c-cover"><img src="../../assets/ill/hero-krasnaya.svg" alt="Обмерный чертёж синькой: собор с кокошниками и шатровой колокольней, кремлёвская стена с зубцами и башни, оси штрих-пунктиром и размерные стрелки." width="1200" height="900" fetchpriority="high"></figure>
   </div>
 </section>
 
-<section class="d-stats" aria-label="Квест в цифрах">
-  <div class="wrap">
-    <ul>
-      <li><span class="n">9</span>точек</li>
-      <li><span class="n">≈2 км</span>пешком</li>
-      <li><span class="n">1,5–2 ч</span>в своём темпе</li>
-      <li><span class="n">М</span>старт у метро «Александровский сад»</li>
-    </ul>
-  </div>
+<section id="facts" class="c-facts" aria-label="Квест в цифрах">
+  <div class="wrap"><ul><li><span class="n">9</span>точек</li><li><span class="n">≈2&nbsp;км</span>пешком</li><li><span class="n">1,5–2&nbsp;ч</span>в&nbsp;своём темпе</li><li><span class="n">0+</span>младшим — задания по&nbsp;желанию</li><li><span class="n">М</span>старт у&nbsp;метро «Александровский сад»</li></ul></div>
 </section>
 
-<section id="story" class="d-sec d-light d-story" aria-labelledby="h-story">
+<section id="story" class="c-sec on-paper" aria-labelledby="h-story">
   <div class="wrap">
-    <h2 id="h-story" class="d-h">Тетрадь <em>каменотёса</em></h2>
-    <div class="grid">
-      <div>
-        <p>В списке Фрола река, ворота, собор, имена и даже памятник. Одни вещи с площади убрали, другие перенесли, третьи вернули через десятки лет. На каждой точке вы проверяете один пункт по тому, что видно своими глазами.</p>
-        <p>Мешать будет Молва — городской слух. Она уверенно рассказывает страшные и красивые истории, и каждую можно опровергнуть на месте.</p>
-      </div>
-      <div class="d-file">
-        <h3>Кто есть кто</h3>
-        <dl>
-          <dt>Фрол</dt><dd>каменотёс, ведёт дело. Когда вы застрянете, подскажет вопросом, а не готовым ответом.</dd>
-          <dt>Молва</dt><dd>городской слух. Её версии звучат убедительно, но не выдерживают проверки.</dd>
-          <dt>Свидетели</dt><dd>садовник, берейтор, приказчик торговых рядов и другие. Каждый помнит свою эпоху.</dd>
-        </dl>
-      </div>
+    <div class="c-head"><span class="c-kicker">сюжет</span><h2 id="h-story" class="c-h">Обмерная ведомость 1936&nbsp;года</h2></div>
+    <div class="c-story-grid">
+      <div class="c-prose"><p>1936&nbsp;год. Площадь перестраивают под парады. Чертёжница Ася работает в&nbsp;бригаде обмерщиков и&nbsp;ведёт ведомость: строка на&nbsp;каждый объект, графы «Было», «Обмер», «Вернуть?».</p><p>Часть граф пустая: что-то снесли раньше, чем она пришла, что-то она не&nbsp;успела. Внизу приписка тому, кто придёт потом. Это вы. На&nbsp;каждой точке вы заполняете строку тем, что насчитали или увидели сами, и&nbsp;узнаёте, вернули объект или нет.</p><p class="c-cliff">Последнюю графу Ася оставила пустой нарочно. Её заполните вы.</p></div>
+      <div class="c-artifact" data-reveal><div class="vedomost"><p class="ttl">Обмерная ведомость. Красная площадь и&nbsp;сад. 1936&nbsp;г.</p><p class="sub">чертёжница Ася Л.</p>
+<table><thead><tr><th scope="col">Строка</th><th scope="col">Было</th><th scope="col">Обмер</th><th scope="col">Вернуть?</th></tr></thead>
+<tbody><tr><td>1. Мост без реки</td><td>мост</td><td class="blank"></td><td class="blank"></td></tr>
+<tr><td>2. Зал без опор</td><td>манеж</td><td class="blank"></td><td class="blank"></td></tr>
+<tr><td>3. Стена или нет</td><td class="pencil">гипотеза?</td><td class="blank"></td><td class="blank"></td></tr>
+<tr><td>…ещё шесть строк</td><td></td><td class="blank"></td><td class="blank"></td></tr></tbody></table>
+<p class="post">Тому, кто будет возвращать: перемерьте за&nbsp;мной. И&nbsp;последнюю графу заполните сами.</p></div></div>
     </div>
   </div>
 </section>
 
-<section id="how" class="d-sec" aria-labelledby="h-how">
+<section id="cast" class="c-sec" aria-labelledby="h-cast">
   <div class="wrap">
-    <h2 id="h-how" class="d-h">Как проходит <em>квест</em></h2>
-    <ol class="d-steps">
-      <li><h3>Приходите к Кутафьей башне</h3><p>Откройте квест в браузере телефона. Одного телефона хватит на всю компанию.</p></li>
-      <li><h3>Читайте тетрадь Фрола</h3><p>На каждой точке вас ждут короткая сцена, свидетель и один пункт списка.</p></li>
-      <li><h3>Проверяйте на месте</h3><p>Загадки разные: рассудить спор двух версий, опровергнуть слух, сосчитать, сопоставить годы.</p></li>
-      <li><h3>Застряли — спросите Фрола</h3><p>У каждой загадки три подсказки, третья — ответ. Проиграть нельзя.</p></li>
-      <li><h3>Назовите, что не вернулось</h3><p>В финале вы сведёте улики и ответите на главный вопрос дела.</p></li>
-    </ol>
+    <div class="c-head"><span class="c-kicker">кто ведёт дело</span><h2 id="h-cast" class="c-h">Чертёжница, обмерщик и&nbsp;три приёма</h2></div>
+    <div class="c-cast"><blockquote class="c-quote">«Сегодня сломали ворота. Я&nbsp;успела зарисовать только верх»<footer>Ася, пометка на&nbsp;полях ведомости</footer></blockquote><dl class="c-people"><div><dt>Ася</dt><dd>чертёжница бригады обмерщиков 1936&nbsp;года (персонаж вымышленный). Пишет коротко, по-чертёжному: ось, пролёт, модуль. Иногда — одна живая фраза.</dd></div><div><dt>Вы — обмерщик</dt><dd>идёте по&nbsp;ведомости и&nbsp;перемеряете за&nbsp;бригадой: считаете, сверяете натуру с&nbsp;эскизом, находите ось.</dd></div><div><dt>Приёмы обмерщика</dt><dd>так здесь устроены подсказки. Их три: направление мысли, почти готовый обмер и&nbsp;сам обмер с&nbsp;объяснением.</dd></div></dl></div>
   </div>
 </section>
 
-<section id="spots" class="d-sec d-light d-spots" aria-labelledby="h-spots">
+<section id="spots" class="c-sec on-paper" aria-labelledby="h-spots">
   <div class="wrap">
-    <h2 id="h-spots" class="d-h">Что вы <em>увидите</em></h2>
-    <p class="lead2">Шесть мест с маршрута, не по порядку. Куда идти дальше, квест подскажет на месте.</p>
-    <ul class="d-cards">
-      <li><h3>Кутафья башня</h3><p>Белая башня перед Кремлём и каменный мост над садом. Садовник 1820-х расскажет о нём странную вещь.</p></li>
-      <li><h3>Манеж</h3><p>Длинный фасад с колоннами и вопрос от берейтора 1817 года.</p></li>
-      <li><h3>Грот в Александровском саду</h3><p>Молва уверяет, что это развалины древней стены. Проверьте.</p></li>
-      <li><h3>Воскресенские ворота</h3><p>Красные ворота с двумя проездами, которые однажды исчезли с площади.</p></li>
-      <li><h3>Казанский собор</h3><p>Два свидетеля спорят о его возрасте, и оба правы.</p></li>
-      <li><h3>Лобное место</h3><p>Самое страшное место площади, если верить Молве.</p></li>
-    </ul>
-  </div>
-</section>
-
-<section class="d-sec d-world" aria-labelledby="h-world">
-  <div class="wrap">
-    <h2 id="h-world" class="d-h">Что узнаете <em>по дороге</em></h2>
-    <ul>
-      <li>Икона в часовне у Воскресенских ворот — копия знаменитой иконы с горы Афон в Греции.</li>
-      <li>Манеж в 1817 году строили при участии испанского инженера Агустина Бетанкура.</li>
-      <li>Кутафья — единственная сохранившаяся предмостная башня Кремля.</li>
-      <li>Памятник Минину и Пожарскому 1818 года — первый скульптурный памятник Москвы.</li>
-    </ul>
-  </div>
-</section>
-
-<section class="d-sec d-light d-who" aria-labelledby="h-who">
-  <div class="wrap">
-    <h2 id="h-who" class="d-h">Для кого <em>этот квест</em></h2>
-    <div class="grid">
-      <div>
-        <p>Для тех, кто был на Красной площади сто раз и хочет увидеть то, чего раньше не замечал, и для гостей Москвы, которым мало фотографии у Покровского собора.</p>
-        <p>Играть можно одному, вдвоём, с друзьями или семьёй. Знать историю заранее не нужно: всё, что понадобится для разгадки, вы увидите по дороге.</p>
-      </div>
-      <div class="tip">
-        <h3>Если с вами младшие</h3>
-        <p>Для них есть задания по желанию: сосчитать, найти, рассмотреть. На разгадку они не влияют. У Могилы Неизвестного солдата квест просит пройти тихо и не задерживаться.</p>
+    <div class="c-head"><span class="c-kicker">что увидите</span><h2 id="h-spots" class="c-h">Что вы увидите</h2><p class="c-lead">Шесть мест из&nbsp;девяти, не&nbsp;по&nbsp;порядку — в&nbsp;эскизах Аси. Куда идти дальше, подскажет квест.</p></div>
+    <div class="c-carousel" data-carousel>
+      <ul class="c-track" data-shuffle tabindex="0" aria-label="Места на маршруте, листаются вбок"><li class="c-spot"><figure><img src="../../assets/ill/spots/rs-kutafya.svg" alt="Эскиз синькой: белая башня с зубцами и проездной аркой, от неё уходит мост." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Кутафья башня</h3><p>Белая башня перед Кремлём и&nbsp;каменный мост за&nbsp;ней. Что под этим мостом — проверьте сами.</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/rs-manezh.svg" alt="Эскиз синькой: длинное здание под широкой крышей, под крышей стропила без опор." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Манеж</h3><p>Длинный фасад и&nbsp;огромный зал за&nbsp;ним. Обмерщику здесь есть что посчитать.</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/rs-grot.svg" alt="Эскиз синькой: грот с аркадой у подножия зубчатой стены." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Грот у&nbsp;кремлёвской стены</h3><p>Говорят, это развалины древней стены. Ася записала эту гипотезу и&nbsp;не&nbsp;успела проверить.</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/rs-kazan.svg" alt="Эскиз синькой: фасад небольшого собора с кокошниками и шатровая колокольня." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Казанский собор</h3><p>Его не&nbsp;было на&nbsp;площади больше полувека. Сколько именно — посчитаете на&nbsp;месте.</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/rs-gum.svg" alt="Эскиз синькой: длинный фасад торговых рядов в перспективе с высоким входом посередине." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Торговые ряды</h3><p>Длинные ряды с&nbsp;главным входом посередине. Куда смотрит их ось?</p></li><li class="c-spot"><figure><img src="../../assets/ill/spots/rs-lobnoe.svg" alt="Эскиз синькой: круглый каменный помост в плане и сбоку." width="1200" height="900" loading="lazy" decoding="async"></figure><h3>Лобное место</h3><p>Круглый каменный помост с&nbsp;самой мрачной славой на&nbsp;площади. Заслуженной ли?</p></li></ul>
+      <div class="c-car-nav">
+        <button type="button" data-dir="-1" aria-label="Предыдущее место"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H6M11 6.5 5.5 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" data-dir="1" aria-label="Следующее место"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span class="c-car-count" aria-live="polite"></span>
+        <span class="c-car-hint" aria-hidden="true">листайте вбок</span>
       </div>
     </div>
   </div>
 </section>
 
-<section id="faq" class="d-sec d-light" aria-labelledby="h-faq" style="padding-top:0">
+<section id="learn" class="c-sec" aria-labelledby="h-learn">
   <div class="wrap">
-    <h2 id="h-faq" class="d-h">Вопросы <em>и ответы</em></h2>
-    <div class="faq">
-      <details><summary><h3>Сколько стоит квест?</h3></summary><p>990 ₽ за квест. Один код на всю компанию: играть можно одному, вдвоём, с друзьями или семьёй. Продажи ещё не открыты, о старте объявим в Telegram-канале «Дворами».</p></details>
-      <details><summary><h3>Где начинается и где заканчивается квест?</h3></summary><p>Начинается у Кутафьей башни, в трёх минутах от метро «Александровский сад». Заканчивается на Красной площади, откуда около 10 минут пешком до метро «Площадь Революции».</p></details>
-      <details><summary><h3>Сколько длится квест и сколько придётся идти?</h3></summary><p>По нашей оценке, 1,5–2 часа: 9 точек и около 2 км пешком.</p></details>
-      <details><summary><h3>Что будет, если Красную площадь перекроют?</h3></summary><p>Площадь иногда закрывают на парады, репетиции и концерты. Первая половина квеста проходит у Кремля и в Александровском саду, а финал — на самой площади. Если площадь закрыта, выберите для квеста другой день.</p></details>
-      <details><summary><h3>Нужно ли заходить в Кремль или в музеи?</h3></summary><p>Нет. Все загадки решаются снаружи, на площади и в Александровском саду. Билеты не нужны.</p></details>
-      <details><summary><h3>Можно ли пройти квест с детьми?</h3></summary><p>Да. Основные загадки рассчитаны на взрослых и подростков, а для младших есть задания по желанию. Страшных сцен в квесте нет.</p></details>
+    <div class="c-head"><span class="c-kicker">что узнаете по дороге</span><h2 id="h-learn" class="c-h">Что узнаете по&nbsp;дороге</h2></div>
+    <ol class="c-learn"><li>Над чем на&nbsp;самом деле перекинут каменный мост к&nbsp;Кремлю.</li><li>Почему огромный зал напротив Кремля стоит без единой внутренней опоры.</li><li>Из&nbsp;чего сложен грот у&nbsp;кремлёвской стены.</li><li>Как собор, которого не&nbsp;было больше полувека, вернули на&nbsp;его угол.</li><li>Кто на&nbsp;площади стоит не&nbsp;там, где стоял сто с&nbsp;лишним лет.</li></ol>
+  </div>
+</section>
+
+<section id="how" class="c-sec on-alt" aria-labelledby="h-how">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">как устроены загадки</span><h2 id="h-how" class="c-h">Не&nbsp;детектив, а&nbsp;обмер</h2></div>
+    <div class="c-how">
+      <div class="c-prose"><p>Здесь никого не&nbsp;ловят. Вы перемеряете площадь: находите то, что повторяется, и&nbsp;считаете; сверяете натуру с&nbsp;эскизом Аси; проводите ось и&nbsp;смотрите, куда она ведёт; проверяете гипотезу по&nbsp;кладке.</p><p>Каждый ответ — строка ведомости. Застряли — откройте приём обмерщика: их три, третий — готовый обмер с&nbsp;объяснением.</p></div>
+      <ol class="c-steps"><li><h3>Берёте дело</h3><p>Один код доступа на&nbsp;всю компанию. Квест в&nbsp;разработке, о&nbsp;старте объявим в&nbsp;Telegram.</p></li><li><h3>Приходите к&nbsp;Кутафьей башне</h3><p>Три минуты от&nbsp;метро «Александровский сад». Квест открывается в&nbsp;браузере телефона.</p></li><li><h3>Заполняете ведомость</h3><p>На&nbsp;каждой точке — строка: что было, что вы намерили, вернули&nbsp;ли.</p></li><li><h3>Решаете последнюю строку</h3><p>В&nbsp;финале нет верного ответа — есть ваш. Концовок две.</p></li></ol>
     </div>
   </div>
 </section>
 
-<section id="buy" class="d-sec d-buy" data-cta aria-labelledby="h-buy">
+<section id="world" class="c-sec on-paper" aria-labelledby="h-world">
   <div class="wrap">
-    <h2 id="h-buy" class="d-h">Дело о стёртых именах</h2>
-    <span class="price">990 ₽</span>
-    <span class="per">за квест · один код на всю компанию</span>
-    <a class="d-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2 10h11l2-7H7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/><circle cx="9" cy="19" r="1.6" fill="currentColor"/><circle cx="17" cy="19" r="1.6" fill="currentColor"/></svg>Купить квест</a>
-    <p class="d-note">Продажи скоро откроются. Пока кнопка ведёт в наш Telegram-канал: там мы первыми объявим старт.</p>
+    <div class="c-head"><span class="c-kicker">вокруг дела</span><h2 id="h-world" class="c-h">Что убирали с&nbsp;площади</h2><p class="c-lead">Площадь не&nbsp;раз перекраивали. Одно вернули, другое переставили, третье ушло под землю.</p></div>
+    <div class="c-world-grid">
+<article class="c-world-card"><span class="yr">1819</span><h3>Река ушла в&nbsp;трубу</h3><p>Неглинную спрятали под землю, а&nbsp;на&nbsp;её месте в&nbsp;1819–1823&nbsp;годах разбили Александровский сад.</p></article>
+<article class="c-world-card"><span class="yr">1918</span><h3>Имена на&nbsp;обелиске</h3><p>Обелиск в&nbsp;саду поставили в&nbsp;1914&nbsp;году. Через четыре года одни имена с&nbsp;него стесали и&nbsp;высекли другие — среди них итальянца Кампанеллу и&nbsp;англичанина Томаса Мора.</p></article>
+<article class="c-world-card"><span class="yr">1931</span><h3>Ворота и&nbsp;памятник</h3><p>Воскресенские ворота снесли, чтобы через площадь шла парадная техника, а&nbsp;памятник Минину и&nbsp;Пожарскому отодвинули от&nbsp;центра площади к&nbsp;Покровскому собору.</p></article>
+<article class="c-world-card"><span class="yr">1936</span><h3>Собор</h3><p>Казанский собор снесли. Архитектор Пётр Барановский успел обмерить его до&nbsp;сноса, и&nbsp;в&nbsp;1990-е собор выстроили заново по&nbsp;его обмерам.</p></article>
+<article class="c-world-card"><span class="yr">1990-е</span><h3>Возвращение</h3><p>Ворота с&nbsp;часовней тоже восстановили. Икона часовни — копия иконы из&nbsp;Иверского монастыря на&nbsp;Афоне, в&nbsp;Греции.</p></article>
+</div>
+  </div>
+</section>
+
+<section id="practical" class="c-sec" aria-labelledby="h-practical">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">что нужно знать</span><h2 id="h-practical" class="c-h">Что нужно знать</h2></div>
+    <dl class="c-practical"><div><dt>Старт</dt><dd>Кутафья башня, 3&nbsp;минуты от&nbsp;метро «Александровский сад» и&nbsp;«Библиотека им.&nbsp;Ленина».</dd></div><div><dt>Финиш</dt><dd>Памятник Минину и&nbsp;Пожарскому у&nbsp;Покровского собора. До&nbsp;метро «Площадь Революции» около 10&nbsp;минут, до&nbsp;«Китай-города» около 15.</dd></div><div><dt>Маршрут</dt><dd>9&nbsp;точек, около 2&nbsp;км пешком (длину уточним на&nbsp;полевом тесте).</dd></div><div><dt>Время</dt><dd>1,5–2 часа в&nbsp;своём темпе.</dd></div><div><dt>Возраст</dt><dd>0+. Основные загадки — для взрослых и&nbsp;подростков, для младших — задания по&nbsp;желанию.</dd></div><div><dt>Как играть</dt><dd>В&nbsp;браузере телефона, одного достаточно на&nbsp;всю компанию. Нужен мобильный интернет.</dd></div><div><dt>Перерыв</dt><dd>Кафе и&nbsp;туалеты в&nbsp;ГУМе, ближе к&nbsp;концу маршрута.</dd></div><div><dt>Погода и&nbsp;сезон</dt><dd>Днём и&nbsp;вечером в&nbsp;любое время года: всё, что меряем, — камень и&nbsp;бронза.</dd></div><div><dt>Если площадь перекрыта</dt><dd>Красную площадь иногда закрывают на&nbsp;парады, репетиции и&nbsp;концерты. Тогда вторую половину квеста лучше пройти в&nbsp;другой день.</dd></div></dl>
+  </div>
+</section>
+
+<!-- seo:start -->
+<section id="about-place" class="c-sec on-paper seo-ref" aria-labelledby="h-seo">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">справка о районе</span><h2 id="h-seo" class="c-h">Красная площадь и&nbsp;Александровский сад: справка</h2></div>
+    <p class="seo-lead">Красная площадь и&nbsp;Александровский сад — самое сердце Москвы, у&nbsp;стен Кремля. Площадь не&nbsp;раз перестраивали, и&nbsp;многое из&nbsp;того, что на&nbsp;ней стоит сегодня, когда-то убирали и&nbsp;возвращали.</p>
+    <div class="seo-grid"><div><h3>Александровский сад</h3><ul><li>Сад разбили в&nbsp;1819–1823&nbsp;годах на&nbsp;месте реки Неглинной, которую убрали в&nbsp;трубу.</li><li>Кутафья — единственная сохранившаяся предмостная башня Кремля.</li><li>Манеж построили в&nbsp;1817&nbsp;году под руководством испанского инженера Агустина Бетанкура.</li><li>Могила Неизвестного солдата открыта в&nbsp;1967&nbsp;году. В&nbsp;квесте мы проходим мимо неё тихо и&nbsp;не&nbsp;задерживаемся.</li></ul></div>
+<div><h3>Красная площадь</h3><ul><li>Памятник Минину и&nbsp;Пожарскому (Иван Мартос, 1818) — первый скульптурный памятник Москвы.</li><li>Казанский собор снесли в&nbsp;1936&nbsp;году и&nbsp;выстроили заново по&nbsp;обмерам Петра Барановского.</li><li>Воскресенские ворота снесли в&nbsp;1931&nbsp;году и&nbsp;восстановили в&nbsp;1990-е.</li><li>ГУМ — бывшие Верхние торговые ряды, вход свободный.</li></ul></div>
+<div><h3>Как добраться</h3><p>Квест начинается у&nbsp;Кутафьей башни, в&nbsp;трёх минутах от&nbsp;метро «Александровский сад», а&nbsp;заканчивается на&nbsp;Красной площади, в&nbsp;10&nbsp;минутах от&nbsp;метро «Площадь Революции».</p><p>Внутрь Кремля, в&nbsp;музеи и&nbsp;платные залы заходить не&nbsp;нужно: все загадки решаются снаружи.</p></div></div>
+  </div>
+</section>
+<!-- seo:end -->
+
+<section id="faq" class="c-sec" aria-labelledby="h-faq">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">спрашивают</span><h2 id="h-faq" class="c-h">Частые вопросы</h2></div>
+    <div class="c-faq"><details open><summary><h3>Где начинается и&nbsp;заканчивается квест?</h3></summary><p>Старт у&nbsp;Кутафьей башни, в&nbsp;трёх минутах от&nbsp;метро «Александровский сад». Финиш у&nbsp;памятника Минину и&nbsp;Пожарскому на&nbsp;Красной площади: до&nbsp;метро «Площадь Революции» около 10&nbsp;минут.</p></details><details><summary><h3>Сколько длится квест и&nbsp;сколько придётся идти?</h3></summary><p>По&nbsp;нашей оценке, 1,5–2 часа: 9&nbsp;точек и&nbsp;около 2&nbsp;км пешком.</p></details><details><summary><h3>Можно ли пройти квест с&nbsp;детьми?</h3></summary><p>Да. Основные загадки рассчитаны на&nbsp;взрослых и&nbsp;подростков, для младших есть задания по&nbsp;желанию. Страшных сцен в&nbsp;квесте нет.</p></details><details><summary><h3>Сколько стоит квест и&nbsp;сколько человек может играть?</h3></summary><p>990&nbsp;₽ за&nbsp;квест: один код доступа на&nbsp;всю компанию. Хватит одного телефона.</p></details><details><summary><h3>Когда можно будет пройти квест?</h3></summary><p>Квест в&nbsp;разработке. Дату запуска объявим в&nbsp;Telegram-канале «Дворами».</p></details><details><summary><h3>Нужно ли заходить в&nbsp;Кремль или в&nbsp;музеи?</h3></summary><p>Нет. Все загадки решаются снаружи, на&nbsp;площади и&nbsp;в&nbsp;Александровском саду. Билеты не&nbsp;нужны.</p></details><details><summary><h3>Что будет, если Красную площадь перекроют?</h3></summary><p>Площадь иногда закрывают на&nbsp;парады, репетиции и&nbsp;концерты. Первая половина квеста проходит у&nbsp;Кремля и&nbsp;в&nbsp;саду, а&nbsp;финал — на&nbsp;самой площади. Если она закрыта, вторую половину лучше пройти в&nbsp;другой день.</p></details><details><summary><h3>Нужен ли интернет?</h3></summary><p>Да. Квест открывается в&nbsp;браузере телефона, дорогу к&nbsp;точкам показывает карта. Зарядите телефон перед стартом.</p></details><details><summary><h3>Что делать, если не&nbsp;получается разгадать загадку?</h3></summary><p>Открыть приём обмерщика. Их три, и&nbsp;третий — готовый ответ с&nbsp;объяснением.</p></details></div>
+  </div>
+</section>
+
+<section id="buy" class="c-sec on-alt" aria-labelledby="h-buy">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">взять дело</span><h2 id="h-buy" class="c-h">Ведомость ждёт обмерщика</h2></div>
+    <div class="c-buy-card" data-cta>
+      <span class="price">990&nbsp;₽</span>
+      <span class="per">за квест, один код доступа на&nbsp;всю компанию</span>
+      <span class="status">В разработке</span>
+      <p>Квест в&nbsp;разработке, взять дело можно будет здесь. Напишем в&nbsp;Telegram, как только ведомость можно будет открыть.</p>
+      <div class="c-buy-actions">
+        <a class="c-btn" data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.5 3.6 2.9 10.8c-1.3.5-1.3 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM8.8 13.4l9.6-6c.5-.3.9-.1.5.2l-8 7.3-.3 3.4-1.8-4.9z" fill="currentColor"/></svg>Узнать о старте продаж</a>
+        <a class="c-link" href="#how">Как устроен квест</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="sources" class="c-sources" aria-label="Источники">
+  <div class="wrap">
+    <details>
+      <summary>Источники</summary>
+      <p>Исторические факты на&nbsp;этой странице сверены по&nbsp;публикациям:</p>
+      <ul><li><a href="https://um.mos.ru/places/aleksandrovskiy_sad/" rel="noopener" target="_blank">Узнай Москву — Александровский сад</a></li><li><a href="https://um.mos.ru/monuments/grot-ruiny/" rel="noopener" target="_blank">Узнай Москву — грот «Руины»</a></li><li><a href="https://rg.ru/2013/07/19/pamyatnik.html" rel="noopener" target="_blank">«Российская газета» — обелиск в&nbsp;Александровском саду</a></li><li><a href="https://um.mos.ru/houses/voskresenskie-iverskie-vorota/" rel="noopener" target="_blank">Узнай Москву — Воскресенские ворота</a></li><li><a href="https://www.mos.ru/news/item/131772073/" rel="noopener" target="_blank">mos.ru, Главархив — судьба Казанского собора</a></li><li><a href="https://www.pnp.ru/social/202-goda-nazad-v-moskve-poyavilsya-pervyy-pamyatnik.html" rel="noopener" target="_blank">«Парламентская газета» — памятник Минину и&nbsp;Пожарскому</a></li><li><a href="https://www.culture.ru/materials/157829/ekzercirgauz-ili-prosto-manezh" rel="noopener" target="_blank">Культура.РФ — Манеж</a></li><li><a href="https://rg.ru/2019/02/21/za-chto-liubiat-iverskuiu-u-kremlia.html" rel="noopener" target="_blank">«Российская газета» — Иверская часовня</a></li><li><a href="https://www.mos.ru/news/item/116923073/" rel="noopener" target="_blank">mos.ru — Кутафья башня и&nbsp;Могила Неизвестного солдата</a></li></ul>
+    </details>
   </div>
 </section>
 </main>
 
-<a class="fab" id="fab" href="#buy" aria-hidden="true" tabindex="-1">Купить · 990 ₽<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-
-<aside class="d-src" aria-label="Источники">
-  <div class="wrap">
-    <details>
-      <summary>Источники фактов</summary>
-      <ul>
-        <li><a href="https://um.mos.ru/monuments/grot-ruiny/" rel="noopener" target="_blank">Узнай Москву — Грот «Руины»</a></li>
-        <li><a href="https://um.mos.ru/places/aleksandrovskiy_sad/" rel="noopener" target="_blank">Узнай Москву — Александровский сад</a></li>
-        <li><a href="https://rg.ru/2013/07/19/pamyatnik.html" rel="noopener" target="_blank">«Российская газета» — обелиск в Александровском саду</a></li>
-        <li><a href="https://um.mos.ru/houses/voskresenskie-iverskie-vorota/" rel="noopener" target="_blank">Узнай Москву — Воскресенские (Иверские) ворота</a></li>
-        <li><a href="https://rg.ru/2019/02/21/za-chto-liubiat-iverskuiu-u-kremlia.html" rel="noopener" target="_blank">«Российская газета» — Иверская икона у&nbsp;Кремля</a></li>
-        <li><a href="https://www.culture.ru/materials/157829/ekzercirgauz-ili-prosto-manezh" rel="noopener" target="_blank">Культура.РФ — экзерциргауз, или просто Манеж</a></li>
-        <li><a href="https://www.culture.ru/persons/8424/avgustin-betankur" rel="noopener" target="_blank">Культура.РФ — Августин Бетанкур</a></li>
-        <li><a href="https://www.mos.ru/news/item/131772073/" rel="noopener" target="_blank">mos.ru, Главархив Москвы — судьба Казанского собора</a></li>
-        <li><a href="https://www.pnp.ru/social/202-goda-nazad-v-moskve-poyavilsya-pervyy-pamyatnik.html" rel="noopener" target="_blank">«Парламентская газета» — первый памятник Москвы</a></li>
-        <li><a href="https://www.mos.ru/news/item/116923073/" rel="noopener" target="_blank">mos.ru, Главархив Москвы — мемориал Неизвестному Солдату</a></li>
-      </ul>
-      <p>Персонажи и сюжет дела придуманы. Исторические факты на этой странице и в квесте сверены по источникам.</p>
-    </details>
-  </div>
-</aside>
+<a class="fab" id="fab" href="#buy" aria-hidden="true" tabindex="-1">Взять дело · 990&nbsp;₽<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 
 <footer class="site-footer">
   <div class="wrap">
-    <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F4F1EA" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F4F1EA" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#E8705F"/></svg><span>ДВОРАМИ</span></a>
-    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../#faq">Вопросы</a><a href="../../#contact">Связаться</a></nav>
+    <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F2EFE8" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F2EFE8" stroke-width="2.5"/><path d="M24 27.5l6 10.5H18z" fill="#E1251B"/></svg><span>ДВОРАМИ</span></a>
+    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../#faq">Вопросы</a><a href="../../#reviews">Отзывы</a><a data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Telegram-канал @dvorami_quest</a></nav>
   </div>
 </footer>
 <script src="../../assets/site.js" defer></script>

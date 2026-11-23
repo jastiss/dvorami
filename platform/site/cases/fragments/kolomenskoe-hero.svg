@@ -1,0 +1,18 @@
+<svg viewBox="0 0 1440 420" preserveAspectRatio="xMidYMax slice">
+      <path d="M0 250 Q240 200 480 230 T960 210 T1440 236 V420 H0z" fill="#2A3A33"/>
+      <g fill="#1E2B25">
+        <path d="M980 214 h70 v-120 h-70z"/>
+        <path d="M986 94 L1015 -10 L1044 94z"/>
+        <path d="M1013 -10 h4 v-26 h-4z"/>
+        <path d="M960 214 h110 v-40 h-110z"/>
+        <path d="M970 174 q15-18 30 0 q15-18 30 0 q15-18 30 0z"/>
+      </g>
+      <g fill="#24332C">
+        <circle cx="120" cy="230" r="46"/><circle cx="180" cy="220" r="56"/><circle cx="250" cy="236" r="40"/>
+        <circle cx="1270" cy="222" r="50"/><circle cx="1340" cy="230" r="44"/><circle cx="1210" cy="240" r="36"/>
+      </g>
+      <path d="M0 300 Q300 250 560 330 Q640 360 720 330 Q900 260 1440 290 V420 H0z" fill="#1A2520"/>
+      <path d="M560 330 Q640 410 720 330 Q660 372 620 372 Q585 372 560 330z" fill="#121A17"/>
+      <path d="M600 372 q20 14 40 0" stroke="#B4C69A" stroke-width="2" fill="none" opacity=".5"/>
+      <g fill="#2C3D35"><ellipse cx="820" cy="356" rx="26" ry="15"/><ellipse cx="862" cy="362" rx="20" ry="12"/></g>
+    </svg>

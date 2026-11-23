@@ -17,9 +17,9 @@
   --sky: #8FC2FF;
   --on-accent: #0E1630;
   --on-accent-2: #2A3466;   /* второстепенный текст на жёлтом, 8,9:1 */
-  --font-display: 'Unbounded', 'Arial Black', system-ui, sans-serif;
-  --font-text: 'Golos Text', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-hand: 'Caveat', 'Segoe Print', 'Bradley Hand', cursive;
+  --font-display: 'Unbounded', 'Unbounded Fallback', 'Arial Black', system-ui, sans-serif;
+  --font-text: 'Golos Text', 'Golos Text Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-hand: 'Caveat', 'Caveat Fallback', 'Segoe Print', 'Bradley Hand', cursive;
   --radius: 24px;
   --pad: 16px;
   --gap-section: 64px;
@@ -417,8 +417,8 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
   --paper: #F2EFE8;
   --ink: #141414;
   --edge: #F2EFE8;         /* «бумажная» обводка и тень кнопок на тёмном */
-  --font-display: 'Oswald', 'Arial Narrow', system-ui, sans-serif;
-  --font-text: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Oswald', 'Oswald Fallback', 'Arial Narrow', system-ui, sans-serif;
+  --font-text: 'Onest', 'Onest Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --radius: 0;
   background-image: var(--grain);
   background-color: var(--bg);
@@ -749,8 +749,8 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 
 /* ЗИЛАРТ — «Авангард»: чёрный, красный, рубленый шрифт, геометрия */
 .qcard--avangard { background: #141414; color: #F2EFE8; border: 3px solid #F2EFE8; transform: rotate(-.6deg); }
-.qcard--avangard .qc-title { font: 700 clamp(30px, 3.2vw, 40px)/1 'Oswald', 'Arial Narrow', sans-serif; text-transform: uppercase; letter-spacing: .01em; max-width: 9em; }
-.qcard--avangard .qc-where { color: #FF5A4E; font-family: 'Oswald', 'Arial Narrow', sans-serif; text-transform: uppercase; font-size: 17px; letter-spacing: .03em; }
+.qcard--avangard .qc-title { font: 700 clamp(30px, 3.2vw, 40px)/1 'Oswald', 'Oswald Fallback', 'Arial Narrow', sans-serif; text-transform: uppercase; letter-spacing: .01em; max-width: 9em; }
+.qcard--avangard .qc-where { color: #FF5A4E; font-family: 'Oswald', 'Oswald Fallback', 'Arial Narrow', sans-serif; text-transform: uppercase; font-size: 17px; letter-spacing: .03em; }
 .qcard--avangard p { color: #C9C5BC; } .qcard--avangard .qc-meta { color: #9A968E; }
 .qcard--avangard .qc-foot { border-top: 3px solid #E1251B; }
 .qcard--avangard .qc-badge { color: #FF5A4E; }
@@ -765,8 +765,8 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 
 /* Башня — петровское барокко: охра, белый камень, антиква, рамка-картуш */
 .qcard--baroque { background: #EFE3C8 radial-gradient(120% 80% at 100% 0, #F7EED9 0, #E6D4AE 100%); color: #3B1F14; border: 2px solid #8E5A2B; outline: 6px double #8E5A2B; outline-offset: -14px; transform: rotate(.7deg); padding: 34px 30px 30px; }
-.qcard--baroque .qc-title { font: 700 clamp(30px, 3vw, 36px)/1.02 'Cormorant', 'Georgia', serif; max-width: 10em; padding-right: 64px; }
-.qcard--baroque .qc-where { color: #8E2B1C; font-family: 'Cormorant', Georgia, serif; font-size: 20px; font-style: italic; }
+.qcard--baroque .qc-title { font: 700 clamp(30px, 3vw, 36px)/1.02 'Cormorant Garamond', 'Cormorant Garamond Fallback', 'Georgia', serif; max-width: 10em; padding-right: 64px; }
+.qcard--baroque .qc-where { color: #8E2B1C; font-family: 'Cormorant Garamond', 'Cormorant Garamond Fallback', Georgia, serif; font-size: 20px; font-style: italic; }
 .qcard--baroque p { color: #4A2A1C; } .qcard--baroque .qc-meta { color: #6B4630; }
 .qcard--baroque .qc-foot { border-top: 1px solid #8E5A2B; }
 .qcard--baroque .qc-badge { color: #8E2B1C; }
@@ -1417,4 +1417,24 @@ img.is-broken { visibility: hidden; }
 /* Ревью итерации 9: подписи в центре карты мельче, чтобы не упираться в край; блок «Куда пойти» без пустоты сверху */
 .map-pin .name--sm { font-size: 17px; }
 @media (min-width: 900px) { .about-head { align-self: start; } }
-@media (max-width: 899px) { .fab.is-on.is-away { transform: translate(-50%, 140%); opacity: 0; pointer-events: none; } }
+/* .is-away (кнопка уходила при прокрутке вниз) убрана 23.11: CTA должен быть доступен стабильно */
+
+/* ===== Правки по замечаниям владельца 22–23.11 (итерация 10) ===== */
+/* Карточки дел: «Дело №N» отдельной строкой, название — с новой строки */
+.qc-no { display: block; white-space: nowrap; font-size: .78em; margin-bottom: 2px; }
+/* «Как это устроено»: заголовок и рукописная пометка — по левому краю, как во всех блоках */
+.how-head { align-items: flex-start; text-align: left; margin: 0 0 44px; max-width: 40em; }
+/* Первый экран: одна иллюстрация-ссылка, а не стопка карточек — не выглядит как карусель, которую надо листать */
+.hero-art { aspect-ratio: auto; }
+.hero-art .hero-card--1 { position: relative; width: 100%; top: 0; left: 0; transform: rotate(-1.5deg); }
+.hero-art:hover .hero-card--1 { transform: rotate(0) translateY(-4px); }
+/* Районы, где проходят квесты: картинка дела + текст, без ленты с обрезанными карточками */
+.guide-places img { width: 96px; height: 72px; aspect-ratio: auto; object-fit: cover; }
+@media (max-width: 759px) {
+  .guide-places { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); grid-auto-columns: auto; overflow: visible; margin: 0; padding: 0; scroll-snap-type: none; }
+  .guide-places li { grid-template-columns: 80px minmax(0, 1fr); padding: 12px; overflow: visible; }
+  .guide-places img { width: 80px; height: 60px; border-radius: 10px; }
+  .guide-places li > div { padding: 0; }
+}
+.screens-h { font-size: clamp(34px, 4vw, 54px); }
+.map-legend li a { color: var(--text); }

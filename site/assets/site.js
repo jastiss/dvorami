@@ -43,6 +43,42 @@
     items.forEach(function (li) { list.appendChild(li); });
   });
 
+
+  // Карусели «Что вы увидите»: листаются пальцем, колесом и стрелками; счётчик «2 / 6»; на краю стрелка гаснет
+  document.querySelectorAll('[data-carousel]').forEach(function (box) {
+    var track = box.querySelector('.c-track');
+    var prev = box.querySelector('[data-dir="-1"]'), next = box.querySelector('[data-dir="1"]');
+    var count = box.querySelector('.c-car-count');
+    if (!track) return;
+    // После перемешивания Chrome «держит» прежнюю карточку привязки и уезжает в конец ленты — возвращаем в начало
+    track.scrollLeft = 0; requestAnimationFrame(function () { track.scrollLeft = 0; });
+    function step() { var li = track.children[0]; return li ? li.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 16) : track.clientWidth; }
+    function upd() {
+      var n = track.children.length, w = step();
+      var first = Math.round(track.scrollLeft / w) + 1;
+      var visible = Math.max(1, Math.round(track.clientWidth / w));
+      var last = Math.min(n, first + visible - 1);
+      if (count) count.textContent = (visible > 1 ? first + '–' + last : first) + ' / ' + n;
+      var max = track.scrollWidth - track.clientWidth - 2;
+      if (prev) prev.disabled = track.scrollLeft <= 2;
+      if (next) next.disabled = track.scrollLeft >= max;
+      box.classList.toggle('is-static', max <= 0);
+    }
+    [prev, next].forEach(function (b) {
+      if (!b) return;
+      b.addEventListener('click', function () {
+        track.scrollBy({ left: step() * +b.getAttribute('data-dir'), behavior: reduce ? 'auto' : 'smooth' });
+      });
+    });
+    track.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') { e.preventDefault(); track.scrollBy({ left: step(), behavior: 'smooth' }); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); track.scrollBy({ left: -step(), behavior: 'smooth' }); }
+    });
+    track.addEventListener('scroll', function () { window.requestAnimationFrame(upd); }, { passive: true });
+    window.addEventListener('resize', upd);
+    upd();
+  });
+
   // Появление при прокрутке
   var targets = document.querySelectorAll('.draw, .rise, [data-reveal]');
   if (!('IntersectionObserver' in window) || reduce) {
@@ -143,7 +179,9 @@
   var fab = document.getElementById('fab');
   if (fab && 'IntersectionObserver' in window) {
     var seen = new Set();
-    var cta = document.querySelectorAll('[data-cta], .site-footer, .site-header');
+    // Следим за самими кнопками внутри [data-cta], а не за блоком целиком: большой блок может быть на экране,
+    // а его кнопка — нет, и тогда CTA пропадал (баг 22.11)
+    var cta = document.querySelectorAll('[data-cta] a, [data-cta] button, a[data-cta], .site-footer, .site-header');
     var fo = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) { if (e.isIntersecting) seen.add(e.target); else seen.delete(e.target); });
       var on = seen.size === 0;
@@ -152,14 +190,8 @@
       fab.tabIndex = on ? 0 : -1;
     }, { threshold: 0 });
     cta.forEach(function (el) { fo.observe(el); });
-    // Пока читатель листает вниз, кнопка уходит и не закрывает текст; остановился или листает вверх — возвращается
-    var lastY = window.scrollY, idle;
-    window.addEventListener('scroll', function () {
-      var y = window.scrollY;
-      if (y > lastY + 4) fab.classList.add('is-away'); else if (y < lastY - 4) fab.classList.remove('is-away');
-      lastY = y; clearTimeout(idle);
-      idle = setTimeout(function () { fab.classList.remove('is-away'); }, 900);
-    }, { passive: true });
+    // Раньше кнопка пряталась, пока читатель листает вниз, и появлялась только при прокрутке вверх —
+    // владелец принял это за баг (22.11). Теперь она видна всегда, когда на экране нет другого CTA.
   }
 })();
 

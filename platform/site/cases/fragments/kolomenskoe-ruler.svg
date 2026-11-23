@@ -1,0 +1,12 @@
+<svg viewBox="0 0 520 170" role="img" aria-label="Линейка времени от XV до XXI века, на ней знак вопроса и пометка «где-то здесь?»">
+        <path d="M20 100 H500" stroke="#A7B4AB" stroke-width="2"/>
+        <g stroke="#A7B4AB" stroke-width="2"><path d="M40 92v16M130 92v16M220 92v16M310 92v16M400 92v16M490 92v16"/></g>
+        <g font-family="Alegreya Sans, sans-serif" font-size="15" fill="#C9D3CB" text-anchor="middle">
+          <text x="40" y="132">XV</text><text x="130" y="132">XVI</text><text x="220" y="132">XVII</text><text x="310" y="132">XVIII</text><text x="400" y="132">XIX</text><text x="490" y="132">XXI</text>
+        </g>
+        <path d="M436 100 h20" stroke="#17201C" stroke-width="6"/>
+        <path d="M438 94 l6 12 M448 94 l6 12" stroke="#A7B4AB" stroke-width="2"/>
+        <ellipse cx="200" cy="100" rx="150" ry="22" fill="#DDE3DD" opacity=".14"/>
+        <text x="190" y="62" font-family="Neucha, cursive" font-size="30" fill="#B4C69A" text-anchor="middle">где-то здесь?</text>
+        <text x="200" y="108" font-family="Alegreya, serif" font-size="40" fill="#D8AE62" text-anchor="middle" dy="-10">?</text>
+      </svg>

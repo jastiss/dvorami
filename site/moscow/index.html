@@ -21,6 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="../assets/fonts/unbounded-cyrillic-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../assets/fonts/golos-text-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/golos-text-cyrillic-600-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../assets/fonts.css">
 <link rel="stylesheet" href="../assets/style.css">
 <script>document.documentElement.classList.add('js')</script>
@@ -44,7 +45,7 @@
      { "@type": "ListItem", "position": 3, "url": "https://dvorami.ru/moscow/kolomenskoe-tuman/", "name": "Дело о тумане в овраге — Коломенское" },
      { "@type": "ListItem", "position": 4, "url": "https://dvorami.ru/moscow/krasnaya-ploshchad-imena/", "name": "Дело о стёртых именах — Красная площадь и Александровский сад" },
      { "@type": "ListItem", "position": 5, "url": "https://dvorami.ru/moscow/kitay-gorod-list/", "name": "Дело о фальшивом листе — Китай-город" },
-     { "@type": "ListItem", "position": 6, "url": "https://dvorami.ru/moscow/arbat-gogol/", "name": "Дело о грустном Гоголе — Арбат" },
+     { "@type": "ListItem", "position": 6, "url": "https://dvorami.ru/moscow/arbat-gogol/", "name": "Дело о загадках Турандот — Арбат" },
      { "@type": "ListItem", "position": 7, "url": "https://dvorami.ru/moscow/vdnh-sestra/", "name": "Дело о шестнадцатой сестре — ВДНХ" }
     ]
    }
@@ -111,67 +112,67 @@
       <button type="button" data-filter="soon" aria-pressed="false">Скоро в продаже</button>
       <button type="button" data-filter="dev" aria-pressed="false">В разработке</button>
     </div>
-    <ul class="qgrid qgrid--stack" id="qgrid">
+    <ul class="qgrid qgrid--stack" id="qgrid" data-cta>
       <li class="qcard" id="case-1" data-status="soon" data-case="1">
         <span class="qc-cover"><img src="../assets/ill/case-01.svg" width="1200" height="900" alt="Иллюстрация к делу №1: ЗИЛАРТ"></span>
-        <h2 class="qc-title"><span class="qc-no">Дело №1 ·</span> Синяя птица</h2>
+        <h2 class="qc-title"><span class="qc-no">Дело №1</span> Синяя птица</h2>
         <span class="qc-where">ЗИЛАРТ · юг Москвы</span>
-        <p>Телеграмма без подписи: «Синяя птица дома тчк встречайте». У&nbsp;десяти свидетелей десять версий. Кто её отправил?</p>
+        <p>Телеграмма без подписи и&nbsp;даты: «Синяя птица дома». Десять свидетелей, кот-обманщик — и&nbsp;кто&nbsp;же её отправил?</p>
         <p class="qc-meta">Метро «ЗИЛ» · 12&nbsp;точек · 2,8&nbsp;км · 2,5–3&nbsp;часа · 0+</p>
         <div class="qc-foot"><span class="qc-badge qc-badge--soon">Скоро в&nbsp;продаже</span><span class="qc-price"><b>990&nbsp;₽</b> на&nbsp;компанию</span></div>
         <a class="qc-btn" href="zilart-sinyaya-ptica/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard" id="case-2" data-status="dev" data-case="2">
         <span class="qc-cover"><img src="../assets/ill/case-02.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №2: Чистые пруды и Покровка"></span>
-        <h2 class="qc-title"><span class="qc-no">Дело №2 ·</span> Башня выше Ивана Великого</h2>
+        <h2 class="qc-title"><span class="qc-no">Дело №2</span> Башня выше Ивана Великого</h2>
         <span class="qc-where">Чистые пруды и&nbsp;Покровка</span>
-        <p>Говорили, что она выше колокольни Ивана Великого, а&nbsp;через шестнадцать лет в&nbsp;шпиль ударила молния. Случайность?</p>
-        <p class="qc-meta">Меншикова башня · Чистые пруды · Покровка</p>
+        <p>В&nbsp;башню, которая была выше Ивана Великого, ударила молния. Кара за&nbsp;гордыню — или кто-то знал заранее?</p>
+        <p class="qc-meta">Метро «Чистые пруды» · 10&nbsp;точек · ≈3&nbsp;км · 2–2,5&nbsp;часа · 0+</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
         <a class="qc-btn" href="chistye-prudy-bashnya/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard" id="case-3" data-status="dev" data-case="3">
         <span class="qc-cover"><img src="../assets/ill/case-03.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №3: Коломенское"></span>
-        <h2 class="qc-title"><span class="qc-no">Дело №3 ·</span> Туман в&nbsp;овраге</h2>
+        <h2 class="qc-title"><span class="qc-no">Дело №3</span> Туман в&nbsp;овраге</h2>
         <span class="qc-where">Коломенское</span>
-        <p>По легенде, туман в&nbsp;Голосовом овраге путает время. Свидетели называют разные годы.</p>
-        <p class="qc-meta">Церковь Вознесения · Голосов овраг</p>
+        <p>Из&nbsp;тумана вышел человек и&nbsp;не&nbsp;помнит, какой нынче век. Узнайте его год по&nbsp;тому, что он видел.</p>
+        <p class="qc-meta">Метро «Коломенская» · 10&nbsp;точек · 3–3,5&nbsp;км · 2–2,5&nbsp;часа · 0+</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
         <a class="qc-btn" href="kolomenskoe-tuman/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard" id="case-4" data-status="dev" data-case="4">
         <span class="qc-cover"><img src="../assets/ill/case-04.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №4: Красная площадь"></span>
-        <h2 class="qc-title"><span class="qc-no">Дело №4 ·</span> Стёртые имена</h2>
+        <h2 class="qc-title"><span class="qc-no">Дело №4</span> Стёртые имена</h2>
         <span class="qc-where">Красная площадь и&nbsp;Александровский сад</span>
-        <p>С&nbsp;этой площади убирали ворота, собор и&nbsp;даже имена. Проверьте, что вернулось на&nbsp;место.</p>
-        <p class="qc-meta">Красная площадь · Александровский сад</p>
+        <p>С&nbsp;этой площади убирали реку, ворота, собор и&nbsp;памятник. Перемерьте за&nbsp;бригадой 1936&nbsp;года и&nbsp;решите, что вернуть.</p>
+        <p class="qc-meta">Метро «Александровский сад» · 9&nbsp;точек · ≈2&nbsp;км · 1,5–2&nbsp;часа · 0+</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
         <a class="qc-btn" href="krasnaya-ploshchad-imena/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard" id="case-5" data-status="dev" data-case="5">
         <span class="qc-cover"><img src="../assets/ill/case-05.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №5: Китай-город"></span>
-        <h2 class="qc-title"><span class="qc-no">Дело №5 ·</span> Фальшивый лист</h2>
+        <h2 class="qc-title"><span class="qc-no">Дело №5</span> Фальшивый лист</h2>
         <span class="qc-where">Китай-город</span>
-        <p>Лист с&nbsp;единорогом обрушил цены на&nbsp;бирже. Найдите, кто его напечатал.</p>
-        <p class="qc-meta">Никольская · Ильинка · Варварка</p>
+        <p>С&nbsp;фасада типографии сбежал единорог. Напечатайте об&nbsp;этом лист — и&nbsp;не&nbsp;соврите ни&nbsp;в&nbsp;одной подробности.</p>
+        <p class="qc-meta">Метро «Театральная» · 9&nbsp;точек · ≈2,5&nbsp;км · 1,5–2&nbsp;часа · 0+</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
         <a class="qc-btn" href="kitay-gorod-list/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard" id="case-6" data-status="dev" data-case="6">
-        <span class="qc-cover"><img src="../assets/ill/case-06.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №6: Арбат"></span>
-        <h2 class="qc-title"><span class="qc-no">Дело №6 ·</span> Грустный Гоголь</h2>
+        <span class="qc-cover"><img src="../assets/ill/case-06.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №6: Арбат вечером"></span>
+        <h2 class="qc-title"><span class="qc-no">Дело №6</span> Загадки Турандот</h2>
         <span class="qc-where">Арбат и&nbsp;арбатские переулки</span>
-        <p>В&nbsp;1952&nbsp;году Гоголь исчез с&nbsp;Арбатской площади. Найдите, куда он ушёл и&nbsp;почему.</p>
-        <p class="qc-meta">Арбат · переулки · Никитский бульвар</p>
+        <p>Принцесса Турандот вызывает вас на&nbsp;состязание: восемь загадок по&nbsp;Арбату. Отгадаете — она признает поражение.</p>
+        <p class="qc-meta">Метро «Арбатская» · 8&nbsp;загадок · ≈2,5&nbsp;км · 1,5–2&nbsp;часа · 0+</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
         <a class="qc-btn" href="arbat-gogol/">Подробнее о&nbsp;деле</a>
       </li>
       <li class="qcard" id="case-7" data-status="dev" data-case="7">
         <span class="qc-cover"><img src="../assets/ill/case-07.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №7: ВДНХ"></span>
-        <h2 class="qc-title"><span class="qc-no">Дело №7 ·</span> Шестнадцатая сестра</h2>
+        <h2 class="qc-title"><span class="qc-no">Дело №7</span> Шестнадцатая сестра</h2>
         <span class="qc-where">ВДНХ · север Москвы</span>
-        <p>Республик пятнадцать, а&nbsp;золотых сестёр у&nbsp;фонтана шестнадцать. Кто из&nbsp;них лишняя?</p>
-        <p class="qc-meta">ВДНХ · фонтан «Дружба народов»</p>
+        <p>Республик пятнадцать, а&nbsp;золотых сестёр у&nbsp;фонтана шестнадцать. Шестнадцатая просит прислать ей открытки с&nbsp;выставки.</p>
+        <p class="qc-meta">Метро «ВДНХ» · 8&nbsp;точек · ≈4,5&nbsp;км · 2–2,5&nbsp;часа · 0+</p>
         <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
         <a class="qc-btn" href="vdnh-sestra/">Подробнее о&nbsp;деле</a>
       </li>
@@ -210,10 +211,13 @@
       <div class="map-legend">
         <span class="hand">где искать</span>
         <ul>
-          <li><span class="lg lg--live" aria-hidden="true"></span><b>ЗИЛАРТ</b> — бывший автозавод за&nbsp;Третьим кольцом. <span class="lg-st lg-st--soon">скоро в&nbsp;продаже</span></li>
-          <li><span class="lg" aria-hidden="true"></span><b>Красная площадь</b> и&nbsp;<b>Китай-город</b> — самое сердце города, у&nbsp;стен Кремля.</li>
-          <li><span class="lg" aria-hidden="true"></span><b>Арбат</b> — к&nbsp;западу от&nbsp;Кремля, <b>Чистые пруды</b> — к&nbsp;северо-востоку.</li>
-          <li><span class="lg" aria-hidden="true"></span><b>ВДНХ</b> на&nbsp;севере и&nbsp;<b>Коломенское</b> на&nbsp;юго-востоке, у&nbsp;реки.</li>
+          <li><span class="lg lg--live" aria-hidden="true"></span><a href="zilart-sinyaya-ptica/"><b>ЗИЛАРТ</b></a> — бывший автозавод за&nbsp;Третьим кольцом, дело №1. <span class="lg-st lg-st--soon">скоро в&nbsp;продаже</span></li>
+          <li><span class="lg" aria-hidden="true"></span><a href="krasnaya-ploshchad-imena/"><b>Красная площадь</b></a> — у&nbsp;стен Кремля, дело №4.</li>
+          <li><span class="lg" aria-hidden="true"></span><a href="kitay-gorod-list/"><b>Китай-город</b></a> — сразу к&nbsp;востоку от&nbsp;Кремля, дело №5.</li>
+          <li><span class="lg" aria-hidden="true"></span><a href="arbat-gogol/"><b>Арбат</b></a> — к&nbsp;западу от&nbsp;Кремля, дело №6.</li>
+          <li><span class="lg" aria-hidden="true"></span><a href="chistye-prudy-bashnya/"><b>Чистые пруды</b></a> — к&nbsp;северо-востоку от&nbsp;центра, дело №2.</li>
+          <li><span class="lg" aria-hidden="true"></span><a href="vdnh-sestra/"><b>ВДНХ</b></a> — на&nbsp;севере, между Третьим кольцом и&nbsp;МКАД, дело №7.</li>
+          <li><span class="lg" aria-hidden="true"></span><a href="kolomenskoe-tuman/"><b>Коломенское</b></a> — на&nbsp;юго-востоке, на&nbsp;берегу Москвы-реки, дело №3.</li>
         </ul>
         </div>
     </div>

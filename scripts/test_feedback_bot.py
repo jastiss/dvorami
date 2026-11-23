@@ -57,7 +57,7 @@ class FakeTelegram:
     def last_buttons(self):
         for p in reversed(self.sent()):
             if "reply_markup" in p:
-                return [b["callback_data"] for row in p["reply_markup"]["inline_keyboard"] for b in row]
+                return [b.get("callback_data") or "url:" + b["url"] for row in p["reply_markup"]["inline_keyboard"] for b in row]
         return []
 
 
@@ -104,7 +104,7 @@ class FeedbackBotTest(unittest.TestCase):
         self.tg.text("/start")
         self.step()
         self.assertIn("Чем помочь", self.tg.sent()[-1]["text"])
-        self.assertEqual(self.tg.last_buttons(), ["m|review|0", "m|suggest|0", "m|question|0"])
+        self.assertEqual(self.tg.last_buttons(), ["url:https://jastiss.github.io/dvorami/moscow/", "m|review|0", "m|suggest|0", "m|question|0"])
         self.tg.press("m|suggest|0")
         self.step()
         self.assertIn("Какой район", self.tg.sent()[-1]["text"])

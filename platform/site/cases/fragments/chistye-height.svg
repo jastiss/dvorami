@@ -1,0 +1,17 @@
+<svg viewBox="0 0 520 320" role="img" aria-label="Схема: силуэты колокольни Ивана Великого и башни у Чистых прудов рядом, между ними знак вопроса">
+      <rect width="520" height="320" fill="#F3E7CB" stroke="#B79A6A"/>
+      <g stroke="#B79A6A" stroke-width="1" stroke-dasharray="3 5"><path d="M20 60h480M20 120h480M20 180h480M20 240h480"/></g>
+      <g fill="#2A1A0E" opacity=".85">
+        <path d="M118 290V120h40v170zM124 120V92h28v28zM128 92V74h20v18zM133 74q5-26 10 0z"/>
+        <path d="M137 50h2v-14h-2z"/>
+      </g>
+      <g fill="#8E3E1A">
+        <path d="M352 290V196h56v94zM360 196v-34h40v34zM368 162v-26h24v26zM374 136v-16h12v16z"/>
+        <path d="M379 120h2V40h-2z"/>
+      </g>
+      <path d="M0 290h520" stroke="#2A1A0E" stroke-width="2"/>
+      <text x="138" y="312" text-anchor="middle" font-family="PT Serif, serif" font-size="15" fill="#2A1A0E">Иван Великий</text>
+      <text x="380" y="312" text-anchor="middle" font-family="PT Serif, serif" font-size="15" fill="#8E3E1A">башня у Чистых прудов</text>
+      <text x="260" y="170" text-anchor="middle" font-family="Caveat, cursive" font-size="64" fill="#8E3E1A">?</text>
+      <path d="M190 62q70-30 140 0" fill="none" stroke="#8E3E1A" stroke-width="1.5" stroke-dasharray="4 4"/>
+    </svg>

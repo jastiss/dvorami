@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Квест по Чистым прудам и Покровке без гида | Дворами</title>
-<meta name="description" content="Квест-прогулка без гида по Чистым прудам и Покровке: Меншикова башня, Дом-комод, бывшие Поганые пруды. Малоизвестная история, сверенная с источниками.">
+<title>Квест по Чистым прудам и Покровке без гида: «Дело о башне выше Ивана Великого» | Дворами</title>
+<meta name="description" content="Квест-прогулка по Чистым прудам и Покровке: Меншикова башня, Дом-комод, чайный дом с драконами. 10 точек, около 3 км, старт у метро «Чистые пруды», финиш на Покровке. Квест в разработке.">
 <!-- ТЕСТОВЫЙ СТЕНД: снять noindex при выкладке на боевой домен -->
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://dvorami.ru/moscow/chistye-prudy-bashnya/">
@@ -14,31 +14,23 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Дворами">
 <meta property="og:locale" content="ru_RU">
-<meta property="og:title" content="Дело о башне выше Ивана Великого — квест-прогулка по Чистым прудам">
-<meta property="og:description" content="Башню построили вровень с Иваном Великим, а через шестнадцать лет в неё ударила молния. Случайность? Квест-прогулка без гида от метро «Чистые пруды».">
+<meta property="og:title" content="Дело о башне выше Ивана Великого — квест-прогулка по Чистым прудам и Покровке">
+<meta property="og:description" content="В башню, которая была выше Ивана Великого, ударила молния. Кара за гордыню — или кто-то знал заранее? Квест-прогулка без гида по Чистым прудам и Покровке.">
 <meta property="og:url" content="https://dvorami.ru/moscow/chistye-prudy-bashnya/">
 <meta property="og:image" content="https://dvorami.ru/assets/og/main.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Дело о башне выше Ивана Великого — квест-прогулка по Чистым прудам">
+<meta name="twitter:title" content="Дело о башне выше Ивана Великого — квест-прогулка по Чистым прудам и Покровке">
 <meta name="twitter:image" content="https://dvorami.ru/assets/og/main.png">
+<link rel="preload" href="../../assets/fonts/pt-serif-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../../assets/fonts/cormorant-garamond-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../../assets/fonts/pt-serif-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../assets/fonts/caveat-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/fonts.css">
 <link rel="stylesheet" href="../../assets/style.css">
-<link rel="stylesheet" href="../../assets/gallery.css">
+<link rel="stylesheet" href="../../assets/case.css">
 <script>document.documentElement.classList.add('js')</script>
-<style>/* seo-блок (Маркетолог) */
-.seo-ref .seo-lead{max-width:44em;font-size:1.08em;line-height:1.55;margin:16px 0 28px}
-.seo-ref .seo-grid{display:grid;gap:28px 40px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
-.seo-ref h3{margin:0 0 10px;font-size:20px}
-.seo-ref p,.seo-ref li{max-width:44em;line-height:1.55}
-.seo-ref p+p{margin-top:10px}
-.seo-ref ul{padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
-.seo-ref .seo-src{margin-top:28px;font-size:14px;opacity:.75;max-width:60em}
-.seo-ref .seo-src a{color:inherit}
-</style>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -50,277 +42,233 @@
    "url": "https://dvorami.ru/"
   },
   {
-   "@type": "TouristTrip",
+   "@type": [
+    "TouristTrip",
+    "Product"
+   ],
    "@id": "https://dvorami.ru/moscow/chistye-prudy-bashnya/#quest",
    "name": "Дело о башне выше Ивана Великого — квест-прогулка по Чистым прудам и Покровке",
-   "description": "Детективный квест-прогулка без гида по Чистым прудам и Покровке: 10 точек, около 3 км, 2–2,5 часа вместе с остановкой на кофе. Старт у метро «Чистые пруды». Квест открывается в браузере телефона. Готовится к запуску.",
+   "description": "Квест-прогулка без гида по Чистым прудам и Покровке: 10 точек, около 3 км, 2–2,5 часа. Старт у метро «Чистые пруды», финиш на Покровке у Дома-комода, оттуда около 10 минут бульваром до метро. Квест в разработке.",
    "url": "https://dvorami.ru/moscow/chistye-prudy-bashnya/",
+   "image": [
+    "https://dvorami.ru/assets/og/main.png"
+   ],
    "inLanguage": "ru",
-   "provider": { "@id": "https://dvorami.ru/#org" },
-   "touristType": ["Компании друзей", "Пары", "Семьи с детьми", "Путешественники-одиночки"],
+   "brand": {
+    "@id": "https://dvorami.ru/#org"
+   },
+   "provider": {
+    "@id": "https://dvorami.ru/#org"
+   },
+   "touristType": [
+    "Компании друзей",
+    "Пары",
+    "Семьи с детьми",
+    "Путешественники-одиночки"
+   ],
    "about": [
-    { "@type": "Place", "name": "Чистые пруды", "containedInPlace": { "@type": "City", "name": "Москва" } },
-    { "@type": "Place", "name": "Покровка", "containedInPlace": { "@type": "City", "name": "Москва" } },
-    { "@type": "Person", "name": "Александр Меншиков" }
+    {
+     "@type": "Place",
+     "name": "Чистые пруды",
+     "containedInPlace": {
+      "@type": "City",
+      "name": "Москва"
+     }
+    },
+    {
+     "@type": "Place",
+     "name": "Меншикова башня"
+    },
+    {
+     "@type": "Place",
+     "name": "Покровка"
+    },
+    {
+     "@type": "Person",
+     "name": "Александр Меншиков"
+    }
    ],
    "itinerary": {
     "@type": "ItemList",
     "itemListOrder": "https://schema.org/ItemListUnordered",
+    "numberOfItems": 10,
     "itemListElement": [
-     { "@type": "ListItem", "position": 1, "item": { "@type": "Place", "name": "Метро «Чистые пруды» — старт" } },
-     { "@type": "ListItem", "position": 2, "item": { "@type": "Place", "name": "Меншикова башня (церковь Архангела Гавриила), Архангельский переулок" } },
-     { "@type": "ListItem", "position": 3, "item": { "@type": "Place", "name": "Чистые пруды, Чистопрудный бульвар" } },
-     { "@type": "ListItem", "position": 4, "item": { "@type": "Place", "name": "Дом-комод, Покровка" } },
-     { "@type": "ListItem", "position": 5, "item": { "@type": "Place", "name": "Чайный дом Перлова, Мясницкая улица" } },
-     { "@type": "ListItem", "position": 6, "item": { "@type": "Place", "name": "Покровские ворота" } },
-     { "@type": "ListItem", "position": 7, "item": { "@type": "Place", "name": "Дом со зверями, Чистопрудный бульвар" } }
+     {
+      "@type": "ListItem",
+      "position": 1,
+      "item": {
+       "@type": "Place",
+       "name": "Метро «Чистые пруды» — старт"
+      }
+     },
+     {
+      "@type": "ListItem",
+      "position": 2,
+      "item": {
+       "@type": "Place",
+       "name": "Меншикова башня, Архангельский переулок"
+      }
+     },
+     {
+      "@type": "ListItem",
+      "position": 3,
+      "item": {
+       "@type": "Place",
+       "name": "Чистопрудный бульвар"
+      }
+     },
+     {
+      "@type": "ListItem",
+      "position": 4,
+      "item": {
+       "@type": "Place",
+       "name": "Дом-комод, Покровка, 22 — финиш"
+      }
+     }
     ]
+   },
+   "offers": {
+    "@type": "Offer",
+    "price": "990",
+    "priceCurrency": "RUB",
+    "url": "https://dvorami.ru/moscow/chistye-prudy-bashnya/",
+    "description": "Цена за квест, один код доступа на всю компанию. Квест в разработке.",
+    "seller": {
+     "@id": "https://dvorami.ru/#org"
+    }
    }
   },
   {
    "@type": "BreadcrumbList",
    "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://dvorami.ru/" },
-    { "@type": "ListItem", "position": 2, "name": "Квесты по Москве", "item": "https://dvorami.ru/moscow/" },
-    { "@type": "ListItem", "position": 3, "name": "Дело №2 · Башня выше Ивана Великого", "item": "https://dvorami.ru/moscow/chistye-prudy-bashnya/" }
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Главная",
+     "item": "https://dvorami.ru/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Квесты по Москве",
+     "item": "https://dvorami.ru/moscow/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Дело №2 · Башня выше Ивана Великого",
+     "item": "https://dvorami.ru/moscow/chistye-prudy-bashnya/"
+    }
    ]
   },
   {
    "@type": "FAQPage",
    "@id": "https://dvorami.ru/moscow/chistye-prudy-bashnya/#faq",
    "mainEntity": [
-    { "@type": "Question", "name": "Когда можно будет пройти квест?", "acceptedAnswer": { "@type": "Answer", "text": "Дату запуска объявим в нашем Telegram-канале. Подпишитесь, и вы узнаете первыми." } },
-    { "@type": "Question", "name": "Где начинается квест?", "acceptedAnswer": { "@type": "Answer", "text": "У метро «Чистые пруды». Точный выход и место встречи с первым свидетелем квест покажет на старте." } },
-    { "@type": "Question", "name": "Сколько длится квест и сколько придётся идти?", "acceptedAnswer": { "@type": "Answer", "text": "По нашей оценке, 2–2,5 часа вместе с остановкой на кофе: 10 точек, около 3 км пешком." } },
-    { "@type": "Question", "name": "Можно ли пройти квест с детьми?", "acceptedAnswer": { "@type": "Answer", "text": "Да. Основные загадки рассчитаны на взрослых и подростков, а для младших есть задания по желанию: найти, сосчитать, отыскать на фасаде." } },
-    { "@type": "Question", "name": "Нужно ли заходить в музеи или храмы?", "acceptedAnswer": { "@type": "Answer", "text": "Нет. Все загадки решаются снаружи, по фасадам, табличкам и надписям. Билеты никуда покупать не нужно." } },
-    { "@type": "Question", "name": "Нужен ли интернет?", "acceptedAnswer": { "@type": "Answer", "text": "Да. Квест открывается в браузере телефона, дорогу к точкам показывает карта. Зарядите телефон перед стартом." } }
+    {
+     "@type": "Question",
+     "name": "Где начинается и заканчивается квест?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Старт у метро «Чистые пруды», у памятника Грибоедову. Финиш на Покровке, 22: оттуда около 10 минут бульваром обратно к метро."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Сколько длится квест и сколько придётся идти?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "По нашей оценке, 2–2,5 часа вместе с остановкой на кофе: 10 точек, около 3 км пешком."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Можно ли пройти квест с детьми?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Да. Основные загадки рассчитаны на взрослых и подростков, а для младших есть задания по желанию: найти зверей на фасаде, сосчитать драконов. На разгадку они не влияют."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Сколько стоит квест и сколько человек может играть?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "990 ₽ за квест: один код доступа на всю компанию. Хватит одного телефона."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Когда можно будет пройти квест?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Квест в разработке. Дату запуска объявим в Telegram-канале «Дворами»."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Нужно ли заходить в музеи или храмы?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Нет. Все загадки решаются снаружи, по фасадам, табличкам и надписям."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Нужен ли интернет?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Да. Квест открывается в браузере телефона, дорогу к точкам показывает карта. Зарядите телефон перед стартом."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Что делать, если не получается разгадать загадку?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Открыть подсказку. У каждой загадки их три, и последняя — это ответ."
+     }
+    }
    ]
   }
  ]
 }
 </script>
-<style>
-/* Стиль «Гравюра»: петровское барокко, медь, охра, бумага */
-.theme-gravura {
-  --bg: #EFE2C4;
-  --paper: #F6ECD4;
-  --paper-2: #E6D3AA;
-  --ink: #2A1A0E;
-  --ink-2: #4A3320;
-  --ink-3: #6A5038;
-  --copper: #8E3E1A;
-  --copper-2: #A9542A;
-  --ochre: #B7832A;
-  --text: #2A1A0E;
-  --text-2: #4A3320;
-  --text-3: #6A5038;
-  --line: #B79A6A;
-  --accent: #8E3E1A;
-  --accent-hover: #6E2E12;
-  --sky: #8E3E1A;
-  --on-accent: #F6ECD4;
-  --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
-  --font-text: 'PT Serif', Georgia, serif;
-  --font-hand: 'Caveat', 'Segoe Print', cursive;
-  --hatch: repeating-linear-gradient(-38deg, rgba(42,26,14,.07) 0 1px, transparent 1px 5px);
-  background-color: var(--bg);
-  background-image:
-    radial-gradient(ellipse at 20% 0%, rgba(255,250,235,.7), transparent 55%),
-    radial-gradient(ellipse at 100% 100%, rgba(142,62,26,.10), transparent 50%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .15 0 0 0 0 .05 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: no-repeat, no-repeat, repeat;
-  color: var(--text);
-  font-family: var(--font-text);
-}
-.theme-gravura a { color: var(--copper); }
-.theme-gravura a:hover { color: var(--accent-hover); }
-.theme-gravura :focus-visible { outline-color: var(--copper); }
-.theme-gravura .logo { font-family: var(--font-display); font-weight: 700; font-size: 25px; letter-spacing: .03em; color: var(--ink); }
-.theme-gravura .logo svg path[stroke] { stroke: var(--ink); }
-.theme-gravura .logo .logo-light { fill: var(--copper); }
-.theme-gravura .nav a:not(.btn) { color: var(--ink); font-size: 17px; }
-.theme-gravura .nav a:not(.btn):hover { color: var(--copper); }
-.theme-gravura .site-header { border-bottom: 1px solid var(--line); }
-.theme-gravura .site-header::after { content: ""; display: block; height: 3px; border-bottom: 1px solid var(--line); margin-top: 3px; }
-
-.gv-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 12px 24px; background: var(--copper); color: var(--on-accent) !important; text-decoration: none; font-family: var(--font-text); font-weight: 700; font-size: 17px; border-radius: 3px; box-shadow: 0 0 0 1px var(--copper), 0 0 0 4px var(--paper), 0 0 0 5px var(--copper); transition: background .2s, transform .2s; }
-.gv-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
-.theme-gravura .nav .btn.gv-btn { min-height: 44px; padding: 8px 16px; font-size: 15px; box-shadow: 0 0 0 1px var(--copper); }
-.gv-btn svg { width: 20px; height: 20px; flex: none; }
-
-/* Общие заголовки */
-.gv-h { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 5vw, 58px); line-height: 1.02; color: var(--ink); }
-.gv-h i { font-style: italic; font-weight: 600; color: var(--copper); }
-.gv-sec { padding: 64px 0; position: relative; }
-@media (min-width: 900px) { .gv-sec { padding: 96px 0; } }
-.rule { display: block; width: 100%; max-width: 240px; height: 16px; color: var(--copper); margin: 18px 0 0; }
-.note-hand { font-family: var(--font-hand); font-size: 25px; line-height: 1.15; color: var(--copper); transform: rotate(-3deg); display: inline-block; }
-
-/* Hero */
-.gv-hero .wrap { display: grid; gap: 36px; padding-top: 20px; padding-bottom: 56px; }
-@media (min-width: 1000px) { .gv-hero h1 { font-size: clamp(50px, 5.4vw, 84px); } }
-@media (min-width: 1000px) { .gv-hero .wrap { grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); align-items: center; gap: 56px; padding-top: 36px; padding-bottom: 80px; } }
-.back { display: inline-flex; align-items: center; gap: 6px; padding: 10px 0; font-size: 16px; color: var(--ink-2) !important; text-decoration: none; border-bottom: 1px dashed var(--line); }
-.back:hover { color: var(--copper) !important; }
-.gv-hero .kicker { display: block; margin-top: 18px; font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: 22px; color: var(--copper); }
-.gv-hero h1 { margin-top: 6px; font-family: var(--font-display); font-weight: 700; color: var(--ink); line-height: .98; font-size: clamp(42px, 9.6vw, 92px); letter-spacing: -.01em; }
-.gv-hero h1 .post { display: block; margin-top: 12px; font-size: .36em; font-weight: 600; font-style: italic; color: var(--ink-2); line-height: 1.2; }
-.gv-hero h1 .ini { color: var(--copper); }
-.gv-hero .intro { margin-top: 20px; font-size: 19px; max-width: 33em; color: var(--ink-2); }
-.gv-hero .intro b { color: var(--ink); }
-.gv-cta { margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; }
-.gv-cta .soon { font-size: 16px; color: var(--ink-3); flex-basis: 100%; }
-.status { display: inline-flex; align-items: center; gap: 8px; margin-top: 22px; padding: 6px 14px 6px 10px; border: 1px solid var(--copper); border-radius: 40px; color: var(--copper); font-size: 15px; font-style: italic; background: var(--paper); transform: rotate(-1.5deg); }
-.status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--ochre); box-shadow: 0 0 0 3px rgba(183,131,42,.25); }
-
-.plate { position: relative; margin: 0 auto; width: 100%; max-width: 420px; }
-.plate-frame { position: relative; padding: 18px; background: var(--paper); border: 1px solid var(--ink-3); box-shadow: 0 0 0 6px var(--paper), 0 0 0 7px var(--ink-3), 8px 12px 0 7px rgba(42,26,14,.12); transform: rotate(1.4deg); }
-.plate-frame svg { display: block; width: 100%; height: auto; }
-.plate figcaption { margin-top: 26px; text-align: center; font-family: var(--font-display); font-style: italic; font-size: 19px; color: var(--ink-2); }
-.plate .note-hand { position: absolute; right: -6px; top: 12%; font-size: 24px; background: var(--paper); padding: 2px 8px; transform: rotate(6deg); border: 1px dashed var(--copper); }
-@media (max-width: 560px) { .plate .note-hand { right: 6px; top: -14px; } }
-
-/* Лента в цифрах */
-.ribbon { position: relative; background: var(--copper); color: var(--paper); }
-.ribbon .wrap { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; padding-top: 0; padding-bottom: 0; }
-@media (min-width: 900px) { .ribbon .wrap { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.ribbon .wrap > div { padding: 22px 14px; border-left: 1px solid rgba(246,236,212,.35); font-size: 16px; line-height: 1.3; }
-.ribbon .wrap > div:nth-child(odd) { border-left: 0; }
-@media (min-width: 900px) { .ribbon .wrap > div:nth-child(odd) { border-left: 1px solid rgba(246,236,212,.35); } .ribbon .wrap > div:first-child { border-left: 0; } }
-.ribbon .n { display: block; font-family: var(--font-display); font-weight: 700; font-size: 40px; line-height: 1; margin-bottom: 4px; }
-.ribbon::before, .ribbon::after { content: ""; position: absolute; left: 0; right: 0; height: 10px; background: linear-gradient(-45deg, transparent 6px, var(--copper) 0) 0 0/14px 10px repeat-x; }
-.ribbon::before { top: -9px; transform: scaleY(-1); }
-.ribbon::after { bottom: -9px; }
-
-/* Письмо */
-.letter-sec .wrap { display: grid; gap: 44px; }
-@media (min-width: 1000px) { .letter-sec .wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; align-items: center; } }
-.letter-sec p { font-size: 19px; color: var(--ink-2); margin-top: 16px; max-width: 32em; }
-.letter-sec p.gv-cliff { font-style: italic; color: var(--copper); }
-.letter { position: relative; padding: 40px 30px 54px; background: var(--paper); background-image: var(--hatch); border: 1px solid var(--line); box-shadow: 0 18px 30px -18px rgba(42,26,14,.45); transform: rotate(-2deg); max-width: 520px; justify-self: center; transition: transform .4s ease; }
-.letter:hover { transform: rotate(-.5deg); }
-.letter .lbl { display: block; font-style: italic; font-size: 15px; color: var(--ink-3); }
-.letter .txt { margin-top: 18px; font-family: var(--font-hand); font-size: clamp(30px, 7vw, 40px); line-height: 1.15; color: var(--ink); }
-.letter .foot { display: block; margin-top: 18px; font-size: 15px; color: var(--ink-3); }
-.seal { position: absolute; right: 22px; bottom: -30px; width: 86px; height: 86px; filter: drop-shadow(0 4px 4px rgba(42,26,14,.3)); transform: rotate(-12deg); }
-
-/* Герои — колонка с цитатой */
-.cast { display: grid; gap: 28px; margin-top: 36px; }
-@media (min-width: 900px) { .cast { grid-template-columns: 1.15fr .85fr; gap: 48px; } }
-.cast blockquote { margin: 0; padding: 28px 28px 28px 32px; border-left: 4px double var(--copper); background: rgba(246,236,212,.6); font-family: var(--font-display); font-size: clamp(23px, 3vw, 30px); line-height: 1.25; color: var(--ink); font-style: italic; }
-.cast blockquote footer { margin-top: 14px; font-family: var(--font-text); font-style: normal; font-size: 16px; color: var(--ink-3); }
-.cast .gv-who p { font-size: 18px; color: var(--ink-2); margin-top: 14px; }
-.cast .gv-who p:first-child { margin-top: 0; }
-.cast .gv-who b { color: var(--ink); }
-
-/* Как проходит — ведомость */
-.how { background: var(--paper-2); background-image: var(--hatch); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.how .wrap { display: grid; gap: 40px; }
-@media (min-width: 1000px) { .how .wrap { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 64px; } }
-.how .side p { font-size: 18px; color: var(--ink-2); margin-top: 18px; max-width: 26em; }
-.steps { list-style: none; padding: 0; counter-reset: st; position: relative; }
-.steps::before { content: ""; position: absolute; left: 25px; top: 10px; bottom: 10px; border-left: 2px dotted var(--copper); }
-.steps li { counter-increment: st; position: relative; padding: 0 0 30px 74px; }
-.steps li:last-child { padding-bottom: 0; }
-.steps li::before { content: counter(st, upper-roman); position: absolute; left: 0; top: -4px; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); border: 1px solid var(--copper); box-shadow: 0 0 0 4px var(--paper-2), 0 0 0 5px var(--copper); font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--copper); }
-.steps h3 { font-family: var(--font-display); font-weight: 700; font-size: 27px; line-height: 1.1; color: var(--ink); }
-.steps p { margin-top: 6px; font-size: 17px; color: var(--ink-2); }
-
-/* Что увидите — коллаж */
-.gv-spots { list-style: none; padding: 0; margin-top: 40px; display: grid; gap: 26px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 700px) { .gv-spots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1100px) { .gv-spots { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 30px; } .gv-spots li { grid-column: span 2; } .gv-spots li:nth-child(1), .gv-spots li:nth-child(4) { grid-column: span 4; } .gv-spots li:nth-child(5), .gv-spots li:nth-child(6) { grid-column: span 3; } .gv-spots { align-items: start; } }
-.gv-spot { background: var(--paper); border: 1px solid var(--line); padding: 14px 14px 20px; box-shadow: 4px 6px 0 rgba(42,26,14,.08); transition: transform .3s ease, box-shadow .3s ease; }
-.gv-spot:nth-child(odd) { --rot: -.8deg; transform: rotate(-.8deg); }
-.gv-spot:nth-child(even) { --rot: .7deg; transform: rotate(.7deg); }
-.gv-spot:hover { transform: rotate(0) translateY(-3px); box-shadow: 6px 10px 0 rgba(42,26,14,.1); }
-.gv-spot .ph { background: #F3E7CB; border: 1px solid rgba(106,80,56,.4); aspect-ratio: 16/10; overflow: hidden; }
-.gv-spot .ph svg { width: 100%; height: 100%; display: block; }
-.gv-spot h3 { margin-top: 14px; font-family: var(--font-display); font-weight: 700; font-size: 27px; line-height: 1.1; color: var(--ink); }
-.gv-spot p { margin-top: 6px; font-size: 17px; color: var(--ink-2); }
-.gv-spot .cap { display: block; margin-top: 8px; font-size: 14px; font-style: italic; color: var(--ink-3); }
-
-/* Спор о высоте — широкая схема */
-.height { border-top: 1px solid var(--line); }
-.height .wrap { display: grid; gap: 32px; align-items: center; }
-@media (min-width: 1000px) { .height .wrap { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 56px; } }
-.height p { font-size: 19px; color: var(--ink-2); margin-top: 16px; max-width: 30em; }
-.height svg { width: 100%; height: auto; display: block; }
-
-/* Для кого */
-.forwho { background: var(--ink); color: var(--paper); }
-.forwho .gv-h { color: var(--paper); }
-.forwho .gv-h i { color: #E3A26A; }
-.forwho .grid { display: grid; gap: 30px; margin-top: 34px; }
-@media (min-width: 900px) { .forwho .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; } .forwho .grid > div { padding: 0 32px; border-left: 1px solid rgba(246,236,212,.25); } .forwho .grid > div:first-child { padding-left: 0; border-left: 0; } }
-.forwho h3 { font-family: var(--font-display); font-weight: 700; font-size: 26px; color: #F0C79A; }
-.forwho p { margin-top: 8px; font-size: 17px; color: #E7DCC4; }
-.forwho .note-hand { color: #E3A26A; margin-top: 30px; font-size: 26px; }
-
-/* FAQ */
-.theme-gravura .faq { margin-top: 30px; max-width: 860px; border-top: 1px solid var(--line); }
-.theme-gravura .faq details { border-bottom: 1px solid var(--line); }
-.theme-gravura .faq summary h3 { font-family: var(--font-text); font-size: 19px; font-weight: 700; color: var(--ink); }
-.theme-gravura .faq summary::after { color: var(--copper); }
-.theme-gravura .faq summary:hover h3 { color: var(--copper); }
-.theme-gravura .faq p { padding: 0 0 20px; font-size: 17px; color: var(--ink-2); max-width: 44em; }
-
-/* Финал */
-.launch { text-align: center; }
-.launch .card { position: relative; max-width: 640px; margin: 0 auto; padding: 48px 26px 44px; background: var(--paper); border: 1px solid var(--ink-3); box-shadow: 0 0 0 6px var(--paper), 0 0 0 7px var(--ink-3); }
-.launch .card p { margin: 16px auto 26px; font-size: 18px; color: var(--ink-2); max-width: 28em; }
-.launch .corner { position: absolute; width: 40px; height: 40px; color: var(--copper); }
-.launch .corner.tl { left: 8px; top: 8px; } .launch .corner.tr { right: 8px; top: 8px; transform: scaleX(-1); }
-.launch .corner.bl { left: 8px; bottom: 8px; transform: scaleY(-1); } .launch .corner.br { right: 8px; bottom: 8px; transform: scale(-1); }
-
-.theme-gravura .site-footer { border-top: 3px double var(--line); }
-.theme-gravura .site-footer .wrap { color: var(--ink-3); }
-.theme-gravura .site-footer a { color: var(--ink-2); }
-
-@media (prefers-reduced-motion: reduce) { .gv-spot, .letter, .gv-btn { transition: none; } }
-</style>
 <script src="../../assets/analytics.js" defer></script>
 </head>
-<body class="theme-gravura">
+<body class="case-page t-gravura">
 <a class="skip" href="#main">К содержанию</a>
 
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="../../" aria-label="Дворами — на главную">
-      <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#2A1A0E" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#2A1A0E" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#8E3E1A"/></svg>
-      <span>ДВОРАМИ</span>
-    </a>
+    <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F2EFE8" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F2EFE8" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#E1251B"/></svg><span>ДВОРАМИ</span></a>
     <nav class="nav" aria-label="Навигация по странице">
       <a href="#story">Сюжет</a>
-      <a href="#how">Как проходит</a>
       <a href="#spots">Что увидите</a>
-      <a href="#faq">Вопросы</a>
-      <a class="btn gv-btn" href="#buy">Взять дело</a>
+      <a href="#how">Загадки</a>
+      <a href="#practical">Что нужно знать</a>
+      <a class="nav-tg" data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener" aria-label="Telegram-канал «Дворами»"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.5 3.6 2.9 10.8c-1.3.5-1.3 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM8.8 13.4l9.6-6c.5-.3.9-.1.5.2l-8 7.3-.3 3.4-1.8-4.9z" fill="currentColor"/></svg><span>Telegram</span></a>
+      <a class="c-btn c-btn--sm" href="#buy">Взять дело</a>
     </nav>
   </div>
 </header>
 
 <main id="main">
-<section class="gv-hero" aria-labelledby="h1">
+<section id="top" class="c-hero" aria-labelledby="h1">
+  
   <div class="wrap">
     <div>
-      <a class="back" href="../">← Все квесты</a>
-      <span class="case-plaque">Дело №2 · Башня выше Ивана Великого</span>
-      <span class="kicker">Квест-прогулка по Чистым прудам и Покровке</span>
-      <h1 id="h1"><span class="ini">Дело</span> о&nbsp;башне выше Ивана Великого</h1>
-      <p class="intro">В 1707 году у Чистых прудов поднялась башня, которая спорила высотой с колокольней <b>Ивана Великого</b>. Через шестнадцать лет в неё ударила молния, и деревянный верх сгорел.</p>
-      <p class="intro">На почтамт пришло письмо без подписи. Случайность это, кара за гордыню или что-то третье — разбираться вам.</p>
-      <span class="status">Квест готовится к запуску</span>
-      <div class="gv-cta" data-cta>
-        <a class="gv-btn" href="#buy">Взять дело</a>
-        <a href="#how">Как устроен квест</a>
-        <span class="soon">Квест готовится к&nbsp;запуску: купить его можно будет на&nbsp;этой странице.</span>
+      <nav class="c-crumbs" aria-label="Хлебные крошки"><ol><li><a href="../../">Главная</a></li><li><a href="../">Квесты по Москве</a></li><li aria-current="page">Дело №2 · Башня выше Ивана Великого</li></ol></nav>
+      <span class="c-plaque">Дело №2 · Башня выше Ивана Великого</span>
+      <h1 id="h1"><span class="pre">Квест-прогулка по Чистым прудам и&nbsp;Покровке</span><span class="big">Дело о&nbsp;башне выше Ивана Великого</span></h1>
+      <p class="c-intro">В&nbsp;1707&nbsp;году у&nbsp;Чистых прудов поднялась башня, которая спорила высотой с&nbsp;колокольней <b>Ивана Великого</b>. Через шестнадцать лет в&nbsp;неё ударила молния, и&nbsp;деревянный верх сгорел.</p><p class="c-intro">На&nbsp;почтамт пришло письмо без подписи. Случайность это, кара за&nbsp;гордыню или что-то третье — разбираться вам.</p>
+      <div class="c-cta" data-cta>
+        <a class="c-btn" href="#buy">Взять дело · <span class="p">990&nbsp;₽</span></a>
+        <a class="c-link" href="#how">Как устроен квест</a>
+        <p class="c-status">В разработке. 990&nbsp;₽ — один код доступа на&nbsp;всю компанию.</p>
       </div>
     </div>
-    <figure class="plate">
-      <div class="plate-frame">
-        <svg viewBox="0 0 360 440" role="img" aria-label="Гравюра: многоярусная барочная башня со шпилем, над ней грозовая туча">
+    <figure class="c-cover"><svg viewBox="0 0 360 440" role="img" aria-label="Гравюра: многоярусная барочная башня со шпилем, над ней грозовая туча">
           <defs>
             <pattern id="hh" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="5" stroke="#2A1A0E" stroke-width=".8" opacity=".45"/></pattern>
             <pattern id="hv" width="4" height="4" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="4" stroke="#2A1A0E" stroke-width=".7" opacity=".5"/></pattern>
@@ -354,113 +302,67 @@
             <path d="M20 404 h320"/><path d="M30 412 h300" opacity=".6"/><path d="M44 420 h272" opacity=".4"/>
           </g>
           <g fill="#2A1A0E" opacity=".75"><path d="M40 404 v-34 q14-26 28 0 v34z"/><path d="M300 404 v-28 q12-22 24 0 v28z"/></g>
-        </svg>
-      </div>
-      <span class="note-hand" aria-hidden="true">выше? вровень?</span>
-      <figcaption>Башня у Чистых прудов. Рисунок по мотивам гравюр XVIII века</figcaption>
-    </figure>
+        </svg></figure>
   </div>
 </section>
 
-<section class="ribbon" aria-label="Квест в цифрах">
-  <div class="wrap">
-    <div><span class="n">10</span>точек на маршруте</div>
-    <div><span class="n">≈3 км</span>пешком, без спешки</div>
-    <div><span class="n">2–2,5 ч</span>вместе с остановкой на кофе</div>
-    <div><span class="n">М</span>старт у метро «Чистые пруды»</div>
-  </div>
+<section id="facts" class="c-facts" aria-label="Квест в цифрах">
+  <div class="wrap"><ul><li><span class="n">10</span>точек</li><li><span class="n">≈3&nbsp;км</span>пешком, без спешки</li><li><span class="n">2–2,5&nbsp;ч</span>вместе с&nbsp;остановкой на&nbsp;кофе</li><li><span class="n">0+</span>младшим — задания по&nbsp;желанию</li><li><span class="n">М</span>старт у&nbsp;метро «Чистые пруды»</li></ul></div>
 </section>
 
-<section id="story" class="gv-sec letter-sec" aria-labelledby="h-story">
+<section id="story" class="c-sec on-paper" aria-labelledby="h-story">
   <div class="wrap">
-    <div>
-      <h2 id="h-story" class="gv-h">Письмо без&nbsp;подписи <i>и без обратного адреса</i></h2>
-      <svg class="rule" viewBox="0 0 240 16" aria-hidden="true"><path d="M0 8h96M144 8h96" stroke="currentColor"/><path d="M120 1l7 7-7 7-7-7z" fill="currentColor"/><circle cx="104" cy="8" r="2" fill="currentColor"/><circle cx="136" cy="8" r="2" fill="currentColor"/></svg>
-      <p>1792 год. В бывшей усадьбе Меншикова только что открыли почтамт. Почтмейстер разбирает конверты и находит один без подписи. Внутри две строки о башне, которая стоит прямо за окном.</p>
-      <p>У каждого в нашей истории своя версия, почему в неё ударила молния. Письмо намекает, что все ошибаются. Почтмейстеру нужен ответ, и найти его можно только на улицах вокруг: в рельефах, вывесках и фасадах вокруг башни.</p>
-      <p class="gv-cliff">Слухов по пути будет много. Не все они врут, но и правды в них меньше, чем кажется.</p>
-    </div>
-    <div class="letter" data-reveal>
-      <span class="lbl">Москва, почтамт. Подписи нет</span>
-      <p class="txt">«Молния не ошиблась. Спросите того, кто знал заранее».</p>
-      <span class="foot">Кто знал? И о чём именно?</span>
-      <svg class="seal" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 4c8 0 10 6 17 8s13-1 17 6 0 12 3 18 9 9 7 17-8 9-10 16 2 13-5 18-12 0-18 4-9 9-17 9-10-6-17-8-13 1-17-6 0-12-3-18-9-9-7-17 8-9 10-16-2-13 5-18 12 0 18-4 9-9 17-9z" fill="#8E3E1A"/><circle cx="50" cy="50" r="27" fill="none" stroke="#5E240C" stroke-width="2"/><path d="M50 30v40M40 40l10-10 10 10M38 62h24" stroke="#F0C79A" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+    <div class="c-head"><span class="c-kicker">сюжет</span><h2 id="h-story" class="c-h">Письмо без&nbsp;подписи</h2></div>
+    <div class="c-story-grid">
+      <div class="c-prose"><p>1792&nbsp;год. В&nbsp;бывшей усадьбе Меншикова только что открыли почтамт. Почтмейстер разбирает конверты и&nbsp;находит один без подписи. Внутри две строки о&nbsp;башне, которая стоит прямо за&nbsp;окном.</p><p>У&nbsp;каждого в&nbsp;этой истории своя версия, почему в&nbsp;башню ударила молния. Письмо намекает, что все ошибаются. Почтмейстеру нужен ответ, и&nbsp;найти его можно только на&nbsp;улицах вокруг: в&nbsp;рельефах, вывесках и&nbsp;фасадах.</p><p class="c-cliff">Слухов по&nbsp;пути будет много. Не&nbsp;все они врут, но&nbsp;и&nbsp;правды в&nbsp;них меньше, чем кажется.</p></div>
+      <div class="c-artifact" data-reveal><div class="letter"><span class="lbl">Москва, почтамт. Подписи нет</span><p class="txt">«Молния не&nbsp;ошиблась. Спросите того, кто знал заранее».</p><span class="foot">Кто знал? И&nbsp;о&nbsp;чём именно?</span><span class="seal" aria-hidden="true"></span></div></div>
     </div>
   </div>
 </section>
 
-<section class="gv-sec" style="padding-top:0" aria-labelledby="h-cast">
+<section id="cast" class="c-sec" aria-labelledby="h-cast">
   <div class="wrap">
-    <h2 id="h-cast" class="gv-h">Кто ведёт дело <i>и кто мешает</i></h2>
-    <div class="cast">
-      <blockquote>«Слухи — та же почта, только без марки. Доходят быстро, а от кого — не узнаешь».<footer>Почтмейстер Евграф Савельич</footer></blockquote>
-      <div class="gv-who">
-        <p><b>Евграф Савельич</b> — почтмейстер, любит сургуч и точные даты. Он поможет, когда вы застрянете: подскажет, куда посмотреть, но думать будете вы.</p>
-        <p><b>Сорока Молва</b> собирает сплетни по всем бульварам. Нарочно она не врёт, просто пересказывает, что «все говорят». Её версии красивы, и каждую можно проверить на месте.</p>
-        <p><b>Свидетели</b> из разных лет — от каменщика, который клал стены башни, до киномеханика начала XX века. Каждый видел своё.</p>
+    <div class="c-head"><span class="c-kicker">кто ведёт дело</span><h2 id="h-cast" class="c-h">Почтмейстер, сорока и&nbsp;свидетели</h2></div>
+    <div class="c-cast"><blockquote class="c-quote">«Слухи — та&nbsp;же почта, только без марки. Доходят быстро, а&nbsp;от&nbsp;кого — не&nbsp;узнаешь»<footer>Почтмейстер Евграф Савельич</footer></blockquote><dl class="c-people"><div><dt>Евграф Савельич</dt><dd>почтмейстер, любит сургуч и&nbsp;точные даты. Поможет, когда вы застрянете: подскажет, куда посмотреть, но&nbsp;думать будете вы.</dd></div><div><dt>Сорока Молва</dt><dd>собирает сплетни по&nbsp;всем бульварам. Нарочно не&nbsp;врёт, просто пересказывает, что «все говорят». Её версии красивы, и&nbsp;каждую можно проверить на&nbsp;месте.</dd></div><div><dt>Свидетели</dt><dd>из&nbsp;разных лет — от&nbsp;часовщика, который заводил часы на&nbsp;башне, до&nbsp;киномеханика начала XX&nbsp;века. Каждый видел своё.</dd></div></dl></div>
+  </div>
+</section>
+
+<section id="spots" class="c-sec on-paper" aria-labelledby="h-spots">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">что увидите</span><h2 id="h-spots" class="c-h">Что вы увидите</h2><p class="c-lead">Шесть мест из&nbsp;десяти, не&nbsp;по&nbsp;порядку. Остальные откроются по&nbsp;ходу квеста.</p></div>
+    <div class="c-carousel" data-carousel>
+      <ul class="c-track" data-shuffle tabindex="0" aria-label="Места на маршруте, листаются вбок"><li class="c-spot"><figure><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: барочная башня за кованой оградой"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.3" fill="none"><path d="M160 14v30M152 44h16l-2 14h-12z"/><path d="M146 58h28v26h-28zM138 84h44v42h-44zM128 126h64v56h-64z"/><path d="M150 140a10 12 0 0 1 20 0v42h-20z"/><path d="M136 132v48M184 132v48"/></g><g stroke="#2A1A0E" stroke-width="1.6"><path d="M10 182h300"/><path d="M20 150v32M44 150v32M68 150v32M92 150v32M228 150v32M252 150v32M276 150v32M300 150v32"/><path d="M14 156h88M222 156h88"/></g><g fill="#8E3E1A"><path d="M20 146l-3 6h6zM44 146l-3 6h6zM68 146l-3 6h6zM92 146l-3 6h6zM228 146l-3 6h6zM252 146l-3 6h6zM276 146l-3 6h6zM300 146l-3 6h6z"/></g></svg></figure><h3>Меншикова башня</h3><p>Её строили как самую высокую в&nbsp;Москве. Что от&nbsp;этой высоты осталось — и&nbsp;куда делись пятьдесят колоколов?</p></li><li class="c-spot"><figure><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: пруд, деревья бульвара и скамейка"><rect width="320" height="200" fill="#F3E7CB"/><path d="M0 120h320v80H0z" fill="url(#hh)"/><g stroke="#2A1A0E" stroke-width="1.2" fill="none"><path d="M20 134q30-6 60 0t60 0 60 0 60 0 60 0" opacity=".6"/><path d="M40 156q30-6 60 0t60 0 60 0 60 0" opacity=".5"/><path d="M40 120V70M30 80q10-40 20 0M28 96q12-50 24 0"/><path d="M270 120V60M258 74q12-44 24 0M254 94q16-56 32 0"/><path d="M110 112h50M114 112v8M156 112v8M108 104h54"/></g><path d="M196 140q6-10 14-6 4-8 10 0l-4 6h-16z" fill="#2A1A0E" opacity=".7"/></svg></figure><h3>Чистые пруды</h3><p>Когда-то они звались Погаными. Почему — в&nbsp;Москве до&nbsp;сих пор спорят, и&nbsp;у&nbsp;каждой версии есть защитник.</p></li><li class="c-spot"><figure><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: фрагмент барочного фасада — парные колонны и круглое окно"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.3"><path d="M40 40h240v12H40z" fill="#E6D3AA"/><path d="M60 52h22v130H60zM92 52h22v130H92zM206 52h22v130h-22zM238 52h22v130h-22z" fill="url(#hv)"/><path d="M56 52h30M88 52h30M202 52h30M234 52h30M56 182h30M88 182h30M202 182h30M234 182h30" stroke-width="2"/><circle cx="160" cy="88" r="22" fill="#F3E7CB"/><circle cx="160" cy="88" r="15" fill="none"/><path d="M134 128h52v54h-52z" fill="#F3E7CB"/><path d="M134 128q26-22 52 0" fill="none"/></g><path d="M0 184h320" stroke="#2A1A0E" stroke-width="2"/></svg></figure><h3>Дом-комод</h3><p>Барочный дворец на&nbsp;Покровке москвичи прозвали комодом. Посмотрите на&nbsp;него с&nbsp;другой стороны улицы — и&nbsp;поймёте, за&nbsp;что.</p></li><li class="c-spot"><figure><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: загнутая крыша в китайском духе с колокольчиком"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.4" fill="none"><path d="M30 96q60 10 130-30 70 40 130 30-10 12-30 10-50 0-100-24-50 24-100 24-20 2-30-10z" fill="#E6D3AA"/><path d="M70 104v80M250 104v80M60 184h200"/><path d="M100 120h120v64H100z" fill="url(#hv)"/><path d="M130 136h60v48h-60z" fill="#F3E7CB"/></g><g stroke="#8E3E1A" stroke-width="1.6" fill="#8E3E1A"><path d="M44 104v12" fill="none"/><path d="M38 116h12l-2 8h-8z"/><path d="M276 104v12" fill="none"/><path d="M270 116h12l-2 8h-8z"/></g><path d="M150 52q10-14 20 0" fill="none" stroke="#2A1A0E" stroke-width="1.4"/></svg></figure><h3>Пагода на&nbsp;Мясницкой</h3><p>Чайный магазин с&nbsp;драконами на&nbsp;фасаде. О&nbsp;нём рассказывают красивую историю. Правдива ли она?</p></li><li class="c-spot"><figure><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: пунктиром — контур исчезнувших крепостных ворот над бульваром"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.4" fill="none" stroke-dasharray="6 5"><path d="M110 184V80h100v104"/><path d="M140 184v-50a20 22 0 0 1 40 0v50"/><path d="M104 80l56-44 56 44"/><path d="M110 80V66h14v14M138 80V66h14v14M168 80V66h14v14M196 80V66h14v14"/><path d="M20 184v-60h90M210 124h90v60"/></g><g stroke="#2A1A0E" stroke-width="1.6"><path d="M0 184h320"/><path d="M0 192h320" opacity=".5"/></g><path d="M46 176h40v-12h-40z" fill="#8E3E1A" opacity=".8"/><circle cx="54" cy="180" r="3" fill="#2A1A0E"/><circle cx="78" cy="180" r="3" fill="#2A1A0E"/></svg></figure><h3>Ворота, которых нет</h3><p>Площадь называется Покровскими воротами, но&nbsp;самих ворот здесь нет больше двух веков. Куда они делись?</p></li><li class="c-spot"><figure><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: окно доходного дома в лепной раме, рядом след звериной лапы"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.4" fill="none"><path d="M110 30h100v150H110z" fill="url(#hv)"/><path d="M124 46h72v120h-72z" fill="#F3E7CB"/><path d="M160 46v120M124 100h72"/><path d="M100 30q60-30 120 0"/></g><g fill="#8E3E1A"><ellipse cx="258" cy="118" rx="16" ry="13"/><ellipse cx="240" cy="96" rx="6" ry="8"/><ellipse cx="254" cy="88" rx="6" ry="8"/><ellipse cx="268" cy="88" rx="6" ry="8"/><ellipse cx="280" cy="98" rx="6" ry="8"/></g><path d="M40 70q10-16 24-4 12-14 22 2" fill="none" stroke="#2A1A0E" stroke-width="1.2"/></svg></figure><h3>Дом со&nbsp;зверями</h3><p>Звери на&nbsp;фасаде сидят там с&nbsp;1909&nbsp;года. Сколько их, вы узнаете, только если поднимете голову.</p></li></ul>
+      <div class="c-car-nav">
+        <button type="button" data-dir="-1" aria-label="Предыдущее место"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H6M11 6.5 5.5 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" data-dir="1" aria-label="Следующее место"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span class="c-car-count" aria-live="polite"></span>
+        <span class="c-car-hint" aria-hidden="true">листайте вбок</span>
       </div>
     </div>
   </div>
 </section>
 
-<section id="how" class="gv-sec how" aria-labelledby="h-how">
+<section id="learn" class="c-sec" aria-labelledby="h-learn">
   <div class="wrap">
-    <div class="side">
-      <h2 id="h-how" class="gv-h">Как проходит <i>квест</i></h2>
-      <p>Гида нет: вас ведёт телефон. Идёте в своём темпе, можно задержаться у фасада или зайти в кафе на Покровке.</p>
-      <p><span class="note-hand">Ответы на загадки нужно найти на месте</span></p>
-    </div>
-    <ol class="steps">
-      <li><h3>Начните у метро</h3><p>Выйдите на «Чистых прудах» и откройте квест в браузере телефона. Одного телефона хватит на всю компанию.</p></li>
-      <li><h3>Слушайте свидетелей</h3><p>На каждой точке — короткая сцена. Свидетель рассказывает свою версию, а Сорока подбрасывает свою.</p></li>
-      <li><h3>Разгадывайте</h3><p>Загадки разные: где-то надо сосчитать, где-то рассудить спор двух свидетелей, где-то прочитать надпись на фасаде как шифр.</p></li>
-      <li><h3>Если застряли</h3><p>У каждой загадки три подсказки, третья — ответ. Проиграть нельзя.</p></li>
-      <li><h3>Соберите улики</h3><p>За каждую точку вы получаете год и букву. В конце из них сложится ответ на письмо.</p></li>
-    </ol>
+    <div class="c-head"><span class="c-kicker">что узнаете по дороге</span><h2 id="h-learn" class="c-h">Что узнаете по&nbsp;дороге</h2></div>
+    <ol class="c-learn"><li>Какая московская башня когда-то спорила высотой с&nbsp;Иваном Великим.</li><li>Почему дом на&nbsp;Мясницкой похож на&nbsp;китайскую пагоду.</li><li>Как пруды сменили неприятное имя на&nbsp;«Чистые».</li><li>Почему один дом на&nbsp;Покровке зовут комодом.</li></ol>
   </div>
 </section>
 
-<section id="spots" class="gv-sec" aria-labelledby="h-spots">
+<section id="how" class="c-sec on-alt" aria-labelledby="h-how">
   <div class="wrap">
-    <h2 id="h-spots" class="gv-h">Что вы <i>увидите</i></h2>
-    <p style="margin-top:16px;font-size:19px;color:var(--ink-2);max-width:36em">Шесть мест из десяти. Остальные откроются по ходу квеста.</p>
-    <ul class="gv-spots" data-shuffle>
-      <li class="gv-spot rise">
-        <div class="ph"><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: барочная башня за кованой оградой"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.3" fill="none"><path d="M160 14v30M152 44h16l-2 14h-12z"/><path d="M146 58h28v26h-28zM138 84h44v42h-44zM128 126h64v56h-64z"/><path d="M150 140a10 12 0 0 1 20 0v42h-20z"/><path d="M136 132v48M184 132v48"/></g><g stroke="#2A1A0E" stroke-width="1.6"><path d="M10 182h300"/><path d="M20 150v32M44 150v32M68 150v32M92 150v32M228 150v32M252 150v32M276 150v32M300 150v32"/><path d="M14 156h88M222 156h88"/></g><g fill="#8E3E1A"><path d="M20 146l-3 6h6zM44 146l-3 6h6zM68 146l-3 6h6zM92 146l-3 6h6zM228 146l-3 6h6zM252 146l-3 6h6zM276 146l-3 6h6zM300 146l-3 6h6z"/></g></svg></div>
-        <h3>Меншикова башня</h3><p>Её строили как самую высокую в Москве. Что от этой высоты осталось — и куда делись пятьдесят колоколов?</p><span class="cap">Архангельский переулок</span>
-      </li>
-      <li class="gv-spot rise">
-        <div class="ph"><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: пруд, деревья бульвара и скамейка"><rect width="320" height="200" fill="#F3E7CB"/><path d="M0 120h320v80H0z" fill="url(#hh)"/><g stroke="#2A1A0E" stroke-width="1.2" fill="none"><path d="M20 134q30-6 60 0t60 0 60 0 60 0 60 0" opacity=".6"/><path d="M40 156q30-6 60 0t60 0 60 0 60 0" opacity=".5"/><path d="M40 120V70M30 80q10-40 20 0M28 96q12-50 24 0"/><path d="M270 120V60M258 74q12-44 24 0M254 94q16-56 32 0"/><path d="M110 112h50M114 112v8M156 112v8M108 104h54"/></g><path d="M196 140q6-10 14-6 4-8 10 0l-4 6h-16z" fill="#2A1A0E" opacity=".7"/></svg></div>
-        <h3>Чистые пруды</h3><p>Когда-то они звались Погаными. Почему — в Москве до сих пор спорят, и у каждой версии есть защитник.</p><span class="cap">Чистопрудный бульвар</span>
-      </li>
-      <li class="gv-spot rise">
-        <div class="ph"><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: фрагмент барочного фасада — парные колонны и круглое окно"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.3"><path d="M40 40h240v12H40z" fill="#E6D3AA"/><path d="M60 52h22v130H60zM92 52h22v130H92zM206 52h22v130h-22zM238 52h22v130h-22z" fill="url(#hv)"/><path d="M56 52h30M88 52h30M202 52h30M234 52h30M56 182h30M88 182h30M202 182h30M234 182h30" stroke-width="2"/><circle cx="160" cy="88" r="22" fill="#F3E7CB"/><circle cx="160" cy="88" r="15" fill="none"/><path d="M134 128h52v54h-52z" fill="#F3E7CB"/><path d="M134 128q26-22 52 0" fill="none"/></g><path d="M0 184h320" stroke="#2A1A0E" stroke-width="2"/></svg></div>
-        <h3>Дом-комод</h3><p>Барочный дворец на Покровке москвичи прозвали комодом. Посмотрите на него с другой стороны улицы — и поймёте, за что.</p><span class="cap">Покровка</span>
-      </li>
-      <li class="gv-spot rise">
-        <div class="ph"><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: загнутая крыша в китайском духе с колокольчиком"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.4" fill="none"><path d="M30 96q60 10 130-30 70 40 130 30-10 12-30 10-50 0-100-24-50 24-100 24-20 2-30-10z" fill="#E6D3AA"/><path d="M70 104v80M250 104v80M60 184h200"/><path d="M100 120h120v64H100z" fill="url(#hv)"/><path d="M130 136h60v48h-60z" fill="#F3E7CB"/></g><g stroke="#8E3E1A" stroke-width="1.6" fill="#8E3E1A"><path d="M44 104v12" fill="none"/><path d="M38 116h12l-2 8h-8z"/><path d="M276 104v12" fill="none"/><path d="M270 116h12l-2 8h-8z"/></g><path d="M150 52q10-14 20 0" fill="none" stroke="#2A1A0E" stroke-width="1.4"/></svg></div>
-        <h3>Пагода на Мясницкой</h3><p>Чайный магазин с драконами на фасаде. О нём рассказывают красивую историю. Правдива ли она?</p><span class="cap">Мясницкая улица</span>
-      </li>
-      <li class="gv-spot rise">
-        <div class="ph"><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: пунктиром — контур исчезнувших крепостных ворот над бульваром"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.4" fill="none" stroke-dasharray="6 5"><path d="M110 184V80h100v104"/><path d="M140 184v-50a20 22 0 0 1 40 0v50"/><path d="M104 80l56-44 56 44"/><path d="M110 80V66h14v14M138 80V66h14v14M168 80V66h14v14M196 80V66h14v14"/><path d="M20 184v-60h90M210 124h90v60"/></g><g stroke="#2A1A0E" stroke-width="1.6"><path d="M0 184h320"/><path d="M0 192h320" opacity=".5"/></g><path d="M46 176h40v-12h-40z" fill="#8E3E1A" opacity=".8"/><circle cx="54" cy="180" r="3" fill="#2A1A0E"/><circle cx="78" cy="180" r="3" fill="#2A1A0E"/></svg></div>
-        <h3>Ворота, которых нет</h3><p>Площадь называется Покровскими воротами, но самих ворот здесь нет уже больше двух веков. Куда они делись?</p><span class="cap">Покровские ворота</span>
-      </li>
-      <li class="gv-spot rise">
-        <div class="ph"><svg viewBox="0 0 320 200" role="img" aria-label="Рисунок: окно доходного дома в лепной раме, рядом след звериной лапы"><rect width="320" height="200" fill="#F3E7CB"/><g stroke="#2A1A0E" stroke-width="1.4" fill="none"><path d="M110 30h100v150H110z" fill="url(#hv)"/><path d="M124 46h72v120h-72z" fill="#F3E7CB"/><path d="M160 46v120M124 100h72"/><path d="M100 30q60-30 120 0"/></g><g fill="#8E3E1A"><ellipse cx="258" cy="118" rx="16" ry="13"/><ellipse cx="240" cy="96" rx="6" ry="8"/><ellipse cx="254" cy="88" rx="6" ry="8"/><ellipse cx="268" cy="88" rx="6" ry="8"/><ellipse cx="280" cy="98" rx="6" ry="8"/></g><path d="M40 70q10-16 24-4 12-14 22 2" fill="none" stroke="#2A1A0E" stroke-width="1.2"/></svg></div>
-        <h3>Дом со зверями</h3><p>Звери на фасаде сидят там с 1909 года. Сколько их, вы узнаете, только если поднимете голову.</p><span class="cap">Чистопрудный бульвар</span>
-      </li>
-    </ul>
+    <div class="c-head"><span class="c-kicker">как устроены загадки</span><h2 id="h-how" class="c-h">Год и&nbsp;буква с&nbsp;каждой точки</h2></div>
+    <div class="c-how">
+      <div class="c-prose"><p>Гида нет: вас ведёт телефон. Загадки разные: где-то надо сосчитать, где-то рассудить спор двух свидетелей, где-то прочитать надпись на&nbsp;фасаде как шифр.</p><p>За&nbsp;каждую точку вы получаете год и&nbsp;букву. В&nbsp;конце из&nbsp;них сложится ответ на&nbsp;письмо. У&nbsp;каждой загадки три подсказки, третья — ответ, так что проиграть нельзя.</p></div>
+      <ol class="c-steps"><li><h3>Берёте дело</h3><p>Один код доступа на&nbsp;всю компанию. Квест в&nbsp;разработке, о&nbsp;старте объявим в&nbsp;Telegram.</p></li><li><h3>Начинаете у&nbsp;метро «Чистые пруды»</h3><p>Квест открывается в&nbsp;браузере телефона, одного телефона хватит на&nbsp;всю компанию.</p></li><li><h3>Слушаете свидетелей и&nbsp;Сороку</h3><p>На&nbsp;каждой точке — короткая сцена и&nbsp;версия, которую можно проверить на&nbsp;месте.</p></li><li><h3>Отвечаете на&nbsp;письмо</h3><p>Из&nbsp;собранных улик сложится ответ: кто знал заранее и&nbsp;о&nbsp;чём.</p></li></ol>
+    </div>
   </div>
 </section>
 
-<section class="gv-sec height" aria-labelledby="h-height">
+<section id="world" class="c-sec on-paper" aria-labelledby="h-world">
   <div class="wrap">
-    <div>
-      <h2 id="h-height" class="gv-h">Спор, который длится <i>три века</i></h2>
-      <p>Одни источники пишут, что башня была выше Ивана Великого на полторы сажени. Другие — что вровень. Кто прав — придётся решать на месте, и к этому спору квест вас ещё вернёт.</p>
-      <p><span class="note-hand">Подсказка: смотрите не только вверх</span></p>
-    </div>
-    <svg viewBox="0 0 520 320" role="img" aria-label="Схема: силуэты колокольни Ивана Великого и башни у Чистых прудов рядом, между ними знак вопроса">
+    <div class="c-head"><span class="c-kicker">вокруг дела</span><h2 id="h-world" class="c-h">Спор, который длится три века</h2></div>
+    <div class="c-story-grid"><div class="c-prose"><p>Одни источники пишут, что башня была выше Ивана Великого на&nbsp;полторы сажени. Другие — что вровень. Кто прав, придётся решать на&nbsp;месте, и&nbsp;к&nbsp;этому спору квест вас ещё вернёт.</p><p class="c-note">Подсказка: смотрите не&nbsp;только вверх</p></div><figure class="c-artifact"><svg viewBox="0 0 520 320" role="img" aria-label="Схема: силуэты колокольни Ивана Великого и башни у Чистых прудов рядом, между ними знак вопроса">
       <rect width="520" height="320" fill="#F3E7CB" stroke="#B79A6A"/>
       <g stroke="#B79A6A" stroke-width="1" stroke-dasharray="3 5"><path d="M20 60h480M20 120h480M20 180h480M20 240h480"/></g>
       <g fill="#2A1A0E" opacity=".85">
@@ -476,118 +378,70 @@
       <text x="380" y="312" text-anchor="middle" font-family="PT Serif, serif" font-size="15" fill="#8E3E1A">башня у Чистых прудов</text>
       <text x="260" y="170" text-anchor="middle" font-family="Caveat, cursive" font-size="64" fill="#8E3E1A">?</text>
       <path d="M190 62q70-30 140 0" fill="none" stroke="#8E3E1A" stroke-width="1.5" stroke-dasharray="4 4"/>
-    </svg>
+    </svg></figure></div>
   </div>
 </section>
 
-<section class="gv-sec forwho" aria-labelledby="h-who">
+<section id="practical" class="c-sec" aria-labelledby="h-practical">
   <div class="wrap">
-    <h2 id="h-who" class="gv-h">Для кого <i>этот квест</i></h2>
-    <div class="grid">
-      <div><h3>Компания или пара</h3><p>Играть можно одному, вдвоём, с друзьями или семьёй. В компании интереснее: версии лучше рассуждаются вслух.</p></div>
-      <div><h3>Взрослые и подростки</h3><p>Основные загадки рассчитаны на взрослых: где-то надо сопоставить даты, где-то поймать сплетню на неточности.</p></div>
-      <div><h3>Если с вами младшие</h3><p>Для них есть задания по желанию: найти зверей на фасаде, сосчитать драконов, отыскать вазы на башне. На разгадку они не влияют.</p></div>
-    </div>
-    <p class="note-hand">Знать историю заранее не нужно: всё, что понадобится, вы увидите по дороге</p>
+    <div class="c-head"><span class="c-kicker">что нужно знать</span><h2 id="h-practical" class="c-h">Что нужно знать</h2></div>
+    <dl class="c-practical"><div><dt>Старт</dt><dd>Метро «Чистые пруды», у&nbsp;памятника Грибоедову.</dd></div><div><dt>Финиш</dt><dd>Покровка,&nbsp;22, у&nbsp;Дома-комода. Оттуда около 10&nbsp;минут бульваром обратно к&nbsp;метро «Чистые пруды».</dd></div><div><dt>Маршрут</dt><dd>10&nbsp;точек, около 3&nbsp;км пешком (длину уточним на&nbsp;полевом тесте).</dd></div><div><dt>Время</dt><dd>2–2,5 часа вместе с&nbsp;остановкой на&nbsp;кофе.</dd></div><div><dt>Возраст</dt><dd>0+. Основные загадки — для взрослых и&nbsp;подростков, для младших есть задания по&nbsp;желанию.</dd></div><div><dt>Как играть</dt><dd>В&nbsp;браузере телефона, одного достаточно на&nbsp;всю компанию. Нужен мобильный интернет.</dd></div><div><dt>Перерыв</dt><dd>Кафе на&nbsp;Покровке и&nbsp;у&nbsp;бульвара. Прогресс сохраняется.</dd></div><div><dt>Погода и&nbsp;сезон</dt><dd>В&nbsp;любое время года: загадки — по&nbsp;фасадам и&nbsp;надписям. Лучше идти в&nbsp;светлое время.</dd></div><div><dt>Дорога</dt><dd>Бульвар, тротуары и&nbsp;переулки. Внутрь музеев и&nbsp;храмов заходить не&nbsp;нужно.</dd></div></dl>
   </div>
 </section>
 
 <!-- seo:start -->
-<section id="about-place" class="gv-sec seo-ref" aria-labelledby="h-seo">
+<section id="about-place" class="c-sec on-paper seo-ref" aria-labelledby="h-seo">
   <div class="wrap">
-    <h2 id="h-seo" class="gv-h">Чистые пруды и&nbsp;Покровка: <i>справка</i></h2>
+    <div class="c-head"><span class="c-kicker">справка о районе</span><h2 id="h-seo" class="c-h">Чистые пруды и&nbsp;Покровка: справка</h2></div>
     <p class="seo-lead">Чистые пруды и&nbsp;Покровка — старая Москва у&nbsp;Бульварного кольца, к&nbsp;северо-востоку от&nbsp;Кремля. Здесь в&nbsp;нескольких минутах друг от&nbsp;друга стоят Меншикова башня, барочный Дом-комод и&nbsp;чайный магазин с&nbsp;драконами на&nbsp;фасаде.</p>
-    <div class="seo-grid">
-      <div>
-        <h3>Меншикова башня: что известно точно</h3>
-        <ul>
-          <li>Её настоящее название — церковь Архангела Гавриила, адрес — Архангельский переулок, 15а. Церковь на&nbsp;этом месте упоминается ещё в&nbsp;1551&nbsp;году.</li>
-          <li>В&nbsp;1704&nbsp;году Александр Меншиков велел снести старую церковь и&nbsp;строить новую. Руководил стройкой Иван Зарудный, с&nbsp;ним работал Доменико Трезини, который потом уехал в&nbsp;Петербург.</li>
-          <li>В&nbsp;1708&nbsp;году на&nbsp;башне висели 50&nbsp;колоколов и&nbsp;английские часы с&nbsp;боем: они отбивали часы, получасы и&nbsp;четверти.</li>
-          <li>В&nbsp;1710&nbsp;году Меншиков стал губернатором Петербурга, бросил московскую стройку и&nbsp;забрал мастеров с&nbsp;собой.</li>
-          <li>В&nbsp;начале XIX&nbsp;века на&nbsp;стенах появились латинские масонские надписи и&nbsp;знаки. В&nbsp;1852&nbsp;году митрополит Филарет велел убрать «розенкрейцерские» символы.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Чистые пруды и&nbsp;бульвар</h3>
-        <ul>
-          <li>Раньше пруды называли Погаными. Почему — версий несколько, и&nbsp;спор не&nbsp;закончен до&nbsp;сих пор.</li>
-          <li>Чистопрудный бульвар закончили в&nbsp;1820&nbsp;году. В&nbsp;нём 822&nbsp;метра, это второй по&nbsp;длине бульвар Москвы после Тверского.</li>
-          <li>«Колизей» (Чистопрудный бульвар, 19) построил Роман Клейн в&nbsp;1914&nbsp;году как кинотеатр на&nbsp;840&nbsp;мест. С&nbsp;1974&nbsp;года здесь театр «Современник».</li>
-          <li>Дом со&nbsp;зверями (Чистопрудный бульвар, 14) появился в&nbsp;1909&nbsp;году, архитекторы — Лев Кравецкий и&nbsp;Пётр Микини.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Покровка и&nbsp;Мясницкая</h3>
-        <ul>
-          <li><b>Дом-комод</b> (Апраксинский дворец, Покровка, 22) — елизаветинское барокко. Его долго приписывали Растрелли и&nbsp;Карлу Бланку, а&nbsp;теперь автором считают Дмитрия Ухтомского: его подпись стоит на&nbsp;чертеже от&nbsp;15&nbsp;мая 1752&nbsp;года. С&nbsp;1861 по&nbsp;1917&nbsp;год здесь была 4-я мужская гимназия.</li>
-          <li>Говорят, что в&nbsp;этом доме венчались Елизавета Петровна и&nbsp;Разумовский, но&nbsp;это, скорее всего, домысел.</li>
-          <li><b>Чайный дом Перлова</b> (Мясницкая, 19) строил Роман Клейн, а&nbsp;китайский фасад около 1896&nbsp;года, к&nbsp;коронации, выполнил Карл Гиппиус. С&nbsp;ним связана популярная история о&nbsp;китайском после. Правдива ли она, вы проверите на&nbsp;маршруте.</li>
-          <li><b>Покровские ворота</b> были воротами в&nbsp;стене Белого города. Стену разобрали в&nbsp;XVIII&nbsp;веке, и&nbsp;на&nbsp;её месте теперь бульвары.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Как добраться</h3>
-        <p>Квест начинается у&nbsp;метро «Чистые пруды». Все загадки решаются снаружи, по&nbsp;фасадам, табличкам и&nbsp;надписям, поэтому билеты в&nbsp;музеи и&nbsp;храмы не&nbsp;нужны.</p>
-        <p>Квест готовится к&nbsp;запуску. Дату объявим в&nbsp;Telegram-канале «Дворами».</p>
-      </div>
-    </div>
+    <div class="seo-grid"><div><h3>Меншикова башня: что известно точно</h3><ul><li>Её настоящее название — церковь Архангела Гавриила, адрес — Архангельский переулок,&nbsp;15а. Церковь на&nbsp;этом месте упоминается ещё в&nbsp;1551&nbsp;году.</li><li>В&nbsp;1704&nbsp;году Александр Меншиков велел строить новую церковь. Руководил стройкой Иван Зарудный, с&nbsp;ним работал Доменико Трезини, который потом уехал в&nbsp;Петербург.</li><li>В&nbsp;1708&nbsp;году на&nbsp;башне висели 50&nbsp;колоколов и&nbsp;английские часы с&nbsp;боем.</li><li>В&nbsp;1710&nbsp;году Меншиков стал губернатором Петербурга, бросил московскую стройку и&nbsp;забрал мастеров с&nbsp;собой.</li></ul></div>
+<div><h3>Чистые пруды и&nbsp;бульвар</h3><ul><li>Раньше пруды называли Погаными. Почему — версий несколько, и&nbsp;спор не&nbsp;закончен до&nbsp;сих пор.</li><li>Чистопрудный бульвар закончили в&nbsp;1820&nbsp;году. В&nbsp;нём 822&nbsp;метра, это второй по&nbsp;длине бульвар Москвы после Тверского.</li><li>«Колизей» (Чистопрудный бульвар,&nbsp;19) построил Роман Клейн в&nbsp;1914&nbsp;году как кинотеатр. С&nbsp;1974&nbsp;года здесь театр «Современник».</li><li>Дом со&nbsp;зверями (Чистопрудный бульвар,&nbsp;14) появился в&nbsp;1909&nbsp;году.</li></ul></div>
+<div><h3>Покровка и&nbsp;Мясницкая</h3><ul><li><b>Дом-комод</b> (Апраксинский дворец, Покровка,&nbsp;22) — елизаветинское барокко. Его долго приписывали Растрелли, а&nbsp;теперь автором считают Дмитрия Ухтомского.</li><li><b>Чайный дом Перлова</b> (Мясницкая,&nbsp;19): китайский фасад около 1896&nbsp;года, к&nbsp;коронации, выполнил Карл Гиппиус. С&nbsp;ним связана популярная история о&nbsp;китайском после. Правдива ли она, вы проверите на&nbsp;маршруте.</li><li><b>Покровские ворота</b> были воротами в&nbsp;стене Белого города. Стену разобрали в&nbsp;XVIII&nbsp;веке, и&nbsp;на&nbsp;её месте теперь бульвары.</li></ul></div>
+<div><h3>Как добраться</h3><p>Квест начинается у&nbsp;метро «Чистые пруды», а&nbsp;заканчивается на&nbsp;Покровке, в&nbsp;10&nbsp;минутах ходьбы от&nbsp;него. Все загадки решаются снаружи, по&nbsp;фасадам, табличкам и&nbsp;надписям, поэтому билеты в&nbsp;музеи и&nbsp;храмы не&nbsp;нужны.</p></div></div>
   </div>
 </section>
 <!-- seo:end -->
 
-<section id="faq" class="gv-sec" aria-labelledby="h-faq">
+<section id="faq" class="c-sec" aria-labelledby="h-faq">
   <div class="wrap">
-    <h2 id="h-faq" class="gv-h">Вопросы <i>и ответы</i></h2>
-    <div class="faq">
-      <details><summary><h3>Когда можно будет пройти квест?</h3></summary><p>Дату запуска объявим в нашем Telegram-канале. Подпишитесь, и вы узнаете первыми.</p></details>
-      <details><summary><h3>Где начинается квест?</h3></summary><p>У метро «Чистые пруды». Точный выход и место встречи с первым свидетелем квест покажет на старте.</p></details>
-      <details><summary><h3>Сколько длится квест и сколько придётся идти?</h3></summary><p>По нашей оценке, 2–2,5 часа вместе с остановкой на кофе: 10 точек, около 3 км пешком.</p></details>
-      <details><summary><h3>Можно ли пройти квест с детьми?</h3></summary><p>Да. Основные загадки рассчитаны на взрослых и подростков, а для младших есть задания по желанию: найти, сосчитать, отыскать на фасаде.</p></details>
-      <details><summary><h3>Нужно ли заходить в музеи или храмы?</h3></summary><p>Нет. Все загадки решаются снаружи, по фасадам, табличкам и надписям. Билеты никуда покупать не нужно.</p></details>
-      <details><summary><h3>Нужен ли интернет?</h3></summary><p>Да. Квест открывается в браузере телефона, дорогу к точкам показывает карта. Зарядите телефон перед стартом.</p></details>
+    <div class="c-head"><span class="c-kicker">спрашивают</span><h2 id="h-faq" class="c-h">Частые вопросы</h2></div>
+    <div class="c-faq"><details open><summary><h3>Где начинается и&nbsp;заканчивается квест?</h3></summary><p>Старт у&nbsp;метро «Чистые пруды», у&nbsp;памятника Грибоедову. Финиш на&nbsp;Покровке,&nbsp;22: оттуда около 10&nbsp;минут бульваром обратно к&nbsp;метро.</p></details><details><summary><h3>Сколько длится квест и&nbsp;сколько придётся идти?</h3></summary><p>По&nbsp;нашей оценке, 2–2,5 часа вместе с&nbsp;остановкой на&nbsp;кофе: 10&nbsp;точек, около 3&nbsp;км пешком.</p></details><details><summary><h3>Можно ли пройти квест с&nbsp;детьми?</h3></summary><p>Да. Основные загадки рассчитаны на&nbsp;взрослых и&nbsp;подростков, а&nbsp;для младших есть задания по&nbsp;желанию: найти зверей на&nbsp;фасаде, сосчитать драконов. На&nbsp;разгадку они не&nbsp;влияют.</p></details><details><summary><h3>Сколько стоит квест и&nbsp;сколько человек может играть?</h3></summary><p>990&nbsp;₽ за&nbsp;квест: один код доступа на&nbsp;всю компанию. Хватит одного телефона.</p></details><details><summary><h3>Когда можно будет пройти квест?</h3></summary><p>Квест в&nbsp;разработке. Дату запуска объявим в&nbsp;Telegram-канале «Дворами».</p></details><details><summary><h3>Нужно ли заходить в&nbsp;музеи или храмы?</h3></summary><p>Нет. Все загадки решаются снаружи, по&nbsp;фасадам, табличкам и&nbsp;надписям.</p></details><details><summary><h3>Нужен ли интернет?</h3></summary><p>Да. Квест открывается в&nbsp;браузере телефона, дорогу к&nbsp;точкам показывает карта. Зарядите телефон перед стартом.</p></details><details><summary><h3>Что делать, если не&nbsp;получается разгадать загадку?</h3></summary><p>Открыть подсказку. У&nbsp;каждой загадки их три, и&nbsp;последняя — это ответ.</p></details></div>
+  </div>
+</section>
+
+<section id="buy" class="c-sec on-alt" aria-labelledby="h-buy">
+  <div class="wrap">
+    <div class="c-head"><span class="c-kicker">взять дело</span><h2 id="h-buy" class="c-h">Почтмейстер ждёт ответа</h2></div>
+    <div class="c-buy-card" data-cta>
+      <span class="price">990&nbsp;₽</span>
+      <span class="per">за квест, один код доступа на&nbsp;всю компанию</span>
+      <span class="status">В разработке</span>
+      <p>Квест в&nbsp;разработке, взять дело можно будет здесь. Напишем в&nbsp;Telegram, как только письмо можно будет вскрыть.</p>
+      <div class="c-buy-actions">
+        <a class="c-btn" data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.5 3.6 2.9 10.8c-1.3.5-1.3 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM8.8 13.4l9.6-6c.5-.3.9-.1.5.2l-8 7.3-.3 3.4-1.8-4.9z" fill="currentColor"/></svg>Узнать о старте продаж</a>
+        <a class="c-link" href="#how">Как устроен квест</a>
+      </div>
     </div>
   </div>
 </section>
 
-<section id="buy" class="gv-sec launch" aria-labelledby="h-launch" style="padding-top:0">
+<section id="sources" class="c-sources" aria-label="Источники">
   <div class="wrap">
-    <div class="card" data-cta>
-      <svg class="corner tl" viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38V8q0-6 6-6h30M8 30V14q0-6 6-6h16" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="3" fill="currentColor"/></svg>
-      <svg class="corner tr" viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38V8q0-6 6-6h30M8 30V14q0-6 6-6h16" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="3" fill="currentColor"/></svg>
-      <svg class="corner bl" viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38V8q0-6 6-6h30M8 30V14q0-6 6-6h16" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="3" fill="currentColor"/></svg>
-      <svg class="corner br" viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38V8q0-6 6-6h30M8 30V14q0-6 6-6h16" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="3" fill="currentColor"/></svg>
-      <h2 id="h-launch" class="gv-h">Почтмейстер ждёт <i>ответа</i></h2>
-      <p>Квест готовится к запуску, и купить дело можно будет здесь. Напишем в Telegram, как только письмо можно будет вскрыть.</p>
-      <a class="gv-btn" href="https://t.me/dvorami_quest" data-tg="channel" rel="noopener" target="_blank">Узнать о запуске</a>
-    </div>
-  </div>
-</section>
-<section class="src-sec" aria-label="Источники">
-  <div class="wrap">
-    <details class="sources">
+    <details>
       <summary>Источники</summary>
       <p>Исторические факты на&nbsp;этой странице сверены по&nbsp;публикациям:</p>
-      <ul>
-        <li><a href="https://bigenc.ru/fine_art/text/1832539" rel="noopener" target="_blank">Большая российская энциклопедия — церковь Архангела Гавриила</a></li>
-        <li><a href="https://moskvichmag.ru/?p=188465" rel="noopener" target="_blank">Москвич Mag — Меншикова башня</a></li>
-        <li><a href="https://www.culture.ru/materials/153294/rekord-davno-minuvshikh-dnei-samye-samye-zdaniya-rossii" rel="noopener" target="_blank">Культура.РФ</a></li>
-        <li><a href="https://aif.ru/society/history/pochemu_nazyvayutsya_chistye_prudy_hotya_prud_odin" rel="noopener" target="_blank">АиФ — Чистые пруды</a></li>
-        <li><a href="https://um.mos.ru/places/chistye-prudy/" rel="noopener" target="_blank">Узнай Москву — Чистые пруды</a></li>
-        <li><a href="https://moskvichmag.ru/?p=306983" rel="noopener" target="_blank">Москвич Mag — Дом-комод</a></li>
-        <li><a href="https://moskvichmag.ru/gorod/dom-nedeli-chajnyj-dom-sergeya-perlova-na-myasnitskoj/" rel="noopener" target="_blank">Москвич Mag — чайный дом Перлова</a></li>
-      </ul>
+      <ul><li><a href="https://bigenc.ru/fine_art/text/1832539" rel="noopener" target="_blank">Большая российская энциклопедия — церковь Архангела Гавриила</a></li><li><a href="https://moskvichmag.ru/?p=188465" rel="noopener" target="_blank">Москвич Mag — Меншикова башня</a></li><li><a href="https://www.culture.ru/materials/153294/rekord-davno-minuvshikh-dnei-samye-samye-zdaniya-rossii" rel="noopener" target="_blank">Культура.РФ — самые высокие здания России</a></li><li><a href="https://aif.ru/society/history/pochemu_nazyvayutsya_chistye_prudy_hotya_prud_odin" rel="noopener" target="_blank">АиФ — Чистые пруды</a></li><li><a href="https://um.mos.ru/places/chistye-prudy/" rel="noopener" target="_blank">Узнай Москву — Чистые пруды</a></li><li><a href="https://moskvichmag.ru/?p=306983" rel="noopener" target="_blank">Москвич Mag — Дом-комод</a></li><li><a href="https://moskvichmag.ru/gorod/dom-nedeli-chajnyj-dom-sergeya-perlova-na-myasnitskoj/" rel="noopener" target="_blank">Москвич Mag — чайный дом Перлова</a></li></ul>
     </details>
   </div>
 </section>
 </main>
 
-<a class="fab" id="fab" href="#buy" aria-hidden="true" tabindex="-1">Взять дело<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+<a class="fab" id="fab" href="#buy" aria-hidden="true" tabindex="-1">Взять дело · 990&nbsp;₽<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 
 <footer class="site-footer">
   <div class="wrap">
-    <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#2A1A0E" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#2A1A0E" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#8E3E1A"/></svg><span>ДВОРАМИ</span></a>
-    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../#faq">Вопросы</a><a href="../../#contact">Связаться</a></nav>
+    <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F2EFE8" stroke-width="5"/><path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F2EFE8" stroke-width="2.5"/><path d="M24 27.5l6 10.5H18z" fill="#E1251B"/></svg><span>ДВОРАМИ</span></a>
+    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../#faq">Вопросы</a><a href="../../#reviews">Отзывы</a><a data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Telegram-канал @dvorami_quest</a></nav>
   </div>
 </footer>
 <script src="../../assets/site.js" defer></script>
