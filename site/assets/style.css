@@ -1354,6 +1354,12 @@ img.is-broken { visibility: hidden; }
 /* Карта: все точки одного размера, статус — цветом и подписью в легенде */
 .map-pin circle.dot { r: 10px; }
 .map-pin--live circle.dot { stroke: var(--accent); stroke-width: 2.5; }
+/* Точки на схеме — ссылки на страницы дел (H-3, 23.11); с клавиатуры — через подписи в легенде, поэтому tabindex="-1" */
+.city-map .map-link { cursor: pointer; }
+.city-map .map-link:hover circle.dot { stroke-width: 4.5; }
+.city-map .map-link:hover .name { text-decoration: underline; }
+/* Схема — отдельной секцией после «Как это выглядит» (H-2, 23.11) */
+.map-sec .map-row { margin-top: 0; }
 .lg--live { font-size: 0; }
 .map-legend .map-btn { align-self: flex-start; margin-top: 6px; }
 

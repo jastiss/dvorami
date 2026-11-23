@@ -12,6 +12,7 @@
  *   - типографика: элементы одной роли (заголовки секций, рукописные надзаголовки, кнопки карточек дел) — одного размера;
  *     в схемах-картах (.city-map svg) подписи одной роли одного размера и не наезжают друг на друга и на точки;
  *     осознанное исключение — атрибут data-size-exception="почему" на элементе и комментарий в CSS;
+ *   - карточка дела в каталоге (главная, /moscow/) = страница дела: номер, название, статус, цифры, метро; карточки двух каталогов одинаковые;
  *   - ошибки в консоли и ошибки JS; предупреждения о неиспользованном preload шрифтов.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
@@ -190,6 +191,17 @@ function inPage(MAIN_CTA) {
     if (/^(mailto:|tel:|javascript:|data:)/.test(v)) return;
     out.links.push(new URL(v, location.href).href);
   });
+  // 7. Карточки дел в каталоге и паспорт страницы дела — для сверки «карточка = страница» (H-5)
+  const nt = el => el ? (el.innerText || el.textContent || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim() : '';
+  out.cards = Array.from(document.querySelectorAll('.qgrid .qcard[data-case]')).map(li => {
+    const a = li.querySelector('a.qc-btn');
+    return { no: li.dataset.case, status: li.dataset.status, title: nt(li.querySelector('.qc-title')).replace(/^Дело №\d+\s*/, ''),
+      where: nt(li.querySelector('.qc-where')), teaser: nt(li.querySelector('p:not(.qc-meta)')), meta: nt(li.querySelector('.qc-meta')),
+      badge: nt(li.querySelector('.qc-badge')), href: a ? new URL(a.getAttribute('href'), location.href).href : '' };
+  });
+  const plaque = document.querySelector('.c-plaque');
+  out.casePage = plaque ? { plaque: nt(plaque), status: nt(document.querySelector('#top .c-status')),
+    facts: Array.from(document.querySelectorAll('#facts li')).map(li => ({ n: nt(li.querySelector('.n')), full: nt(li) })) } : null;
   out.anchorsMissing = out.anchors.filter(id => !document.getElementById(decodeURIComponent(id)));
   out.text = document.body.innerText;
   return out;
@@ -237,6 +249,7 @@ async function ctaAlwaysThere(page) {
   const browser = await chromium.launch();
   const checked = new Map();
   const caseSections = {};
+  const catalogs = {}, casePages = {};
   const shots = args.shots;
 
   for (const rel of pages) {
@@ -280,6 +293,10 @@ async function ctaAlwaysThere(page) {
         if (!(key === '*' || rel.startsWith(key))) continue;
         for (const w of words) if (r.text.toLowerCase().includes(w.toLowerCase())) err(rel, vp.width, `спойлер на странице: «${w}»`);
       }
+      if (vp.width === VIEWPORTS[0].width) {
+        if (r.cards.length) catalogs[rel] = r.cards;
+        if (r.casePage) casePages[rel] = r.casePage;
+      }
       if (CASE_RE.test(rel)) {
         caseSections[rel] = r.sections.join(' > ');
         const c = r.ctas;
@@ -307,6 +324,40 @@ async function ctaAlwaysThere(page) {
   for (const [p, s] of Object.entries(caseSections)) (variants[s] = variants[s] || []).push(p);
   if (Object.keys(variants).length > 1) {
     err('страницы дел', '', 'разный набор блоков:\n    ' + Object.entries(variants).map(([s, p]) => `${p.join(', ')}: ${s}`).join('\n    '));
+  }
+
+  // Карточка дела в каталоге = страница дела (H-5, 23.11: на главной и в /moscow/ разошёлся тизер дела №4).
+  // Карточки собирает build_cases.py из поля card; здесь ловим ручную правку и расхождение цифр с паспортом дела.
+  const byNo = {};
+  for (const [cat, cards] of Object.entries(catalogs)) {
+    for (const k of cards) {
+      const where = `${cat || 'главная'}, карточка дела №${k.no}`;
+      const crel = k.href.startsWith(BASE + '/') ? k.href.slice(BASE.length + 1).split('#')[0] : '';
+      const cp = casePages[crel];
+      if (!cp) { if (!args.only) err(where, '', `ссылка «Подробнее» ведёт не на страницу дела: ${k.href.replace(BASE, '')}`); continue; }
+      if (cp.plaque !== `Дело №${k.no} · ${k.title}`) err(where, '', `номер/название «Дело №${k.no} · ${k.title}» ≠ странице дела «${cp.plaque}»`);
+      if (!k.badge || !cp.status.startsWith(k.badge)) err(where, '', `статус «${k.badge}» ≠ странице дела «${cp.status}»`);
+      const segs = k.meta.split(' · ');
+      for (const f of cp.facts) {
+        if (f.n === 'М') {
+          const m = f.full.match(/«[^»]+»/);
+          if (m && !k.meta.includes(m[0])) err(where, '', `метро в карточке («${k.meta}») ≠ странице дела (${m[0]})`);
+          continue;
+        }
+        const v = f.n.replace(/ ч$/, ' час');
+        if (!segs.some(s => s.startsWith(v))) err(where, '', `в карточке («${k.meta}») нет «${f.n}» из цифр страницы дела`);
+      }
+      (byNo[k.no] = byNo[k.no] || []).push([cat || 'главная', k]);
+    }
+  }
+  for (const [no, list] of Object.entries(byNo)) {
+    const [c0, k0] = list[0];
+    for (const [c1, k1] of list.slice(1)) for (const f of ['title', 'where', 'teaser', 'meta', 'badge', 'status']) {
+      if (k0[f] !== k1[f]) err(`карточка дела №${no}`, '', `${c0} и ${c1} расходятся (${f}): «${k0[f]}» / «${k1[f]}» — карточки собирает build_cases.py из поля card`);
+    }
+  }
+  if (!args.only) for (const cat of ['', 'moscow/']) for (const p of Object.keys(casePages)) {
+    if (!(catalogs[cat] || []).some(k => k.href === `${BASE}/${p}`)) err(cat || 'главная', '', `нет карточки дела ${p}`);
   }
 
   stop();

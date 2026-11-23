@@ -9,6 +9,8 @@
   top · facts · story · cast · spots · learn · how · world · practical · about-place · faq · buy · sources
 
 Новое дело = новый файл данных platform/site/cases/cN_<район>.py + запуск:  python3 scripts/build_cases.py
+Карточки дел в каталогах (site/index.html и site/moscow/index.html, между метками cards:start / cards:end)
+собираются здесь же из поля card дела — руками их не править.
 """
 import html
 import importlib.util
@@ -337,16 +339,59 @@ def body(c):
 '''
 
 
+CARD_STATUS = {'soon': '<span class="qc-badge qc-badge--soon">Скоро в&nbsp;продаже</span><span class="qc-price"><b>990&nbsp;₽</b> на&nbsp;компанию</span>',
+               'dev': '<span class="qc-badge">В&nbsp;разработке</span>'}
+# Каталоги, куда вставляются карточки дел (между метками cards:start / cards:end): файл, путь до корня site/, место (для аналитики)
+CATALOGS = [('index.html', '', 'home'), (os.path.join('moscow', 'index.html'), '../', 'moscow')]
+
+
+def card_html(c, root, place, first):
+    """Карточка дела в каталоге — из поля card дела (H-5: один источник; site_check сверяет её со страницей дела)."""
+    k = c['card']
+    home = place == 'home'
+    h = 'h3' if home else 'h2'
+    li_id = '' if home else f' id="case-{c["no"]}"'
+    lazy = '' if (first and not home) else ' loading="lazy"'
+    href = ('moscow/' if home else '') + c['slug'] + '/'
+    return (f'      <li class="qcard"{li_id} data-status="{c["status"]}" data-case="{c["no"]}">\n'
+            f'        <span class="qc-cover"><img src="{root}assets/ill/{k["img"]}" width="1200" height="900"{lazy} alt="{esc(k["alt"])}"></span>\n'
+            f'        <{h} class="qc-title"><span class="qc-no">Дело №{c["no"]}</span> {c["short"]}</{h}>\n'
+            f'        <span class="qc-where">{k["where"]}</span>\n'
+            f'        <p>{k["teaser"]}</p>\n'
+            f'        <p class="qc-meta">{k["meta"]}</p>\n'
+            f'        <div class="qc-foot">{CARD_STATUS[c["status"]]}</div>\n'
+            f'        <a class="qc-btn" href="{href}" data-track="quest_card" data-track-quest="{c["slug"]}" data-track-place="{place}">Подробнее о&nbsp;деле</a>\n'
+            f'      </li>\n')
+
+
+def build_catalogs(cases):
+    for rel, root, place in CATALOGS:
+        path = os.path.join(SITE, rel)
+        with open(path, encoding='utf-8') as fh:
+            page = fh.read()
+        cards = ''.join(card_html(c, root, place, i == 0) for i, c in enumerate(cases))
+        page, n = re.subn(r'(<!-- cards:start[^>]*-->\n).*?(      <!-- cards:end -->)',
+                          lambda m: m.group(1) + cards + m.group(2), page, flags=re.S)
+        if n != 1:
+            raise SystemExit(f'{rel}: нет меток <!-- cards:start --> / <!-- cards:end -->')
+        with open(path, 'w', encoding='utf-8') as fh:
+            fh.write(page)
+        print('→', os.path.relpath(path, REPO), '(карточки дел)')
+
+
 def main():
     files = sorted(f for f in os.listdir(DATA) if re.match(r'c\d+_.*\.py$', f))
+    cases = []
     for f in files:
         c = load(os.path.join(DATA, f))
+        cases.append(c)
         out = os.path.join(SITE, 'moscow', c['slug'], 'index.html')
         os.makedirs(os.path.dirname(out), exist_ok=True)
         with open(out, 'w', encoding='utf-8') as fh:
             page = re.sub(r'\{\{([\w-]+)\}\}', lambda m: frag(m.group(1)), head(c) + body(c))
             fh.write(page)
         print('→', os.path.relpath(out, REPO))
+    build_catalogs(sorted(cases, key=lambda c: c['no']))
 
 
 if __name__ == '__main__':
