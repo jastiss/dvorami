@@ -1,0 +1,10 @@
+<!-- Логотип «Дворами» для картинок канала: знак «Арка-Д» (platform/design/logo/d-arka.svg)
+     + слово шрифтом Unbounded 800, как в шапке сайта (.logo в site/assets/style.css).
+     Логотип меняется ТОЛЬКО в этом файле: генератор (scripts/make_channel_img.py) вставляет его как есть. -->
+<style>
+  .wordmark { display:flex; align-items:center; gap:16px; color:var(--text); }
+  .wordmark svg { width:56px; height:56px; flex:none; }
+  .wordmark .wm-text { font-family:'Unbounded',sans-serif; font-weight:800; font-size:36px;
+                       letter-spacing:-.01em; line-height:1; }
+</style>
+<div class="wordmark"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M16.5 7H31.5L36.5 34H44V38.5H41.5V44H36V38.5H12V44H6.5V38.5H4V34H11.5ZM18 34L21 17Q24 12 27 17L30 34Z"/><path fill="#FFC53D" d="M20.3 34V26.6Q24 22.2 27.7 26.6V34Z"/></svg><span class="wm-text">дворами</span></div>

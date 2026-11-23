@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="t d">
+  <title id="t">Дворами — знак A «Арка»</title>
+  <desc id="d">Русская буква Д: её контур — свод арки, внутренний просвет — проход во двор, в глубине горит тёплый свет.</desc>
+  <path class="logo-d" fill="currentColor" fill-rule="evenodd"
+        d="M16.5 7H31.5L36.5 34H44V38.5H41.5V44H36V38.5H12V44H6.5V38.5H4V34H11.5Z
+           M18 34L21 17Q24 12 27 17L30 34Z"/>
+  <path class="logo-light" fill="#FFC53D" d="M20.3 34V26.6Q24 22.2 27.7 26.6V34Z"/>
+</svg>

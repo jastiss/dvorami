@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Логотип «Дворами» — варианты</title>
+<style>
+  @font-face{font-family:'Unbounded';font-weight:800;font-display:swap;src:url(../../../site/assets/fonts/unbounded-cyrillic-800-normal.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+  @font-face{font-family:'Unbounded';font-weight:800;font-display:swap;src:url(../../../site/assets/fonts/unbounded-latin-800-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+  @font-face{font-family:'Golos Text';font-weight:400 600;font-display:swap;src:url(../../../site/assets/fonts/golos-text-cyrillic-400-normal.woff2) format('woff2')}
+  :root{
+    --bg:#0E1630; --surface:#17224A; --line:#2B3A70; --text:#F3F1EA; --text-2:#D5D9E6;
+    --text-3:#A9B1C7; --accent:#FFC53D; --sky:#8FC2FF; --paper:#F4F1EA; --ink:#141414;
+    --font:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --disp:'Unbounded','Arial Black',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.55;
+    background-image:linear-gradient(180deg,#17224A,var(--bg) 640px);background-repeat:no-repeat}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 20px 80px}
+  h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,5vw,52px);letter-spacing:-.02em;line-height:1.05;margin:0 0 6px}
+  .lead{color:var(--text-2);font-size:18px;max-width:46em;margin:0 0 10px}
+  .note{color:var(--text-3);font-size:15px;max-width:46em}
+  h2{font-family:var(--disp);font-weight:800;font-size:24px;margin:48px 0 4px;letter-spacing:-.01em}
+  .rec{display:inline-block;margin-left:10px;font-family:var(--font);font-size:13px;font-weight:600;
+    background:var(--accent);color:var(--ink);border-radius:999px;padding:3px 12px;vertical-align:middle;letter-spacing:0}
+  .desc{color:var(--text-2);font-size:16px;max-width:48em;margin:6px 0 20px}
+  .cards{display:grid;gap:18px;grid-template-columns:1fr}
+  @media(min-width:720px){.cards{grid-template-columns:1fr 1fr}}
+  .card{border:1px solid var(--line);border-radius:18px;padding:22px;background:rgba(255,255,255,.015)}
+  .card.light{background:var(--paper)}
+  .card h3{margin:0 0 16px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);font-weight:600}
+  .card.light h3{color:#5C564D}
+  .lock{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .lock .mark{width:46px;height:46px;flex:none;color:var(--text)}
+  .card.light .lock .mark{color:var(--ink)}
+  .word{font-family:var(--disp);font-weight:800;font-size:30px;letter-spacing:-.01em;color:var(--text)}
+  .card.light .word{color:var(--ink)}
+  .sizes{display:flex;align-items:flex-end;gap:22px}
+  .sizes .s{text-align:center;color:var(--text-3);font-size:12px}
+  .card.light .sizes .s{color:#5C564D}
+  .sizes .mark{color:var(--text);display:block;margin:0 auto 7px}
+  .card.light .sizes .mark{color:var(--ink)}
+  .m180{width:180px;height:180px}.m64{width:64px;height:64px}.m32{width:32px;height:32px}.m16{width:16px;height:16px}
+  /* шапка-мокап */
+  .hdr{display:flex;align-items:center;justify-content:space-between;gap:20px;border:1px solid var(--line);
+    border-radius:14px;padding:14px 18px;margin:14px 0 0;background:#0B1230}
+  .hdr .brand{display:flex;align-items:center;gap:10px;flex:none}
+  .hdr nav{flex:1;justify-content:flex-end}
+  .hdr nav span{white-space:nowrap}
+  .hdr .brand .mark{width:34px;height:34px;color:var(--text)}
+  .hdr .brand b{font-family:var(--disp);font-weight:800;font-size:22px;letter-spacing:-.01em}
+  .hdr .pill{background:var(--accent);color:var(--ink);font-weight:700;font-size:14px;border-radius:999px;padding:9px 18px;white-space:nowrap}
+  .hdr nav{display:none;gap:22px;color:var(--text-2);font-size:15px}
+  @media(min-width:720px){.hdr nav{display:flex}}
+  .logo-light{fill:var(--accent)}
+  .assembly{margin:22px 0 0;border:1px dashed var(--line);border-radius:18px;padding:26px;display:flex;
+    align-items:center;gap:22px;flex-wrap:wrap;background:rgba(255,255,255,.015)}
+  .assembly svg{width:120px;height:120px;color:var(--text)}
+  .assembly .cap{color:var(--text-3);font-size:14px;max-width:24em}
+  .btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--text);
+    font-family:var(--font);font-size:15px;font-weight:600;border-radius:999px;padding:9px 18px;cursor:pointer}
+  /* сборка знака «Арки» из частей */
+  .asm .leg,.asm .top,.asm .arch,.asm .light{opacity:1}
+  .asm.play .top{animation:drop .5s ease-out both}
+  .asm.play .leg{animation:drop .5s ease-out .15s both}
+  .asm.play .arch{animation:fadeUp .5s ease-out .5s both}
+  .asm.play .light{animation:glow .6s ease-out .95s both}
+  @keyframes drop{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes glow{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+  @media (prefers-reduced-motion: reduce){.asm.play *{animation:none!important;opacity:1!important;transform:none!important}}
+  footer{margin-top:60px;color:var(--text-3);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Логотип «Дворами»</h1>
+  <p class="lead">Три знака на основе русской буквы&nbsp;<b>Д</b>. Указание владельца 23.11: «обыграть букву&nbsp;Д, стильно и современно, не перегружать».</p>
+  <p class="note">Знак одноцветный (один путь + тёплый маркер), читается в 16&nbsp;px, работает на тёмном и светлом. Слово набрано Unbounded 800; для финала — в кривые.</p>
+
+  <h2>A. «Арка-Д» <span class="rec">рекомендуем — уже на сайте</span></h2>
+  <p class="desc">Контур буквы Д&nbsp;— это свод арки, её просвет&nbsp;— проход во двор, в&nbsp;глубине горит тёплый свет: там, во&nbsp;дворе, что-то спрятано. Прямо из названия «дворами». Маркер-свет остаётся системой: жёлтый у платформы, красный у «Авангарда», своя фигура у будущих квестов.</p>
+  <div class="cards" id="row-a"></div>
+
+  <h2>B. «Маршрут-Д»</h2>
+  <p class="desc">Буква Д, прочерченная одной линией маршрута: тропа входит снизу, обходит двор и выходит к&nbsp;точке-цели. Говорит «прогулка с&nbsp;целью», хороша для обложек. В&nbsp;16&nbsp;px линия тяжелеет, точка теряется.</p>
+  <div class="cards" id="row-b"></div>
+
+  <h2>C. «Квартал-Д»</h2>
+  <p class="desc">Буква Д как план квартала: корпуса складываются в&nbsp;букву, внутри&nbsp;— двор с&nbsp;деревом, в&nbsp;левом корпусе&nbsp;— проход-арка. Богатая идея, но в&nbsp;фавиконе внутренние детали сливаются.</p>
+  <div class="cards" id="row-c"></div>
+
+  <h2>Сборка знака (анимация страницы вариантов)</h2>
+  <div class="assembly">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><g class="asm" id="asm">
+      <path class="top" fill="currentColor" d="M16.5 7H31.5L36.5 34H11.5Z" opacity="0"></path>
+      <path class="arch" fill="#0E1630" d="M18 34L21 17Q24 12 27 17L30 34Z" opacity="0"></path>
+      <g class="leg" fill="currentColor" opacity="0"><path d="M4 34H44V38.5H41.5V44H36V38.5H12V44H6.5V38.5H4Z"></path></g>
+      <path class="light" fill="#FFC53D" d="M20.3 34V26.6Q24 22.2 27.7 26.6V34Z" opacity="0" style="transform-origin:24px 30px"></path>
+    </g></svg>
+    <div>
+      <p class="cap">Крыша и ножки встают, проявляется арка, в&nbsp;глубине загорается свет&nbsp;— знак собирается из частей.</p>
+      <button class="btn" id="replay" type="button">Собрать заново</button>
+    </div>
+  </div>
+
+  <footer>platform/design/logo/ · d-arka.svg (рекомендуем), d-marshrut.svg, d-kvartal.svg · паспорт — logo.md</footer>
+</div>
+<script>
+const FILES = { a: 'd-arka', b: 'd-marshrut', c: 'd-kvartal' };
+async function load(key){
+  const raw = await (await fetch(FILES[key] + '.svg')).text();
+  const inner = raw.replace(/<\?xml[^>]*\?>/,'').replace(/<svg[^>]*>/,'').replace('</svg>','');
+  const mk = (cls) => `<svg viewBox="0 0 48 48" class="mark ${cls}" aria-hidden="true">${inner}</svg>`;
+  const block = (light) => `
+    <div class="card ${light?'light':''}">
+      <h3>${light?'на светлом':'на тёмном (фирменный фон)'}</h3>
+      <div class="lock">${mk('')}<span class="word">дворами</span></div>
+      <div class="sizes">
+        <div class="s">${mk('m64')}64</div>
+        <div class="s">${mk('m32')}32</div>
+        <div class="s">${mk('m16')}16</div>
+      </div>
+      ${light?'':`<div class="hdr"><div class="brand">${mk('')}<b>дворами</b></div><nav><span>Как это устроено</span><span>Квесты</span><span>Вопросы</span></nav><span class="pill">Выбрать квест</span></div>`}
+    </div>`;
+  document.getElementById('row-'+key).innerHTML = block(false) + block(true);
+}
+Promise.all(Object.keys(FILES).map(load));
+const asm = document.getElementById('asm');
+function play(){ asm.classList.remove('play'); void asm.offsetWidth; asm.classList.add('play'); }
+document.getElementById('replay').addEventListener('click', play);
+play();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="t d">
+  <title id="t">Дворами — знак C «Квартал»</title>
+  <desc id="d">Русская буква Д как план квартала: корпуса домов складываются в букву, внутри — двор с деревом, в левом корпусе — проход-арка.</desc>
+  <path class="logo-d" fill="currentColor" fill-rule="evenodd"
+        d="M13 7H35V34H44V39H41.5V44H36V39H12V44H6.5V39H4V34H13Z
+           M18.5 13H29.5V34H18.5Z
+           M13 25H18.5V29.5H13Z
+           M23.4 7H24.6V13H23.4Z"/>
+  <circle class="logo-light" cx="24" cy="27" r="3.2" fill="#FFC53D"/>
+</svg>

@@ -436,3 +436,84 @@ body.case-page.t-otkrytka {
 :is(.t-avangard, .t-gravura, .t-nabor, .t-teatr, .t-otkrytka) :is(.c-quote footer, .telegram .lbl, .letter .lbl, .letter .foot, .afisha .pre, .afisha .who span:last-child, .c-kicker, .c-plaque) { font-weight: 700; }
 /* Открытка: все подзаголовки тем же курсивом, что и заголовки (подгружено заранее) */
 .t-otkrytka :is(.c-spot h3, .c-people dt, .c-steps h3, .c-world-card h3, .c-practical dt, .seo-ref h3, .c-facts .n, .c-buy-card .price, .c-world-card .yr) { font-style: italic; }
+
+/* =====================================================================
+   Итерация 11 — указания владельца 23.11:
+   №4 ярче и контрастнее, №6 богаче + театральные шрифты, лёгкие анимации.
+   Всё decor — aria-hidden по смыслу (псевдоэлементы), prefers-reduced-motion уважается,
+   CTA и заголовки ничем не перекрыты.
+   ===================================================================== */
+
+/* ---------- №4 «Синька-чертёж»: ночная подсветка, золото, прорисовка ---------- */
+body.case-page.t-chertezh {
+  --bg: #0E3463; --bg-2: #0B2B54; --accent-text: #F9C6AC; --kicker: #F9C6AC; --gold: #E9B24C;
+  background-color: #0E3463;
+  background-image:
+    radial-gradient(1100px 620px at 82% -160px, rgba(233,178,76,.16), transparent 60%),
+    linear-gradient(rgba(255,255,255,.085) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.085) 1px, transparent 1px),
+    linear-gradient(rgba(233,178,76,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(233,178,76,.06) 1px, transparent 1px);
+  background-size: auto, 32px 32px, 32px 32px, 160px 160px, 160px 160px;
+  background-repeat: no-repeat, repeat, repeat, repeat, repeat;
+}
+.t-chertezh .site-header { background: #0B2B54; }
+.t-chertezh .c-hero { background:
+  radial-gradient(72% 82% at 82% 0%, rgba(233,178,76,.16), transparent 55%),
+  linear-gradient(180deg, rgba(8,30,60,0), rgba(7,26,52,.55)); }
+.t-chertezh .c-facts { background: #0B2B54; }
+.t-chertezh .c-facts .n { color: #FBE7C2; }
+.t-chertezh .c-facts li { border-top-color: rgba(233,178,76,.5); }
+.t-chertezh .c-sec.on-paper { box-shadow: inset 0 1px 0 rgba(233,178,76,.35); }
+/* обложка: золотая рамка-подсветка + «прорисовка» чертежа плоттером */
+.t-chertezh .c-spot img { border-color: rgba(233,178,76,.5); box-shadow: 0 10px 28px -16px rgba(0,0,0,.6); }
+.js .t-chertezh .c-cover img { animation: draftIn 1.15s ease-out .05s both; }
+@keyframes draftIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@media (prefers-reduced-motion: reduce) { .js .t-chertezh .c-cover img { animation: none; } }
+
+/* ---------- №6 «Театр»: богаче сцена, поднимающийся занавес, афишные шрифты ---------- */
+.t-teatr .c-hero h1 .big { font-size: clamp(44px, 8.2vw, 86px); }
+.t-teatr .c-h { letter-spacing: .045em; }
+.t-teatr .c-sec + .c-sec { border-top: 1px solid rgba(212,168,75,.22); }
+.t-teatr .c-hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 64px; z-index: 1;
+  pointer-events: none; background: radial-gradient(60% 100% at 50% 100%, rgba(255,208,120,.22), transparent 72%); }
+/* занавес над обложкой-афишей: две бархатные половины расходятся при загрузке */
+.t-teatr .c-cover { position: relative; overflow: hidden; }
+.js .t-teatr .c-cover::before, .js .t-teatr .c-cover::after { content: ""; position: absolute; top: 0; bottom: 0; width: 53%;
+  z-index: 3; pointer-events: none; box-shadow: inset 0 0 44px rgba(0,0,0,.55);
+  background: repeating-linear-gradient(90deg, #4E0C17 0 11px, #7A1728 11px 22px, #3E0914 22px 33px); }
+.js .t-teatr .c-cover::before { left: 0; border-right: 3px solid #D4A84B; animation: curtainL 1.6s cubic-bezier(.62,0,.2,1) .3s both; }
+.js .t-teatr .c-cover::after { right: 0; border-left: 3px solid #D4A84B; animation: curtainR 1.6s cubic-bezier(.62,0,.2,1) .3s both; }
+@keyframes curtainL { from { transform: translateX(0); } to { transform: translateX(-103%); } }
+@keyframes curtainR { from { transform: translateX(0); } to { transform: translateX(103%); } }
+@media (prefers-reduced-motion: reduce) {
+  .js .t-teatr .c-cover::before { transform: translateX(-103%); animation: none; }
+  .js .t-teatr .c-cover::after { transform: translateX(103%); animation: none; }
+}
+
+/* =====================================================================
+   Доработка по приёмке 23.11
+   ===================================================================== */
+/* Кнопка в шапке дел: общее правило .nav a (padding 12px 0) съедало поля — задаём явно */
+body.case-page .nav a.c-btn { padding: 8px 18px; white-space: nowrap; }
+@media (max-width: 400px) { body.case-page .nav a.c-btn { padding: 8px 14px; font-size: 15px; } }
+
+/* Единый логотип: знак «Арка-Д» + слово «дворами» Unbounded 800 на всех делах; стиль дела — во всём остальном */
+body.case-page .logo { font-family: 'Unbounded', 'Unbounded Fallback', 'Arial Black', system-ui, sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.01em; text-transform: none; font-style: normal; }
+@media (max-width: 400px) { body.case-page .logo { font-size: 19px; } }
+
+/* №4: второй цвет в первом экране — лист кальки с ведомостью как предмет; заголовки чертёжным узким шрифтом */
+body.case-page.t-chertezh { --font-display: 'Oswald', 'Oswald Fallback', 'Arial Narrow', sans-serif; --h-transform: uppercase; --h-spacing: .025em; --h-size: clamp(36px, 5.4vw, 62px); }
+.t-chertezh .c-hero h1 .big { font-size: clamp(44px, 7.6vw, 88px); line-height: 1.14; }
+.t-chertezh .c-hero h1 .big::after { content: ""; display: block; width: min(360px, 80%); height: 14px; margin-top: 14px;
+  border-left: 2px solid #E8573D; border-right: 2px solid #E8573D; background: linear-gradient(#E8573D, #E8573D) center / 100% 2px no-repeat; }
+.t-chertezh .c-cover { overflow: visible; border: 0; padding: 0; background: none; transform: rotate(1.4deg);
+  box-shadow: 0 2px 0 rgba(0,0,0,.25), 0 34px 60px -28px rgba(0,0,0,.8), 0 0 80px -20px rgba(233,178,76,.35); }
+.t-chertezh .c-cover img { border-radius: 2px; }
+.t-chertezh .c-cover::before { content: ""; position: absolute; z-index: 2; left: 50%; top: -14px; width: 120px; height: 30px; transform: translateX(-50%) rotate(-2deg);
+  background: rgba(245,232,200,.55); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+@media (max-width: 999px) { .t-chertezh .c-hero .wrap { gap: 26px; } .t-chertezh .c-cover { margin: 0 4px; } }
+
+/* №6: ламбрекен с бахромой и кистями вместо ряда полукругов */
+.t-teatr .c-hero::before { height: 48px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='48' viewBox='0 0 130 48'%3E%3Cpath d='M0 0H130V6Q65 50 0 6Z' fill='%237A1728'/%3E%3Cpath d='M22 0Q65 30 108 0Z' fill='%235A0E1A'/%3E%3Cpath d='M0 9Q65 53 130 9' fill='none' stroke='%23D4A84B' stroke-width='6' stroke-dasharray='1.6 3.2' opacity='.9'/%3E%3Cpath d='M0 6Q65 50 130 6' fill='none' stroke='%23E7C27A' stroke-width='2.5'/%3E%3Cpath d='M0 0v22M130 0v22' stroke='%23D4A84B' stroke-width='3'/%3E%3Cpath d='M-5 22h10l3 16h-16zM125 22h10l3 16h-16z' fill='%23D4A84B'/%3E%3C/svg%3E") center top / 130px 48px repeat-x; }
+.t-teatr .c-hero .wrap { padding-top: 40px; }

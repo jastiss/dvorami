@@ -365,18 +365,48 @@ def chertezh_spots():
     save('rs-lobnoe', 'Эскиз: круглый помост на площади',
          'Чертёж синькой: круглый каменный помост с ограждением показан в плане сверху и сбоку, оси штрих-пунктиром и размерная линия.', body, BP_DEFS)
 
-    # Обложка первого экрана: площадь в чертеже
-    body = bp_bg()
-    body += kazan(330, 740, .95)
-    body += ln('M560 740V470H1140', 2.6) + ln(''.join(f'M{560+i*58} 470V440H{590+i*58}V470' for i in range(10)), 2)
-    body += ln('M760 740V330H860V740', 2.6) + ln('M745 330H875L810 210Z', 2.6) + ln('M810 210V150M790 175H830', 2)
-    body += ln('M1000 740V380H1080V740', 2.2) + ln('M990 380H1090L1040 300Z', 2.2)
-    body += ln('M40 740H1160', 2.4)
-    body += axis(240, 110, 240, 800) + dim(130, 790, 520) + vdim(60, 180, 740)
-    body += pencil('M600 160q50 -40 110 0', 2.6) + pencil('M610 200q40 20 90 0', 2) + pencil('M900 560l60 30', 2.4)
-    body += bp_finish()
-    save('hero-krasnaya', 'Красная площадь в чертеже',
-         'Обмерный чертёж синькой: слева собор с кокошниками и шатровой колокольней, справа кремлёвская стена с зубцами и башни; оси штрих-пунктиром, размерные стрелки, пометки карандашом.', body, BP_DEFS)
+    # Обложка первого экрана: лист ведомости 1936 г. — тёплая калька, синяя тушь, кирпичная заливка, красные размеры
+    INK, RED, PAPER = '#143A6B', '#C23B22', '#F1E6CC'
+    defs = (f'<pattern id="pg" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="{INK}" stroke-opacity=".10" stroke-width="1"/></pattern>'
+            f'<pattern id="pg5" width="200" height="200" patternUnits="userSpaceOnUse"><path d="M200 0H0V200" fill="none" stroke="{INK}" stroke-opacity=".16" stroke-width="1.4"/></pattern>'
+            '<pattern id="brick" width="44" height="24" patternUnits="userSpaceOnUse"><rect width="44" height="24" fill="#B8442E"/><path d="M0 0H44M0 12H44M22 0V12M0 12V24M44 12V24" stroke="#8E2F1E" stroke-width="2" fill="none"/></pattern>'
+            '<pattern id="wash" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)"><path d="M0 0V9" stroke="#C23B22" stroke-opacity=".5" stroke-width="2.2"/></pattern>'
+            '<linearGradient id="roof" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3F8468"/><stop offset="1" stop-color="#245442"/></linearGradient>'
+            '<radialGradient id="lamp"><stop offset="0" stop-color="#FFD98A" stop-opacity=".95"/><stop offset=".5" stop-color="#F2B544" stop-opacity=".35"/><stop offset="1" stop-color="#F2B544" stop-opacity="0"/></radialGradient>'
+            '<filter id="pp" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="11" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .45 0 0 0 0 .33 0 0 0 0 .18 0 0 0 .32 -.08"/></filter>'
+            '<linearGradient id="fold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".5" stop-color="#000" stop-opacity=".09"/><stop offset=".52" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>')
+    body = (f'<rect width="{W}" height="{H}" fill="{PAPER}"/><rect width="{W}" height="{H}" fill="url(#pg)"/><rect width="{W}" height="{H}" fill="url(#pg5)"/>')
+    # заливки: стена и башни — кирпич, шатры — зелёные, собор — красная отмывка штрихом
+    body += '<rect x="560" y="470" width="580" height="270" fill="url(#brick)"/>'
+    body += ''.join(f'<rect x="{560+i*58}" y="440" width="30" height="32" fill="url(#brick)"/>' for i in range(10))
+    body += '<rect x="760" y="330" width="100" height="410" fill="url(#brick)"/><path d="M745 330H875L810 210Z" fill="url(#roof)"/>'
+    body += '<rect x="1000" y="380" width="80" height="360" fill="url(#brick)"/><path d="M990 380H1090L1040 300Z" fill="url(#roof)"/>'
+    body += '<path d="M780 740V640Q810 596 840 640V740Z" fill="#3A1810"/><rect x="792" y="420" width="36" height="60" fill="#3A1810"/><rect x="1024" y="450" width="32" height="50" fill="#3A1810"/>'
+    body += '<rect x="560" y="470" width="580" height="270" fill="#3A1810" opacity=".10"/>'
+    body += ('<g transform="translate(330 740) scale(.95)"><path d="M-200 0V-220Q-170 -270 -140 -220Q-110 -270 -80 -220Q-50 -270 -20 -220Q10 -270 40 -220Q70 -270 100 -220H120V0Z" fill="url(#wash)"/>'
+             '<path d="M-150 -262V-330Q-120 -370 -90 -330Q-60 -370 -30 -330Q0 -370 30 -330Q55 -365 70 -330V-262Z" fill="url(#wash)"/>'
+             '<path d="M-80 -430Q-40 -520 0 -430Z" fill="#E0A63C"/><rect x="-70" y="-430" width="60" height="60" fill="#FBF4E2"/>'
+             '<rect x="120" y="-300" width="80" height="300" fill="#FBF4E2"/><path d="M120 -300L160 -470L200 -300Z" fill="url(#roof)"/>'
+             '<path d="M-170 0V-110Q-150 -150 -130 -110V0ZM-90 0V-130Q-50 -180 -10 -130V0Z" fill="#3A1810" opacity=".8"/></g>')
+    # ночная подсветка: фонари у стены
+    body += ''.join(f'<circle cx="{x}" cy="700" r="70" fill="url(#lamp)"/><circle cx="{x}" cy="700" r="7" fill="#FFE9B0"/>' for x in (620, 930, 1120))
+    ink = kazan(330, 740, .95)
+    ink += ln('M560 740V470H1140', 3) + ln(''.join(f'M{560+i*58} 470V440H{590+i*58}V470' for i in range(10)), 2.4)
+    ink += ln('M760 740V330H860V740', 3) + ln('M745 330H875L810 210Z', 3) + ln('M810 210V150M790 175H830', 2.4)
+    ink += ln('M1000 740V380H1080V740', 2.6) + ln('M990 380H1090L1040 300Z', 2.6)
+    ink += ln('M40 740H1160', 3)
+    ink += ln(f'M{W-330} {H-40}V{H-118}H{W-40}M{W-330} {H-79}H{W-40}M{W-200} {H-118}V{H-40}', 2)
+    body += ink.replace(BP, INK)
+    red = axis(240, 110, 240, 800) + dim(130, 790, 520) + vdim(60, 180, 740) + dim(560, 400, 1140) + vdim(1170, 210, 740)
+    red += pencil('M600 160q50 -40 110 0', 3) + pencil('M610 200q40 20 90 0', 2.4) + pencil('M900 560l60 30', 2.8)
+    red += pencil('M886 250a60 60 0 1 0 .1 0', 2.6, .8) + pencil('M1010 236l-64 20m16 -16l-16 16 20 8', 2.6)
+    body += red.replace(BP, RED).replace('#F2B8A8', RED).replace('stroke-width="1.6"', 'stroke-width="2.4"')
+    body += f'<g transform="translate(250 190) rotate(-12)" fill="none" stroke="{RED}" opacity=".7"><circle r="62" stroke-width="5"/><circle r="48" stroke-width="2"/><path d="M-34 0H34M-26 -16H26M-26 16H26" stroke-width="4"/></g>'
+    body += (f'<rect x="398" width="6" height="{H}" fill="url(#fold)"/><rect x="798" width="6" height="{H}" fill="url(#fold)"/>'
+             f'<rect width="{W}" height="{H}" filter="url(#pp)" opacity=".55"/>'
+             f'<rect x="20" y="20" width="{W-40}" height="{H-40}" fill="none" stroke="{INK}" stroke-width="3"/><rect x="32" y="32" width="{W-64}" height="{H-64}" fill="none" stroke="{INK}" stroke-width="1.2"/>')
+    save('hero-krasnaya', 'Красная площадь: лист обмерной ведомости',
+         'Лист кальки с обмерным чертежом: слева собор с кокошниками и шатровой колокольней, справа кирпичная кремлёвская стена с зубцами и башни под зелёными шатрами; красные размерные стрелки, ось и пометки карандашом, у стены горят фонари.', body, defs)
 
 
 # ---------------------------------------------------------------- типографский оттиск (№5)
@@ -584,14 +614,46 @@ def mask(x, y, s=1.0, col='url(#gold)', smile=True):
 
 
 def princess(x, y, s=1.0):
-    """Золотая принцесса — силуэт со спины, руки скрыты: ответа «что в руке» нет."""
+    """Золотая принцесса анфас: корона, лицо-маска, широкие рукава сомкнуты — в руках ничего (ответ т. 3 не показываем)."""
+    beads = ''.join(f'<circle cx="{bx}" cy="{by}" r="5" fill="#FBE3A0"/>' for bx, by in [(-42, -372), (-22, -396), (0, -418), (22, -396), (42, -372)])
+    diam = ''.join(f'<path d="M0 {-200+i*44}l13 20-13 20-13-20Z" fill="url(#gold)"/>' for i in range(4))
     return (f'<g transform="translate({x} {y}) scale({s})">'
-            '<path d="M-60 0Q-80 -160 -40 -260Q-30 -300 0 -310Q30 -300 40 -260Q80 -160 60 0Z" fill="url(#gold)"/>'
-            '<path d="M-40 -260Q-70 -200 -64 -120M40 -260Q70 -200 64 -120" fill="none" stroke="#7C5A1E" stroke-width="6"/>'
-            '<circle cx="0" cy="-340" r="30" fill="url(#gold)"/>'
-            '<path d="M-36 -366Q0 -420 36 -366L26 -352Q0 -380 -26 -352Z" fill="#FBE3A0"/>'
-            '<path d="M-14 -400L0 -440L14 -400" fill="#FBE3A0"/>'
+            '<ellipse cx="0" cy="2" rx="118" ry="14" fill="#000" opacity=".35"/>'
+            '<path d="M-104 0Q-112 -150 -50 -252H50Q112 -150 104 0Z" fill="url(#gold)" stroke="#7C5A1E" stroke-width="3"/>'
+            '<path d="M-26 0V-236H26V0Z" fill="#7A1728"/>' + diam +
+            '<path d="M-104 0Q-108 -22 -100 -30H100Q108 -22 104 0Z" fill="#7C5A1E"/>'
+            '<path d="M-48 -250Q-138 -214 -128 -104Q-60 -96 0 -134Q60 -96 128 -104Q138 -214 48 -250Q0 -226 -48 -250Z" fill="#E9C46A" stroke="#7C5A1E" stroke-width="3"/>'
+            '<path d="M-128 -104Q-60 -96 0 -134Q60 -96 128 -104" fill="none" stroke="#7A1728" stroke-width="9"/>'
+            '<path d="M-64 -150Q-30 -120 0 -134Q30 -120 64 -150" fill="none" stroke="#7C5A1E" stroke-width="3" opacity=".7"/>'
+            '<path d="M-30 -252L0 -216L30 -252Z" fill="#7A1728" stroke="#FBE3A0" stroke-width="3"/>'
+            '<path d="M-44 -300Q-52 -352 0 -356Q52 -352 44 -300Q40 -268 0 -262Q-40 -268 -44 -300Z" fill="#1A0E12"/>'
+            '<circle cx="-50" cy="-316" r="15" fill="#1A0E12"/><circle cx="50" cy="-316" r="15" fill="#1A0E12"/>'
+            '<path d="M-27 -306Q-29 -338 0 -340Q29 -338 27 -306Q24 -272 0 -266Q-24 -272 -27 -306Z" fill="#F7E7C8"/>'
+            '<path d="M-19 -312q8 -7 16 0M3 -312q8 -7 16 0" fill="none" stroke="#1A0E12" stroke-width="3.2" stroke-linecap="round"/>'
+            '<path d="M-21 -322q9 -6 17 -2M4 -324q9 -4 17 2" fill="none" stroke="#1A0E12" stroke-width="2" stroke-linecap="round"/>'
+            '<path d="M-6 -286q6 5 12 0q-6 -5 -12 0Z" fill="#B3202F"/><circle cx="-17" cy="-298" r="5" fill="#E58A7A" opacity=".55"/><circle cx="17" cy="-298" r="5" fill="#E58A7A" opacity=".55"/>'
+            '<path d="M-48 -340L-42 -372L-30 -350L-22 -396L-10 -356L0 -418L10 -356L22 -396L30 -350L42 -372L48 -340Q0 -356 -48 -340Z" fill="url(#gold)" stroke="#7C5A1E" stroke-width="2.5"/>'
+            + beads +
+            '<path d="M-62 -322v40M62 -322v40" stroke="#D4A84B" stroke-width="3"/><circle cx="-62" cy="-276" r="6" fill="#B3202F"/><circle cx="62" cy="-276" r="6" fill="#B3202F"/>'
             '</g>')
+
+
+def fan_backdrop(cx, cy, r):
+    """Раскрытый веер-задник за фигурой (декорация сцены, не предмет в руке)."""
+    out = []
+    n = 14
+    for i in range(n):
+        a1 = math.pi + math.pi * i / n
+        a2 = math.pi + math.pi * (i + 1) / n
+        x1, y1 = cx + r * math.cos(a1), cy + r * math.sin(a1)
+        x2, y2 = cx + r * math.cos(a2), cy + r * math.sin(a2)
+        col = '#8A1D30' if i % 2 else '#5E1020'
+        out.append(f'<path d="M{cx} {cy}L{x1:.0f} {y1:.0f}A{r} {r} 0 0 1 {x2:.0f} {y2:.0f}Z" fill="{col}" stroke="#D4A84B" stroke-width="2.5"/>')
+        xm, ym = cx + (r - 34) * math.cos((a1 + a2) / 2), cy + (r - 34) * math.sin((a1 + a2) / 2)
+        out.append(f'<circle cx="{xm:.0f}" cy="{ym:.0f}" r="9" fill="#D4A84B" opacity=".9"/>')
+    out.append(f'<path d="M{cx-r} {cy}A{r} {r} 0 0 1 {cx+r} {cy}" fill="none" stroke="url(#gold)" stroke-width="10"/>')
+    out.append(f'<path d="M{cx-r*.55:.0f} {cy}A{r*.55:.0f} {r*.55:.0f} 0 0 1 {cx+r*.55:.0f} {cy}" fill="none" stroke="#D4A84B" stroke-width="3" opacity=".8"/>')
+    return '<g opacity=".95">' + ''.join(out) + '</g>'
 
 
 def teatr_spots():
@@ -640,9 +702,9 @@ def teatr_spots():
          'Театральная сцена с бархатными кулисами: на низком постаменте стоят, взявшись за руки, золотые фигуры мужчины и женщины в платье с высокой талией.',
          th_stage(pair), TH_DEFS)
     # Обложка: занавес приоткрыт, принцесса и маски
-    inner = princess(600, 700, 1.2) + mask(250, 330, .9) + mask(950, 330, .9, col='#C9A24A', smile=False) + mask(600, 220, .6, col='#9C2A3A')
+    inner = fan_backdrop(600, 752, 400) + princess(600, 752, 1.32) + mask(262, 300, 1.0) + mask(938, 300, 1.0, col='#C9A24A', smile=False)
     save('hero-arbat', 'Сцена: принцесса и маски',
-         'Театральная сцена с бархатными кулисами и фестонами: в луче прожектора стоит золотая принцесса в короне, над сценой парят три маски итальянской комедии.',
+         'Театральная сцена с бархатными кулисами и фестонами: на фоне раскрытого веера-задника стоит золотая принцесса в короне, руки спрятаны в широких рукавах; по сторонам парят две маски итальянской комедии.',
          th_stage(inner), TH_DEFS)
 
 

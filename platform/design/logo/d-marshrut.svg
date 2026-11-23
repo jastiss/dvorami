@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="t d">
+  <title id="t">Дворами — знак B «Маршрут»</title>
+  <desc id="d">Русская буква Д, написанная одной линией маршрута: линия входит снизу слева, обходит двор и выходит к точке-цели.</desc>
+  <g class="logo-route" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 43V34h34v4.8"/>
+    <path d="M14 34 18 9h12l4 25"/>
+  </g>
+  <circle class="logo-light" cx="41" cy="42.6" r="3.4" fill="#FFC53D"/>
+</svg>

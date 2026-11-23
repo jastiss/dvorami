@@ -1,10 +1,16 @@
 /* Шрифты сайта: свои файлы (OFL, пакеты Fontsource), одна таблица на все страницы.
    Браузер скачивает только те начертания, что встречаются на странице.
-   font-display: optional — без «мигания»: главные начертания каждой страницы подгружаются заранее (<link rel=preload>),
-   из кэша при переходе между страницами шрифт ставится сразу; если сеть медленная, остаётся подогнанный запасной. */
+   font-display: swap — наш шрифт ставится всегда, как только загрузится.
+   ВНИМАНИЕ (ошибка итерации 10, замечание владельца 23.11 «что стало со шрифтом»): здесь стояло
+   font-display: optional. При нём браузер даёт шрифту ~100 мс и, если не успел, НАВСЕГДА за эту загрузку
+   страницы оставляет запасной Arial/Times — то есть на холодном кэше и на любом начертании без preload
+   (курсивы, вторые веса, Caveat 500) сайт набирался системным Arial, растянутым size-adjust до 129 %.
+   Отсюда «стало выглядеть хуже». Мигания при swap не будет: ниже — запасные шрифты с подогнанными
+   метриками, а главные начертания каждой страницы идут <link rel=preload>. */
 /* Запасные шрифты с подогнанными метриками (size-adjust, ascent/descent-override): пока свой шрифт
-   не загрузился (font-display: optional), текст набран системным Arial/Times той же ширины и высоты строки —
-   при смене шрифта ничего не прыгает. Метрики замерены в Chromium против Liberation Sans/Serif (метрики Arial/Times). */
+   не загрузился, текст набран системным Arial/Times той же ширины и высоты строки —
+   при подстановке своего шрифта ничего не прыгает (нет сдвига вёрстки, CLS = 0).
+   Метрики замерены в Chromium против Liberation Sans/Serif (метрики Arial/Times). */
 @font-face { font-family: 'Oswald Fallback'; src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Helvetica'); size-adjust: 87.9%; ascent-override: 135.4%; descent-override: 33.0%; line-gap-override: 0%; }
 @font-face { font-family: 'Onest Fallback'; src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Helvetica'); size-adjust: 103.3%; ascent-override: 93.9%; descent-override: 30.0%; line-gap-override: 0%; }
 @font-face { font-family: 'Cormorant Garamond Fallback'; src: local('Times New Roman'), local('TimesNewRomanPSMT'), local('Liberation Serif'), local('Times'); size-adjust: 93.6%; ascent-override: 98.3%; descent-override: 31.0%; line-gap-override: 0%; }
@@ -20,7 +26,7 @@
 @font-face {
   font-family: 'Unbounded';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/unbounded-cyrillic-600-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -30,7 +36,7 @@
 @font-face {
   font-family: 'Unbounded';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/unbounded-latin-600-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -40,7 +46,7 @@
 @font-face {
   font-family: 'Unbounded';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 800;
   src: url(fonts/unbounded-cyrillic-800-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -50,7 +56,7 @@
 @font-face {
   font-family: 'Unbounded';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 800;
   src: url(fonts/unbounded-latin-800-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -60,7 +66,7 @@
 @font-face {
   font-family: 'Golos Text';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/golos-text-cyrillic-400-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -70,7 +76,7 @@
 @font-face {
   font-family: 'Golos Text';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/golos-text-latin-400-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -80,7 +86,7 @@
 @font-face {
   font-family: 'Golos Text';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/golos-text-cyrillic-500-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -90,7 +96,7 @@
 @font-face {
   font-family: 'Golos Text';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/golos-text-latin-500-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -100,7 +106,7 @@
 @font-face {
   font-family: 'Golos Text';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/golos-text-cyrillic-600-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -110,7 +116,7 @@
 @font-face {
   font-family: 'Golos Text';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/golos-text-latin-600-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -120,7 +126,7 @@
 @font-face {
   font-family: 'Golos Text';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/golos-text-cyrillic-700-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -130,7 +136,7 @@
 @font-face {
   font-family: 'Golos Text';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/golos-text-latin-700-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -140,7 +146,7 @@
 @font-face {
   font-family: 'Caveat';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/caveat-cyrillic-500-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -150,7 +156,7 @@
 @font-face {
   font-family: 'Caveat';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/caveat-latin-500-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -160,7 +166,7 @@
 @font-face {
   font-family: 'Caveat';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/caveat-cyrillic-700-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -170,7 +176,7 @@
 @font-face {
   font-family: 'Caveat';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/caveat-latin-700-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -180,7 +186,7 @@
 @font-face {
   font-family: 'Oswald';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/oswald-cyrillic-500-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -190,7 +196,7 @@
 @font-face {
   font-family: 'Oswald';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/oswald-latin-500-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -200,7 +206,7 @@
 @font-face {
   font-family: 'Oswald';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/oswald-cyrillic-700-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -210,7 +216,7 @@
 @font-face {
   font-family: 'Oswald';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/oswald-latin-700-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -220,7 +226,7 @@
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/cormorant-garamond-cyrillic-700-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -230,7 +236,7 @@
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/cormorant-garamond-latin-700-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -240,7 +246,7 @@
 @font-face {
   font-family: 'Onest';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/onest-cyrillic-400-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -250,7 +256,7 @@
 @font-face {
   font-family: 'Onest';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/onest-latin-400-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -260,7 +266,7 @@
 @font-face {
   font-family: 'Onest';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/onest-cyrillic-500-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -270,7 +276,7 @@
 @font-face {
   font-family: 'Onest';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/onest-latin-500-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -280,7 +286,7 @@
 @font-face {
   font-family: 'Onest';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/onest-cyrillic-600-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -290,7 +296,7 @@
 @font-face {
   font-family: 'Onest';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/onest-latin-600-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -300,7 +306,7 @@
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/cormorant-garamond-cyrillic-600-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -310,7 +316,7 @@
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/cormorant-garamond-latin-600-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -320,7 +326,7 @@
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/cormorant-garamond-cyrillic-700-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -330,7 +336,7 @@
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/cormorant-garamond-latin-700-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -340,7 +346,7 @@
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: italic;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/cormorant-garamond-cyrillic-600-italic.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -350,7 +356,7 @@
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: italic;
-  font-display: optional;
+  font-display: swap;
   font-weight: 600;
   src: url(fonts/cormorant-garamond-latin-600-italic.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -360,7 +366,7 @@
 @font-face {
   font-family: 'PT Serif';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/pt-serif-cyrillic-400-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -370,7 +376,7 @@
 @font-face {
   font-family: 'PT Serif';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/pt-serif-latin-400-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -380,7 +386,7 @@
 @font-face {
   font-family: 'PT Serif';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/pt-serif-cyrillic-700-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -390,7 +396,7 @@
 @font-face {
   font-family: 'PT Serif';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/pt-serif-latin-700-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -400,7 +406,7 @@
 @font-face {
   font-family: 'PT Serif';
   font-style: italic;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/pt-serif-cyrillic-400-italic.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -410,7 +416,7 @@
 @font-face {
   font-family: 'PT Serif';
   font-style: italic;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/pt-serif-latin-400-italic.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -420,7 +426,7 @@
 @font-face {
   font-family: 'Alegreya';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/alegreya-cyrillic-500-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -430,7 +436,7 @@
 @font-face {
   font-family: 'Alegreya';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/alegreya-latin-500-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -440,7 +446,7 @@
 @font-face {
   font-family: 'Alegreya';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/alegreya-cyrillic-700-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -450,7 +456,7 @@
 @font-face {
   font-family: 'Alegreya';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/alegreya-latin-700-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -460,7 +466,7 @@
 @font-face {
   font-family: 'Alegreya';
   font-style: italic;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/alegreya-cyrillic-500-italic.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -470,7 +476,7 @@
 @font-face {
   font-family: 'Alegreya';
   font-style: italic;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/alegreya-latin-500-italic.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -480,7 +486,7 @@
 @font-face {
   font-family: 'Alegreya Sans';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/alegreya-sans-cyrillic-400-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -490,7 +496,7 @@
 @font-face {
   font-family: 'Alegreya Sans';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/alegreya-sans-latin-400-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -500,7 +506,7 @@
 @font-face {
   font-family: 'Alegreya Sans';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/alegreya-sans-cyrillic-500-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -510,7 +516,7 @@
 @font-face {
   font-family: 'Alegreya Sans';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 500;
   src: url(fonts/alegreya-sans-latin-500-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -520,7 +526,7 @@
 @font-face {
   font-family: 'Alegreya Sans';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/alegreya-sans-cyrillic-700-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -530,7 +536,7 @@
 @font-face {
   font-family: 'Alegreya Sans';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 700;
   src: url(fonts/alegreya-sans-latin-700-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
@@ -540,7 +546,7 @@
 @font-face {
   font-family: 'Neucha';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/neucha-cyrillic-400-normal.woff2) format('woff2');
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
@@ -550,7 +556,7 @@
 @font-face {
   font-family: 'Neucha';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
   src: url(fonts/neucha-latin-400-normal.woff2) format('woff2');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;

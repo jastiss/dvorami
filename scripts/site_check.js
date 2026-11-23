@@ -3,7 +3,7 @@
  *
  * Поднимает локальный http-сервер из site/, открывает каждую страницу в Chromium при 390 и 1440 px
  * (внешние запросы блокируются — проверяем только свои файлы) и ищет то, что владелец уже ловил руками:
- *   - кнопка/CTA без видимого текста (пусто или цвет текста сливается с фоном);
+ *   - кнопка/CTA без видимого текста (пусто или цвет текста сливается с фоном); кнопка шапки без полей;
  *   - на какой-то высоте прокрутки вниз на экране нет ни одного целевого действия (CTA пропадает);
  *   - горизонтальный скролл страницы; обрезанные карточки и виджеты (контент шире блока или вылезает за экран);
  *   - локальные ссылки, картинки, стили и скрипты, которые не отвечают 200; ссылки на несуществующие якоря;
@@ -97,6 +97,15 @@ function inPage(MAIN_CTA) {
       const L1 = lum(fg), L2 = lum(bg); const ratio = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05);
       if (fg.a < .3 || ratio < 3) out.problems.push(`текст кнопки почти не виден (контраст ${ratio.toFixed(2)}): ${label(el)}`);
     }
+  });
+
+  // 1a. Кнопки в шапке: у текста есть поля (ловили 23.11: «Взять дело» упиралась в края) и он не переносится
+  document.querySelectorAll('.site-header .nav a.c-btn, .site-header .nav a.btn, .site-header .nav a.av-btn').forEach(el => {
+    if (!visible(el)) return;
+    const cs = getComputedStyle(el);
+    const pl = parseFloat(cs.paddingLeft), pr = parseFloat(cs.paddingRight);
+    if (pl < 12 || pr < 12) out.problems.push(`кнопка шапки без полей (padding ${pl}/${pr}px, нужно ≥ 12): ${label(el)}`);
+    if (el.getBoundingClientRect().height > 2.2 * parseFloat(cs.lineHeight) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) out.problems.push(`текст кнопки шапки переносится: ${label(el)}`);
   });
 
   // 2. Горизонтальный скролл

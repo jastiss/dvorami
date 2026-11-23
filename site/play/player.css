@@ -303,3 +303,7 @@ details.pl-field[open] summary { margin-bottom: 10px; }
   .pl-main { padding-top: 24px; }
   .pl-tabs { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
 }
+
+/* Единый логотип (указание 23.11): слово «дворами» — Unbounded 800 на всех страницах, включая плеер */
+.pl-logo span { font: 800 15px/1 'Unbounded', 'Unbounded Fallback', 'Arial Black', sans-serif; letter-spacing: -0.01em; text-transform: none; }
+@media (max-width: 400px) { .pl-logo span { font-size: 13px; } }

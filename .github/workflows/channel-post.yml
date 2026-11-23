@@ -1,0 +1,46 @@
+name: Канал — публикация постов
+
+# Публикует в @dvorami_quest один одобренный пост (status: approved, время МСК наступило).
+# Посты — docs/marketing/channel/posts/*.md; скрипт scripts/channel_post.py.
+# Токен PLAYER_BOT_TOKEN (бот @dvorami_bot должен быть админом канала).
+# Пока секрета нет — скрипт сразу выходит, ничего не коммитит.
+on:
+  schedule:
+    - cron: "7 * * * *"      # раз в час (минута 7, чтобы разойтись с другими задачами)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Защита от двойной публикации: запуски не пересекаются, и пост публикуется, только
+# пока у него status: approved и пустой message_id. После отправки скрипт сразу
+# проставляет status: published + message_id и коммитит — следующий запуск его пропустит.
+concurrency:
+  group: channel-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Опубликовать готовый пост
+        env:
+          PLAYER_BOT_TOKEN: ${{ secrets.PLAYER_BOT_TOKEN }}
+          CHANNEL_CHAT_ID: ${{ secrets.CHANNEL_CHAT_ID }}
+        run: python3 scripts/channel_post.py
+      - name: Сохранить смену статуса
+        if: always()
+        run: |
+          paths="docs/marketing/channel/posts"
+          if [ -z "$(git status --porcelain -- $paths)" ]; then exit 0; fi
+          git config user.name "dvorami-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- $paths
+          git commit -m "Канал: пост опубликован"
+          for i in 1 2 3; do
+            git pull --rebase && git push && exit 0
+            sleep 5
+          done
+          exit 1

@@ -131,7 +131,6 @@ CASE = {
     ],
     'buy': {'h2': 'Гранка ждёт наборщика', 'text': 'Квест в&nbsp;разработке, взять дело можно будет здесь. Напишем в&nbsp;Telegram, как только лист можно будет набирать.'},
     'sources': [
-        ('https://weekend.rambler.ru/read/56505697-kak-v-moskve-poyavilsya-kitay-gorod/', 'Рамблер — откуда название Китай-города'),
         ('https://um.mos.ru/places/tretyakovskiy-proezd/', 'Узнай Москву — Третьяковский проезд'),
         ('https://www.mos.ru/news/item/96221073/', 'mos.ru — Синодальная типография'),
         ('https://www.pnp.ru/social/pochemu-apostol-stal-pervoy-na-rusi-pechatnoy-knigoy.html', '«Парламентская газета» — «Апостол»'),
