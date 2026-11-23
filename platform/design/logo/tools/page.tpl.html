@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Логотип «Дворами» — «Ключ», три варианта бородки</title>
+<style>
+  @font-face{font-family:'Unbounded';font-weight:800;font-display:swap;src:url(../../../site/assets/fonts/unbounded-cyrillic-800-normal.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+  @font-face{font-family:'Unbounded';font-weight:800;font-display:swap;src:url(../../../site/assets/fonts/unbounded-latin-800-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+  @font-face{font-family:'Golos Text';font-weight:400;font-display:swap;src:url(../../../site/assets/fonts/golos-text-cyrillic-400-normal.woff2) format('woff2')}
+  @font-face{font-family:'Golos Text';font-weight:600;font-display:swap;src:url(../../../site/assets/fonts/golos-text-cyrillic-600-normal.woff2) format('woff2')}
+  @font-face{font-family:'Caveat';font-weight:700;font-display:swap;src:url(../../../site/assets/fonts/caveat-cyrillic-700-normal.woff2) format('woff2')}
+  :root{
+    --bg:#0E1630; --surface:#17224A; --surface-2:#1E2B57; --line:#2B3A70; --text:#F3F1EA; --text-2:#D5D9E6;
+    --text-3:#A9B1C7; --accent:#FFC53D; --paper:#F1EDE3; --ink:#0E1630;
+    --font:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --disp:'Unbounded','Arial Black',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.5;
+    background-image:linear-gradient(180deg,#17224A,var(--bg) 640px);background-repeat:no-repeat}
+  .wrap{max-width:1120px;margin:0 auto;padding:40px 16px 72px}
+  .hand{font-family:'Caveat',cursive;font-weight:700;font-size:26px;color:var(--accent);display:inline-block;transform:rotate(-2deg);margin:0 0 2px}
+  h1{font-family:var(--disp);font-weight:800;font-size:clamp(28px,5vw,52px);letter-spacing:-.02em;line-height:1.05;margin:0 0 12px}
+  .lead{color:var(--text-2);font-size:18px;max-width:44em;margin:0}
+  .mark{display:block;flex:none;color:inherit}
+  .word{font-family:var(--disp);font-weight:800;letter-spacing:-.01em;line-height:1}
+
+  /* эскиз и три варианта в один ряд */
+  .row4{display:grid;gap:12px;margin-top:28px;grid-template-columns:repeat(2,minmax(0,1fr))}
+  @media(min-width:900px){.row4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  .row4 figure{margin:0;min-width:0}
+  .row4 a,.row4 .pic{display:grid;place-items:center;aspect-ratio:1;border-radius:18px;background:var(--paper);color:var(--ink);overflow:hidden}
+  .row4 img{display:block;width:100%;height:100%;object-fit:contain}
+  .row4 .mark{width:80%;height:80%}
+  .row4 figcaption{font-size:15px;color:var(--text-2);margin-top:8px}
+  .row4 figcaption b{font-family:var(--disp);font-weight:800;color:var(--accent);margin-right:6px}
+
+  section{margin-top:64px}
+  .head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+  h2{font-family:var(--disp);font-weight:800;font-size:clamp(22px,3vw,32px);margin:0;letter-spacing:-.01em}
+  .rec{font-size:14px;font-weight:600;background:var(--accent);color:var(--ink);border-radius:999px;padding:3px 12px}
+  .idea{color:var(--text-2);max-width:46em;margin:6px 0 20px}
+
+  .grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+  @media(min-width:860px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .card{border:1px solid var(--line);border-radius:18px;padding:22px 20px;color:var(--text);background:var(--bg);min-width:0}
+  .card.light{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+  .sizes{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap}
+  .sizes figure{margin:0;text-align:center}
+  .sizes figcaption{font-size:13px;margin-top:8px;opacity:.72}
+  .m180{width:180px;height:180px}.m32{width:32px;height:32px;margin:0 auto}.m16{width:16px;height:16px;margin:0 auto}
+  .lock{display:flex;align-items:center;gap:12px;margin-top:26px}
+  .lock .mark{width:56px;height:56px}
+  .lock .word{font-size:30px}
+
+  /* в деле: шапка 390 и вкладки */
+  .use{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center;border:1px solid var(--line);border-radius:18px;padding:18px 20px;background:var(--surface);min-width:0}
+  .phone{width:390px;flex:none}
+  .cap{font-size:13px;color:var(--text-3);margin:0 0 6px}
+  .hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#0B1230;border:1px solid var(--line);border-radius:14px}
+  .brand{display:flex;align-items:center;gap:9px;min-width:0}
+  .brand .mark{width:40px;height:40px}
+  .brand .word{font-size:20px}
+  .pill{background:var(--accent);color:var(--ink);font-weight:600;border-radius:999px;padding:10px 16px;font-size:15px;white-space:nowrap}
+  @media(max-width:480px){
+    .use{padding:16px 0;border-left:0;border-right:0;border-radius:0;margin:0 -16px;background:none}
+    .phone .cap,.tabs{padding:0 16px}
+    .phone{width:100%}
+    .hdr{border-radius:0;border-left:0;border-right:0}
+  }
+  .tabs{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .tabbar{display:flex;align-items:flex-end;padding:6px 8px 0;border-radius:10px;background:#C9CDD4}
+  .tabbar.dk{background:#202124}
+  .tab{display:flex;align-items:center;gap:8px;background:#fff;color:#1F2125;border-radius:8px 8px 0 0;padding:8px 26px 8px 10px;font:13px/1 system-ui,sans-serif;white-space:nowrap}
+  .tab .mark{width:16px;height:16px;color:#0E1630}
+  .dk .tab{background:#35363A;color:#E8EAED}
+  .dk .tab .mark{color:#F3F1EA}
+
+  .apps{min-width:0}
+  .apps div{display:flex;gap:12px}
+  .app{display:grid;place-items:center;width:64px;height:64px;border-radius:16px;background:var(--bg);border:1px solid var(--line);color:var(--text)}
+  .app.lt{background:var(--paper);border-color:var(--paper);color:var(--ink)}
+  .app .mark{width:50px;height:50px}
+  @media(max-width:480px){.apps{padding:0 16px}}
+  /* версия для 16 px */
+  .small{display:grid;gap:18px;grid-template-columns:minmax(0,1fr);align-items:center;border:1px solid var(--line);border-radius:18px;padding:20px;background:var(--surface)}
+  @media(min-width:760px){.small{grid-template-columns:auto auto minmax(0,1fr)}}
+  .small .pair{display:flex;gap:12px}
+  .small .box{display:grid;place-items:center;width:140px;height:140px;border-radius:14px;background:var(--paper);color:var(--ink)}
+  .small .box.dk{background:var(--bg);color:var(--text);border:1px solid var(--line)}
+  .small .box .mark{width:112px;height:112px}
+  .small .real{display:flex;gap:12px;align-items:center}
+  .small .dot{display:grid;place-items:center;width:44px;height:44px;border-radius:10px;background:var(--paper);color:var(--ink)}
+  .small .dot.dk{background:var(--bg);color:var(--text);border:1px solid var(--line)}
+  .small p{margin:0;color:var(--text-2);font-size:16px;max-width:36em}
+  footer{margin-top:56px;color:var(--text-3);font-size:14px;border-top:1px solid var(--line);padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="hand">ключ: правим бородку</p>
+  <h1>«Ключ»: три&nbsp;варианта</h1>
+  <p class="lead">Направление выбрано, буква «Д» снята. По&nbsp;вашим правкам домики стали разными по&nbsp;размеру, у&nbsp;одного появилась труба, в&nbsp;башне прорезаны вертикальные окна. Кольцо, жёлтый свет и&nbsp;наклон 45°&nbsp;— как в&nbsp;эскизе.</p>
+
+  <div class="row4" id="row4"></div>
+  <div id="variants"></div>
+
+  <section id="s16">
+    <p class="hand">для вкладки браузера</p>
+    <h2>Версия для&nbsp;16&nbsp;px</h2>
+    <p class="idea">Одна на&nbsp;все три варианта: в&nbsp;16&nbsp;точках окна и&nbsp;мелкие различия всё равно пропадают.</p>
+    <div class="small" id="small"></div>
+  </section>
+
+  <footer>platform/design/logo/ · v4-klyuch-a.svg, -b.svg, -c.svg (знаки) · v4-klyuch-*-lockup.svg (знак + слово, в&nbsp;кривых) · v4-klyuch-16.svg (упрощённый) · начерчено вручную, без&nbsp;fal · на&nbsp;сайт не&nbsp;поставлено, выбирает владелец</footer>
+</div>
+
+<script>
+const MARKS = /*MARKS*/;
+const V = [
+  {id:'a', name:'A · по эскизу', rec:true, short:'малый дом с трубой, башня в два окна, дом крупнее',
+   idea:'Ближе всего к эскизу: слева малый дом с трубой на скате, в центре башня со срезанным углом и двумя высокими окнами, справа дом покрупнее. Силуэт самый спокойный.'},
+  {id:'b', name:'B · широкая башня', short:'малый дом, башня в три окна, дом с трубой',
+   idea:'Башня шире, с надстройкой и тремя окнами в ряд. Слева малый дом, труба переехала на крупный дом у конца ключа. Ритм окон самый заметный, бородка плотнее.'},
+  {id:'c', name:'C · шпиль', short:'дом с трубой, башня со шпилем, малый дом',
+   idea:'Башня со шпилем и тремя окнами, среднее выше. Крупный дом с трубой стоит у кольца, крайний дом маленький. Силуэт самый острый, но дальше всех от эскиза.'}
+];
+const mk = (id, cls='') => `<svg class="mark ${cls}" viewBox="0 0 48 48" aria-hidden="true">${MARKS[id]}</svg>`;
+
+document.getElementById('row4').innerHTML =
+  `<figure><div class="pic"><img src="refs/owner-likes-key.png" alt="Эскиз, который понравился владельцу" width="872" height="778"></div><figcaption>эскиз, который вам понравился</figcaption></figure>` +
+  V.map(v => `<figure><a href="#${v.id}" aria-label="Вариант ${v.name}">${mk(v.id)}</a><figcaption><b>${v.id.toUpperCase()}</b>${v.short}</figcaption></figure>`).join('');
+
+const card = (v, light) => `
+  <div class="card ${light?'light':''}">
+    <div class="sizes">
+      <figure>${mk(v.id,'m180')}<figcaption>180 px</figcaption></figure>
+      <figure>${mk(v.id,'m32')}<figcaption>32 px</figcaption></figure>
+      <figure>${mk('s16','m16')}<figcaption>16 px</figcaption></figure>
+    </div>
+    <div class="lock">${mk(v.id)}<span class="word">дворами</span></div>
+  </div>`;
+
+document.getElementById('variants').innerHTML = V.map(v => `
+  <section id="${v.id}">
+    <div class="head"><h2>${v.name}</h2>${v.rec?'<span class="rec">рекомендуем</span>':''}</div>
+    <p class="idea">${v.idea}</p>
+    <div class="grid">
+      ${card(v,true)}${card(v,false)}
+      <div class="use">
+        <div class="phone"><p class="cap">шапка сайта, 390 px</p>
+          <div class="hdr"><div class="brand">${mk(v.id)}<span class="word">дворами</span></div><span class="pill">Выбрать квест</span></div></div>
+        <div class="tabs"><p class="cap">вкладка браузера, 16 px</p>
+          <div class="tabbar"><span class="tab">${mk('s16')}Дворами — квесты</span></div>
+          <div class="tabbar dk"><span class="tab">${mk('s16')}Дворами — квесты</span></div></div>
+        <div class="apps"><p class="cap">значок на экране телефона, 64 px</p>
+          <div><span class="app lt">${mk(v.id)}</span><span class="app">${mk(v.id)}</span></div></div>
+      </div>
+    </div>
+  </section>`).join('');
+
+document.getElementById('small').innerHTML = `
+  <div class="pair"><div class="box">${mk('s16')}</div><div class="box dk">${mk('s16')}</div></div>
+  <div class="real"><span class="dot">${mk('s16','m16')}</span><span class="dot dk">${mk('s16','m16')}</span></div>
+  <p>Окон нет, стержень толще, зазоры между домами шире. Труба оставлена: в&nbsp;16&nbsp;px она читается как зубец, и&nbsp;левый дом не&nbsp;сливается с&nbsp;правым. Слева&nbsp;— увеличено, справа&nbsp;— в&nbsp;настоящем размере.</p>`;
+</script>
+</body>
+</html>
