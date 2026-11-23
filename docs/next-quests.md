@@ -12,8 +12,8 @@
 | 5 | Дело о неоплаченном векселе | Замоскворечье | Пятницкая улица, церковь Святого Климента, Лаврушинский переулок (Третьяковская галерея), Лужков мост через Водоотводный канал | Купцы Замоскворечья верили на слово. Один вексель так и не оплатили |
 
 ## Источники (места)
-- Голосов овраг, камни: [Wikipedia: Golosov Ravine](https://en.wikipedia.org/wiki/Golosov_Ravine); [KudaGo: камни Коломенского](https://kudago.com/msk/place/kamni-kolomenskoe/); легенда о тумане — [Вечерняя Москва](https://vm.ru/technology/521171-mezhdu-vremenem-i-prostranstvom).
-- Дом-комод (Апраксинский дворец, Покровка): [Москвич Mag](https://moskvichmag.ru/?p=306983); окрестности Чистых прудов и Меншикова башня: [журнал Tripster](https://experience.tripster.ru/journal/articles/chto-interesnogo-mozhno-uvidet-v-rajone-chistyh-prudov/), [Москвич Mag](https://moskvichmag.ru/?p=386334).
+- Голосов овраг, камни: [РИА Новости, 20.04.2021: овраг в Коломенском](https://ria.ru/20210420/ovrag-1728983325.html); [KudaGo: камни Коломенского — наводка](https://kudago.com/msk/place/kamni-kolomenskoe/); легенда о тумане — [Вечерняя Москва](https://vm.ru/technology/521171-mezhdu-vremenem-i-prostranstvom).
+- Дом-комод (Апраксинский дворец, Покровка): [Москвич Mag](https://moskvichmag.ru/?p=306983); окрестности Чистых прудов и Меншикова башня: [Узнай Москву: Чистые пруды](https://um.mos.ru/places/chistye-prudy/), [Москвич Mag](https://moskvichmag.ru/?p=386334).
 - Хитровка, ВДНХ, Замоскворечье — общеизвестные места; перед разработкой Историк делает фактчек как для ЗИЛАРТа (`quests/zilart/research/facts.md`).
 
 ## Как выбирать следующий
