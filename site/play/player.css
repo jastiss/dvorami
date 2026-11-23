@@ -89,9 +89,8 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
   display: flex; align-items: center; gap: 12px;
   height: var(--top-h); max-width: var(--col); margin: 0 auto; padding: 0 4px 0 16px;
 }
-.pl-logo { display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; min-height: 44px; }
-.pl-logo svg { width: 28px; height: 28px; }
-.pl-logo .logo-light { fill: var(--accent); }
+.pl-logo { display: flex; align-items: center; gap: 6px; color: var(--text); text-decoration: none; min-height: 44px; }
+.pl-logo svg { width: 36px; height: 36px; flex: none; }
 /* Единый логотип (указание 23.11): слово «дворами» — Unbounded 800 на всех страницах, включая плеер */
 .pl-logo span { font: 800 15px/1 'Unbounded', 'Unbounded Fallback', 'Arial Black', sans-serif; letter-spacing: -.01em; }
 .pl-where { margin-left: auto; font: 500 16px/1.2 var(--font-text); color: var(--text-2); white-space: nowrap; }

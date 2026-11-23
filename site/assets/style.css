@@ -92,12 +92,13 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 .link-arrow:hover::after { transform: translateX(4px); }
 
 /* ---------- Логотип ---------- */
-.logo { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; }
+.logo { display: inline-flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; }
 .logo:hover { color: var(--text); }
-.logo svg { width: 34px; height: 34px; flex: none; transition: transform .3s ease; }
+/* Знак «Ключ» — диагональ в квадратном поле, поэтому поле крупнее строки слова */
+.logo svg { width: 44px; height: 44px; flex: none; transition: transform .3s ease; }
 .logo:hover svg { transform: translateY(-2px) scale(1.06); }
-.logo .logo-light { transition: transform .4s ease; transform-origin: 24px 33px; }
-.logo:hover .logo-light { transform: scale(1.35); }
+.logo .logo-light { transition: transform .4s ease; transform-origin: 124.9px 134.9px; }
+.logo:hover .logo-light { transform: scale(1.18); }
 
 /* ---------- Шапка ---------- */
 .site-header { position: relative; z-index: 3; }
@@ -106,7 +107,7 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 .nav a:not(.btn) { display: none; color: var(--text); text-decoration: none; padding: 12px 0; }
 .nav a:not(.btn):hover { color: var(--accent); text-decoration: underline; }
 .nav .btn { min-height: 44px; padding: 10px 20px; font-size: 16px; }
-@media (max-width: 380px) { .nav .btn { padding: 10px 14px; font-size: 15px; } .logo { font-size: 20px; gap: 8px; } .logo svg { width: 30px; height: 30px; } }
+@media (max-width: 380px) { .nav .btn { padding: 10px 14px; font-size: 15px; } .logo { font-size: 20px; gap: 8px; } .logo svg { width: 38px; height: 38px; } }
 @media (min-width: 1000px) {
   .site-header .wrap { padding-top: 24px; padding-bottom: 24px; }
   .nav a:not(.btn) { display: inline-block; }
@@ -835,7 +836,7 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 @media (max-width: 400px) {
   .site-header .wrap { padding-top: 12px; padding-bottom: 12px; }
   .logo { font-size: 19px; gap: 7px; }
-  .logo svg { width: 28px; height: 28px; }
+  .logo svg { width: 38px; height: 38px; }
   .nav { column-gap: 4px; }
   .nav a.nav-tg { min-width: 44px; }
   .nav .btn { padding: 8px 14px; font-size: 15px; }

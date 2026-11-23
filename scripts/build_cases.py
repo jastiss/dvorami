@@ -49,9 +49,9 @@ STATUS = {'soon': 'Скоро в продаже', 'dev': 'В разработк�
 ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 ARROW_L = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H6M11 6.5 5.5 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 TG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.5 3.6 2.9 10.8c-1.3.5-1.3 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM8.8 13.4l9.6-6c.5-.3.9-.1.5.2l-8 7.3-.3 3.4-1.8-4.9z" fill="currentColor"/></svg>'
-LOGO = ('<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
-        '<path class="logo-d" fill="currentColor" fill-rule="evenodd" d="M16.5 7H31.5L36.5 34H44V38.5H41.5V44H36V38.5H12V44H6.5V38.5H4V34H11.5ZM18 34L21 17Q24 12 27 17L30 34Z"/>'
-        '<path class="logo-light" fill="#FFC53D" d="M20.3 34V26.6Q24 22.2 27.7 26.6V34Z"/></svg>')
+LOGO = ('<svg viewBox="0 0 512 512" aria-hidden="true" focusable="false">'
+        '<path class="logo-key" fill="currentColor" fill-rule="evenodd" d="M230.9 194.4L295.2 258.8L319.5 234.5L313.5 228.5L319.5 222.5L323.6 222.5L373.5 237.5L381.5 264L388.6 257.5L396.5 265.5L385.5 277.1L389.5 290.5L382.5 296.5L378.5 289.5L352.2 315.8L363.7 327.3L446.5 244.5L493.6 291.5L410.8 374.3L421.2 384.8L454.5 351.5L499.6 359.5L508.6 401.6L473.3 436.9L482.6 446.2A30.7 30.7 0 0 1 439.2 489.6L188.2 238.6A121.5 121.5 0 1 1 230.9 194.4ZM316 281L337 260L351 274L330 295ZM440 404L460.5 383.5L474.5 397.5L454 418ZM378.7 331.4L396.1 314L406.1 324L388.7 341.4ZM404.7 305.3L421.8 288.2L431.8 298.3L414.8 315.3ZM430.5 279.5L447 263L457.1 273L440.5 289.6ZM396.7 349.4L414.1 332L424.1 342L406.7 359.4ZM422.8 323.3L439.8 306.3L449.8 316.2L432.8 333.3ZM448.5 297.6L465.1 281L475 291L458.5 307.5Z"/>'
+        '<circle class="logo-light" cx="124.9" cy="134.9" r="67.6" fill="#F9BD39"/></svg>')
 
 
 def esc(s):

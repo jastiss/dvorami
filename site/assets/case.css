@@ -25,8 +25,6 @@ body.case-page .skip { background: var(--accent); color: var(--on-accent); }
 /* ---------- Шапка ---------- */
 body.case-page .site-header { background: var(--bg); border-bottom: 1px solid var(--line); }
 body.case-page .logo { font-family: var(--font-display); font-weight: 700; color: var(--text); font-size: 24px; }
-body.case-page .logo svg path[stroke] { stroke: var(--text); }
-body.case-page .logo .logo-light { fill: var(--accent); }
 body.case-page .nav a:not(.c-btn) { display: none; color: var(--text); text-decoration: none; padding: 12px 0; font-size: 17px; }
 body.case-page .nav a:not(.c-btn):hover { color: var(--accent-text); text-decoration: underline; }
 body.case-page .nav a.c-btn { display: inline-flex; }
