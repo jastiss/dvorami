@@ -13,43 +13,19 @@
 <link rel="preload" href="../../assets/fonts/oswald-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../../assets/fonts/onest-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../../assets/fonts.css">
+<!-- Каркас экрана — общий для всех дел; тема дела — только переменные и вид артефакта (platform/design/player-frame.md) -->
 <link rel="stylesheet" href="../player.css">
+<link rel="stylesheet" href="theme.css">
 <script>
   try { if (localStorage.getItem('dvorami:theme') === 'sun') document.documentElement.dataset.theme = 'sun'; } catch (e) {}
 </script>
 </head>
-<body data-quest="zilart">
-<header class="pl-top">
-  <a class="pl-logo" href="../../" aria-label="Дворами — на главную">
-    <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M16.5 7H31.5L36.5 34H44V38.5H41.5V44H36V38.5H12V44H6.5V38.5H4V34H11.5ZM18 34L21 17Q24 12 27 17L30 34Z"/><path class="logo-light" fill="#E1251B" d="M20.3 34V26.6Q24 22.2 27.7 26.6V34Z"/></svg>
-    <span>дворами</span>
-  </a>
-  <span class="pl-count" id="count" aria-live="polite"></span>
-  <button class="pl-sun" type="button" data-act="theme" aria-pressed="false" title="Светлая тема: экран лучше читается на солнце">Светлая тема</button>
-</header>
-<div class="pl-progress" id="progress" aria-hidden="true"></div>
-
+<!-- Данные дела для каркаса: data-quest — папка с quest.json, data-case-no — номер дела в шапке -->
+<body data-quest="zilart" data-case-no="1">
 <main class="pl-main" id="app" tabindex="-1">
   <p class="pl-loading">Загружаем дело…</p>
   <noscript><p class="pl-loading">Для прохождения квеста включите JavaScript.</p></noscript>
 </main>
-
-<nav class="pl-tabs" id="tabs" aria-label="Действия" hidden>
-  <button type="button" data-act="board"><span class="pl-tab-ico" aria-hidden="true">▦</span>Улики<b class="pl-badge" id="badge"></b></button>
-  <button type="button" data-act="note"><span class="pl-tab-ico" aria-hidden="true">✎</span>Заметка</button>
-  <button type="button" data-act="repeat"><span class="pl-tab-ico" aria-hidden="true">↻</span>Повторить</button>
-  <button type="button" data-act="menu"><span class="pl-tab-ico" aria-hidden="true">≡</span>Ещё</button>
-</nav>
-
-<dialog class="pl-sheet" id="sheet" aria-labelledby="sheet-title">
-  <div class="pl-sheet-head">
-    <h2 id="sheet-title"></h2>
-    <button type="button" class="pl-x" data-act="close" aria-label="Закрыть">×</button>
-  </div>
-  <div class="pl-sheet-body" id="sheet-body"></div>
-</dialog>
-
-<div class="pl-toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Аналитика: счётчик подключается из analytics.js -->
 <script src="../../assets/analytics.js" defer></script>

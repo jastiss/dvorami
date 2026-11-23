@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Демо темы «Чертёж» — каркас плеера | Дворами</title>
+<!-- Плеер квеста: не индексируется ни на стенде, ни на боевом сайте -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0E3463">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="../../../../site/assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../../../site/assets/apple-touch-icon.png">
+<link rel="preload" href="../../../../site/assets/fonts/golos-text-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../../../site/assets/fonts/golos-text-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../../../../site/assets/fonts.css">
+<!-- Каркас экрана — общий для всех дел; тема дела — только переменные и вид артефакта (platform/design/player-frame.md) -->
+<link rel="stylesheet" href="../../../../site/play/player.css">
+<link rel="stylesheet" href="theme.css">
+<script>
+  try { if (localStorage.getItem('dvorami:theme') === 'sun') document.documentElement.dataset.theme = 'sun'; } catch (e) {}
+</script>
+</head>
+<!-- Данные дела для каркаса: data-quest — папка с quest.json, data-case-no — номер дела в шапке -->
+<body data-quest="demo-chertezh" data-case-no="4">
+<main class="pl-main" id="app" tabindex="-1">
+  <p class="pl-loading">Загружаем дело…</p>
+  <noscript><p class="pl-loading">Для прохождения квеста включите JavaScript.</p></noscript>
+</main>
+
+<!-- Аналитика: счётчик подключается из analytics.js -->
+<script src="../../../../site/assets/analytics.js" defer></script>
+<script src="../../../../site/play/player.js" defer></script>
+</body>
+</html>

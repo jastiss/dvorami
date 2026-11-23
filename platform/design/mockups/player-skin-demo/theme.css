@@ -1,0 +1,26 @@
+/* ДЕМО-ТЕМА «Чертёж» (дело №4) — проверка, что новое дело подключается к каркасу плеера без правки каркаса.
+   Палитра и шрифты — из темы страницы дела (site/assets/case.css, .t-chertezh). Не публикуется: макет. */
+:root {
+  --bg: #0E3463; --surface: #0B2B54; --surface-2: #164577; --line: #2C5A8F; --control: #8FB0D6;
+  --text: #EAF2FA; --text-2: #C9DBEE; --text-3: #A5BEDB;
+  --accent: #E9B24C; --on-accent-fill: #0B2B54; --accent-text: #F9C6AC; --accent-btn: #E9B24C; --on-accent: #0B2B54;
+  --ok: #9FE0A8; --paper: #E8EFF4; --ink: #0F2F57; --ink-2: #284A72;
+  --font-display: 'Golos Text', 'Golos Text Fallback', system-ui, sans-serif;
+  --font-text: 'Golos Text', 'Golos Text Fallback', system-ui, sans-serif;
+  --font-doc: 'Neucha', 'Neucha Fallback', 'Segoe Print', cursive;
+  --h1-size: clamp(32px, 9vw, 44px); --h1-weight: 700; --h1-track: -.01em;
+  --btn-font: 700 19px/1.15 var(--font-display);
+  --tag-font: 700 14px/1 var(--font-display); --tag-track: .06em;
+  --radius: 2px; --radius-btn: 2px; --btn-shadow: 4px 4px 0 rgba(0, 0, 0, .3);
+  --page-bg: linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px) 0 0 / 32px 32px, linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px) 0 0 / 32px 32px;
+}
+:root[data-theme="sun"] {
+  --bg: #E8EFF4; --surface: #FFFFFF; --surface-2: #DCE6EE; --line: #B9C9DA; --control: #4A6A90;
+  --text: #0F2F57; --text-2: #284A72; --text-3: #3F5F86;
+  --accent: #B8442E; --on-accent-fill: #FFFFFF; --accent-text: #A63B26; --accent-btn: #0F2F57; --on-accent: #FFFFFF;
+  --ok: #1F6B2A; --paper: #FFFFFF; --ink: #0F2F57; --ink-2: #284A72;
+}
+/* Артефакт дела — строка обмерной ведомости с пометкой от руки */
+.pl-doc { border: 1.5px solid var(--ink); box-shadow: inset 0 0 0 4px var(--paper), inset 0 0 0 5px var(--ink-2); padding: 16px 18px; }
+.pl-doc code { font: 400 22px/1.3 var(--font-doc); letter-spacing: 0; color: #A63B26; }
+.pl-art { border: 1.5px solid var(--ink); }

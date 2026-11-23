@@ -1,0 +1,39 @@
+/* Тема дела №1 «Дело о Синей птице» — стиль «Авангард» (platform/design/BRAND.md, раздел 3).
+   Только значения переменных каркаса (site/play/player.css) и вид артефакта. Раскладку, размеры касаний и навигацию тема не трогает. */
+
+:root {
+  --bg: #141414; --surface: #1E1E1E; --surface-2: #262626; --line: #333333; --control: #9A968E;
+  --text: #F2EFE8; --text-2: #C9C5BC; --text-3: #A6A29A;
+  --accent: #E1251B; --on-accent-fill: #FFFFFF; --accent-text: #FF5A4E; --accent-btn: #E1251B; --on-accent: #FFFFFF;
+  --ok: #7CC47F; --paper: #F2EFE8; --ink: #141414; --ink-2: #3A3833;
+  --font-display: 'Oswald', 'Oswald Fallback', 'Arial Narrow', system-ui, sans-serif;
+  --font-text: 'Onest', 'Onest Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --h1-size: clamp(36px, 10.5vw, 50px); --h1-line: 1; --h1-weight: 700; --h1-case: uppercase; --h1-track: .005em;
+  --btn-font: 700 20px/1.1 var(--font-display); --btn-case: uppercase; --btn-track: .05em;
+  --tag-font: 700 16px/1 var(--font-display); --tag-track: .08em;
+  --radius: 0px; --radius-btn: 0px; --btn-shadow: 4px 4px 0 var(--text);
+}
+/* Светлая тема: мелкий красный текст — только #C81E17 */
+:root[data-theme="sun"] {
+  --bg: #F4F1EA; --surface: #FFFFFF; --surface-2: #ECE8DF; --line: #D6D0C4; --control: #6E6A62;
+  --text: #141414; --text-2: #3A3833; --text-3: #55524C;
+  --accent: #E1251B; --on-accent-fill: #FFFFFF; --accent-text: #C81E17; --accent-btn: #C81E17; --on-accent: #FFFFFF;
+  --ok: #1F6B2A; --paper: #FFFFFF; --ink: #141414; --ink-2: #3A3833;
+}
+
+/* Фигуры «Авангарда» у заголовка точки: круг, треугольник, ромб — по очереди */
+.pl-deco { display: block; background: var(--accent); }
+.pl-deco[data-shape="0"] { border-radius: 50%; }
+.pl-deco[data-shape="1"] { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.pl-deco[data-shape="2"] { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.pl-head h1 { padding-right: 44px; }
+
+/* Артефакт: улика — карточка из дела с красной плашкой-штампом; документ — телеграфная лента */
+.pl-art { transform: rotate(-1deg); box-shadow: 5px 5px 0 var(--accent); }
+.pl-art-mark { font: 700 44px/1 var(--font-display); transform: rotate(-3deg); }
+.pl-art-mark small { font: 500 15px/1 var(--font-display); letter-spacing: .06em; }
+.pl-art-who { font: 700 20px/1.2 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.pl-letters span { font: 700 26px/1 var(--font-display); }
+.pl-doc code { text-transform: uppercase; }
+.pl-card--paper { box-shadow: 5px 5px 0 var(--accent); }
+:root[data-theme="sun"] .pl-art, :root[data-theme="sun"] .pl-card--paper { outline: 2px solid var(--ink); }

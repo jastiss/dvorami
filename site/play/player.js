@@ -1,6 +1,8 @@
 /* Дворами — веб-плеер квеста.
    Читает quest.json из папки страницы (формат как у scripts/quest_bot.py) и повторяет логику бота:
    вступление → точки по порядку (дорога → «Мы на месте» → сцена → шаги) → улика → финал.
+   Экран — единый каркас для всех дел (platform/design/player-frame.md): страница дела даёт только
+   <body data-quest data-case-no>, <main id="app"> и theme.css; шапку, навигацию и шторку строит этот файл.
    ?field=1 — режим полевого теста: «что проверить», тайминг, ошибки, подсказки, заметки, отчёт.
    Прогресс — в localStorage (если доступен). Без внешних зависимостей.
    «Что-то не так?» на каждой точке: категория + текст → копия в буфер → игровой бот (docs/feedback-bot.md).
@@ -12,8 +14,51 @@
   var FIELD = /[?&]field=1(&|$)/.test(location.search);
   var KEY = 'dvorami:play:' + QID;
   var THEME_KEY = 'dvorami:theme';
+  var CASE_NO = document.body.dataset.caseNo || '';
   var app = document.getElementById('app');
+  var view = 'point';   // раздел навигации: point | board | map
+
+  // ---------- каркас: шапка дела, прогресс, навигация, шторка — одинаковые во всех делах ----------
+  var ICONS = {
+    point: '<path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21Z"/><circle cx="12" cy="10.5" r="2.3"/>',
+    board: '<rect x="3.5" y="7.5" width="12" height="13" rx="1.5"/><path d="M8 7.5V4h12.5v13h-5"/><path d="M6.5 12h6M6.5 16h4"/>',
+    map: '<path d="M3.5 6.5 9 4l6 2.5L20.5 4v13.5L15 20l-6-2.5L3.5 20Z"/><path d="M9 4v13.5M15 6.5V20"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
+    note: '<path d="m4 20 1-4.5L16.5 4a2.1 2.1 0 0 1 3 3L8 18.5 4 20Z"/><path d="m14.5 6 3.5 3.5"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
+    alert: '<path d="M12 4 3 20h18L12 4Z"/><path d="M12 10v5M12 17.4v.2"/>',
+    send: '<path d="M4 12 20 4l-5 16-3.5-6.5L4 12Z"/><path d="M11.5 13.5 20 4"/>',
+    pause: '<path d="M8.5 5v14M15.5 5v14"/>',
+    restart: '<path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"/><path d="M4.5 4v5h5"/>',
+    hint: '<path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3Z"/>',
+    out: '<path d="M8 16 16 8M9 8h7v7"/>'
+  };
+  function ico(name) { return '<svg class="pl-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + ICONS[name] + '</svg>'; }
+  (function shell() {
+    app.insertAdjacentHTML('beforebegin',
+      '<header class="pl-top"><div class="pl-top-in">' +
+      '<a class="pl-logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M16.5 7H31.5L36.5 34H44V38.5H41.5V44H36V38.5H12V44H6.5V38.5H4V34H11.5ZM18 34L21 17Q24 12 27 17L30 34Z"/><path class="logo-light" d="M20.3 34V26.6Q24 22.2 27.7 26.6V34Z"/></svg><span>дворами</span></a>' +
+      '<p class="pl-where" id="where" aria-live="polite"></p>' +
+      '<button class="pl-menu-btn" type="button" data-act="menu" aria-label="Меню">' + ico('menu') + '</button>' +
+      '</div><div class="pl-progress" id="progress" role="img"></div></header>');
+    app.insertAdjacentHTML('afterend',
+      '<aside class="pl-side" id="side" aria-label="Досье"></aside>' +
+      '<nav class="pl-nav" id="tabs" aria-label="Разделы дела" hidden>' +
+      '<button type="button" data-act="view" data-view="point">' + ico('point') + '<span>Точка</span></button>' +
+      '<button type="button" data-act="view" data-view="board">' + ico('board') + '<span>Улики</span><b class="pl-badge" id="badge"></b></button>' +
+      '<button type="button" data-act="view" data-view="map">' + ico('map') + '<span>Карта</span></button></nav>' +
+      '<dialog class="pl-sheet" id="sheet" aria-labelledby="sheet-title"><div class="pl-sheet-head"><h2 id="sheet-title"></h2>' +
+      '<button type="button" class="pl-x" data-act="close" aria-label="Закрыть">' + ico('close') + '</button></div>' +
+      '<div class="pl-sheet-body" id="sheet-body"></div></dialog>' +
+      '<div class="pl-toast" id="toast" role="status" aria-live="polite"></div>');
+  })();
   var sheet = document.getElementById('sheet');
+  function themeColor() {
+    var meta = document.querySelector('meta[name="theme-color"]');
+    var bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    if (meta && bg) meta.setAttribute('content', bg);
+  }
   var Q = null;   // квест
   var S = null;   // состояние игрока
   var sheetKind = null;
@@ -56,26 +101,36 @@
   function prose(src) {
     var s = inline(src);
     if (!s) return '';
-    return s.split(/\n{2,}/).map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
+    return s.split(/\n{2,}/).map(function (p) {
+      var m = p.match(/^<code>([^<]+)<\/code>$/);
+      return m ? docLine(m[1]) : '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+    }).join('');
+  }
+  // Абзац из одной строки <code> — документ дела (телеграмма, шифр). Буквы — отдельными элементами: тема может «напечатать» их по одной
+  function docLine(t) {
+    var i = 0;
+    var chars = t.replace(/&[a-z]+;|&#\d+;|[\s\S]/gi, function (ch) { return /^\s$/.test(ch) ? ' ' : '<i style="--i:' + (i++) + '">' + ch + '</i>'; });
+    return '<p class="pl-doc"><code><span class="visually-hidden">' + t + '</span><span aria-hidden="true">' + chars + '</span></code></p>';
   }
   function plain(src) {
     return String(src || '').replace(PICT, '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/[ \t]{2,}/g, ' ').trim();
   }
-  // 👀 🔄 🧠 🧸 → типографские теги (BRAND.md, раздел 5): эмодзи в интерфейсе не показываем
-  var TAGS = [['\u{1F440}', 'Смотри', 'smo'], ['\u{1F504}', 'Крути', 'krut'], ['\u{1F9E0}', 'Думай', 'dum'],
-    ['\u{1F9F8}', 'По желанию', 'mal'], ['☕', 'Перерыв', 'brk'], ['\u{1F5C2}', 'Доска', 'brd']];
+  // Эмодзи в начале шага → текстовый тег (BRAND.md, раздел 5): эмодзи в интерфейсе не показываем.
+  // Название тега — жирная подпись после эмодзи («Смотри и считай», «Версия Тюфеля»), иначе — по умолчанию для значка.
+  var TAGS = { '\u{1F440}': ['Смотри', 'look'], '\u{1F504}': ['Крути', 'turn'], '\u{1F9E0}': ['Думай', 'think'],
+    '\u{1F9F8}': ['По желанию', 'opt'], '➕': ['По желанию', 'opt'], '☕': ['Перерыв', 'brk'],
+    '\u{1F5C2}': ['Доска улик', 'think'], '\u{1F408}': ['Версия', 'cat'] };
   function stepTag(text) {
     var t = String(text || '').replace(/^\s+/, '');
-    for (var i = 0; i < TAGS.length; i++) {
-      if (t.indexOf(TAGS[i][0]) === 0) {
-        var rest = t.slice(TAGS[i][0].length).replace(/^️?\s*/, '');
-        var m = rest.match(/^<b>([^<]*)<\/b>\s*/);
-        if (m && m[1].replace(/[.:!\s]/g, '').toLowerCase() === TAGS[i][1].toLowerCase()) rest = rest.slice(m[0].length);
-        return { tag: TAGS[i][1], cls: TAGS[i][2], text: rest };
-      }
-    }
-    return { tag: null, cls: '', text: t };
+    var m = t.match(/^(\p{Extended_Pictographic})️?\s*/u);
+    if (!m) return { tag: null, cls: '', text: t };
+    var def = TAGS[m[1]], rest = t.slice(m[0].length);
+    var tag = def ? def[0] : null, cls = def ? def[1] : 'think';
+    var b = rest.match(/^<b>([^<]{2,32})<\/b>\s*/);
+    if (b) { tag = b[1].replace(/[.:!\s]+$/, ''); rest = rest.slice(b[0].length); }
+    if (/^по желанию/i.test(tag || '')) cls = 'opt';
+    return { tag: tag, cls: tag ? cls : '', text: rest };
   }
 
   // ---------- проверка ответа: как matches() в scripts/quest_bot.py ----------
@@ -242,29 +297,31 @@
     resolve({ st: 'skipped' });
   }
 
-  // ---------- отрисовка ----------
-  var SHAPES = [
-    '<svg class="pl-shape" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#E1251B"/></svg>',
-    '<svg class="pl-shape" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 2l30 58H2z" fill="#E1251B"/></svg>',
-    '<svg class="pl-shape" viewBox="0 0 64 64" aria-hidden="true"><rect x="13" y="13" width="38" height="38" transform="rotate(45 32 32)" fill="#E1251B"/></svg>'
-  ];
-  function head(p, sub) {
-    return '<header class="pl-head" id="top">' + SHAPES[(p.n - 1) % 3] +
-      '<div class="pl-num">Точка ' + String(p.n).padStart(2, '0') + ' из ' + Q.points.length + (sub ? ' · ' + sub : '') + '</div>' +
-      '<h1>' + esc(plain(p.title)) + '</h1><p class="pl-place">' + esc(plain(p.place)) + '</p></header>';
+  // ---------- отрисовка: единый каркас (platform/design/player-frame.md) ----------
+  // Разметку каркаса тема дела не меняет — только переменные CSS и вид артефакта.
+  function head(eyebrow, title, place, shape) {
+    return '<header class="pl-head" id="top"><span class="pl-deco" data-shape="' + (shape % 3) + '" aria-hidden="true"></span>' +
+      '<p class="pl-eyebrow">' + esc(eyebrow) + '</p><h1>' + esc(plain(title)) + '</h1>' +
+      (place ? '<p class="pl-place">' + esc(plain(place)) + '</p>' : '') + '</header>';
   }
+  function pointHead(p, stage) { return head('Точка ' + p.n + ' · ' + stage, p.title, p.place, p.n - 1); }
+  function caseName() { return CASE_NO ? 'Дело № ' + CASE_NO : 'Дело'; }
+  function clueTotal() { return Q.points.filter(function (p) { return p.clue; }).length; }
+  function mapLink(p) { return 'https://yandex.ru/maps/?pt=' + p.lon + ',' + p.lat + '&z=18&l=map'; }
   function checkBlock(p, collapsed) {
     if (!S.field || !p.check || !p.check.length) return '';
     var items = '<ul>' + p.check.map(function (c) { return '<li>' + inline(c) + '</li>'; }).join('') + '</ul>' +
-      '<p class="pl-small" style="margin-top:10px">Фотографии сохраняйте в галерею телефона. Замечания записывайте кнопкой «Заметка» внизу — они попадут в отчёт к точке ' + p.n + '.</p>';
-    if (collapsed) return '<details class="pl-card pl-field"><summary>Полевой тест: что проверить</summary>' + items + '</details>';
-    return '<section class="pl-card pl-field"><span class="pl-label">Полевой тест: что проверить</span>' + items + '</section>';
+      '<p class="pl-small" style="margin-top:10px">Фотографии сохраняйте в галерею телефона. Замечания записывайте через меню → «Заметка» — они попадут в отчёт к точке ' + p.n + '.</p>';
+    if (collapsed) return '<details class="pl-field"><summary>Полевой тест: что проверить</summary>' + items + '</details>';
+    return '<section class="pl-field"><span class="pl-label">Полевой тест: что проверить</span>' + items + '</section>';
   }
+  // Артефакт дела — улика: метка (буква и год) и слова свидетеля
   function clueCard(c, isNew) {
-    return '<div class="pl-card' + (isNew ? ' pl-new' : '') + '"><div class="pl-clue">' +
-      '<div class="pl-letter" aria-label="Буква ' + esc(c.letter) + ', ' + esc(c.year) + ' год">' + esc(c.letter) + '<small>' + esc(c.year) + '</small></div>' +
-      '<div><div class="who">' + esc(plain(c.who)) + '</div><p class="says">«' + inline(c.says) + '»</p></div></div></div>';
+    return '<figure class="pl-art' + (isNew ? ' is-new' : '') + '">' +
+      '<div class="pl-art-mark" role="img" aria-label="Буква ' + esc(c.letter) + ', ' + esc(c.year) + ' год"><span aria-hidden="true">' + esc(c.letter) + '</span><small aria-hidden="true">' + esc(c.year) + '</small></div>' +
+      '<figcaption><span class="pl-art-who">' + esc(plain(c.who)) + '</span><p class="pl-art-says">«' + inline(c.says) + '»</p></figcaption></figure>';
   }
+  function tagHtml(t) { return t.tag ? '<span class="pl-tag pl-tag--' + t.cls + '">' + esc(t.tag) + '</span>' : ''; }
   function doneStep(st, r, i) {
     var t = stepTag(st.text);
     var stamp = '';
@@ -273,116 +330,162 @@
     else if (r && r.st === 'free') stamp = '<span class="pl-stamp">' + esc(r.text) + '</span>';
     else if (r && r.st === 'skipped') stamp = '<span class="pl-stamp pl-stamp--ans">Пропущено</span>';
     var ok = (r && r.st !== 'skipped' && st.ok) ? '<p class="pl-ok">' + inline(st.ok) + '</p>' : '';
-    return '<section class="pl-card pl-step pl-done' + (t.cls === 'mal' ? ' pl-step--mal' : '') + '" data-step="' + i + '">' +
-      (t.tag ? '<span class="pl-tag pl-tag--' + t.cls + '">' + t.tag + '</span>' : '') +
+    return '<section class="pl-past" data-step="' + i + '">' + (t.tag ? '<div>' + tagHtml(t) + '</div>' : '') +
       '<div class="pl-prose">' + prose(t.text) + '</div>' + stamp + ok + '</section>';
   }
-  function ladderLabels(n) {
-    if (n === 3) return [['Намёк', 'куда смотреть'], ['Почти решение', 'останется один шаг'], ['Ответ', 'улика всё равно ваша']];
-    var out = [];
-    for (var i = 0; i < n; i++) out.push(i === n - 1 ? ['Ответ', 'улика всё равно ваша'] : ['Подсказка ' + (i + 1), '']);
+  // Лестница подсказок: у загадки последняя ступень — ответ; у свободного вопроса ответа нет
+  function hintSteps(st) {
+    var n = (st.hints || []).length, out = [];
+    for (var i = 0; i < n; i++) {
+      if (st.type !== 'free' && i === n - 1) out.push({ name: 'Ответ', btn: 'Показать ответ', note: 'улика всё равно ваша' });
+      else if (n === 3 && i === 0) out.push({ name: 'Намёк', btn: 'Подсказка 1 из 3', note: 'намёк: куда смотреть' });
+      else if (n === 3 && i === 1) out.push({ name: 'Почти решение', btn: 'Подсказка 2 из 3', note: 'почти решение: останется один шаг' });
+      else out.push({ name: 'Подсказка ' + (i + 1), btn: 'Подсказка ' + (i + 1) + ' из ' + n, note: '' });
+    }
     return out;
   }
   function activeStep(st) {
     var t = stepTag(st.text);
-    var h = '<section class="pl-card pl-step is-active' + (t.cls === 'mal' ? ' pl-step--mal' : '') + '" id="active" data-step="' + S.k + '">' +
-      (t.tag ? '<span class="pl-tag pl-tag--' + t.cls + '">' + t.tag + '</span>' : '') +
+    var total = pt().steps.length;
+    var h = '<section class="pl-card pl-task' + (t.cls === 'opt' ? ' pl-task--opt' : '') + '" id="active" data-step="' + S.k + '">' +
+      '<div class="pl-task-top">' + tagHtml(t) + '<span class="pl-stepno">Шаг ' + (S.k + 1) + ' из ' + total + '</span></div>' +
       '<div class="pl-prose">' + prose(t.text) + '</div>';
-    if (st.type === 'board') h += '<div style="margin-top:16px">' + boardHtml(false) + '</div>';
+    if (st.type === 'board') h += '<div style="margin-top:16px">' + boardLetters(false) + '</div>';
     if (st.type === 'info' || st.type === 'board') {
-      h += '<div class="pl-actions"><button class="pl-btn" type="button" data-act="next">Дальше</button></div>';
-      return h + '</section>';
+      return h + '<div class="pl-actions"><button class="pl-btn" type="button" data-act="next">Дальше</button></div></section>';
     }
     var hints = st.hints || [];
-    var revealed = hints.length && S.hint >= hints.length;
-    h += '<form class="pl-form" data-form="answer" autocomplete="off">' +
-      '<label class="visually-hidden" for="ans">Ваш ответ</label>' +
-      '<input class="pl-input" id="ans" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + (st.type === 'free' ? 'Ваш ответ' : 'Ответ в одно-два слова') + '" value="' + esc(S.last) + '">' +
-      '<button class="pl-btn" type="submit">Ответить</button></form>';
-    if (S.wrong) h += '<p class="pl-wrong" role="status" style="margin-top:12px">«' + esc(S.wrong) + '» — не подходит. Попробуйте ещё раз' + (hints.length ? ' или откройте подсказку.' : '.') + '</p>';
+    var steps = hintSteps(st);
+    var revealed = st.type !== 'free' && hints.length && S.hint >= hints.length;
+    if (!revealed) {
+      h += '<form class="pl-form" data-form="answer" autocomplete="off">' +
+        '<label class="visually-hidden" for="ans">Ваш ответ</label>' +
+        '<input class="pl-input" id="ans" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + (st.type === 'free' ? 'Ваш ответ' : 'Ответ в одно-два слова') + '" value="' + esc(S.last) + '">' +
+        '<button class="pl-btn" type="submit">Ответить</button></form>';
+      if (S.wrong) h += '<p class="pl-wrong" role="status">«' + esc(S.wrong) + '» — не подходит. Попробуйте ещё раз' + (hints.length ? ' или откройте подсказку.' : '.') + '</p>';
+    }
     if (hints.length) {
-      var labels = ladderLabels(hints.length);
-      h += '<div class="pl-ladder" style="--n:' + hints.length + '">';
-      for (var i = 0; i < hints.length; i++) {
-        var used = i < S.hint, avail = i === S.hint;
-        h += '<button type="button" class="pl-rung' + (used ? ' used' : '') + '" data-act="hint" data-level="' + i + '"' + (avail ? '' : ' disabled') + '>' +
-          '<b>' + labels[i][0] + '</b>' + (labels[i][1] ? '<small>' + labels[i][1] + '</small>' : '') + '</button>';
+      h += '<div class="pl-hints">';
+      for (var j = 0; j < Math.min(S.hint, hints.length); j++) h += '<div class="pl-hint"><b>' + steps[j].name + '</b>' + inline(hints[j]) + '</div>';
+      if (S.hint < hints.length) {
+        var pips = '';
+        for (var i = 0; i < hints.length; i++) pips += '<i' + (i < S.hint ? ' class="on"' : '') + '></i>';
+        h += '<button type="button" class="pl-hintbtn" data-act="hint" data-level="' + S.hint + '">' + ico('hint') +
+          '<span><b>' + steps[S.hint].btn + '</b>' + (steps[S.hint].note ? '<small>' + steps[S.hint].note + '</small>' : '') + '</span>' +
+          '<span class="pl-pips" aria-hidden="true">' + pips + '</span></button>';
       }
       h += '</div>';
-      for (var j = 0; j < Math.min(S.hint, hints.length); j++) {
-        h += '<div class="pl-hint"><span class="pl-label">' + labels[j][0] + '</span>' + inline(hints[j]) + '</div>';
-      }
-      if (revealed) h += '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="reveal">Дальше</button></div>';
+      if (revealed) h += '<div class="pl-actions"><button class="pl-btn" type="button" data-act="reveal">Дальше</button></div>';
     }
-    if (st.optional || st.type === 'free' || !hints.length) h += '<button type="button" class="pl-skip" data-act="skip">Пропустить</button>';
+    if (!revealed && (st.optional || st.type === 'free' || !hints.length)) h += '<button type="button" class="pl-skip" data-act="skip">Пропустить</button>';
     return h + '</section>';
   }
   function issueBtn() {
     return '<button type="button" class="pl-issue" data-act="issue">Что-то не так? Напишите нам</button>';
   }
-  function boardHtml(inSheet) {
-    var b = S.board.slice();
-    if (!b.length) return '<p class="pl-empty">Доска улик пока пуста. Первая улика — на точке 1.</p>';
-    var byYear = inSheet && S.sort && sortMode === 'year';
-    if (byYear) b.sort(function (a, c) { return a.year - c.year; });
-    var h = '';
-    if (inSheet && S.sort) {
-      h += '<div class="pl-seg" role="group" aria-label="Порядок улик"><button type="button" data-act="sort" data-mode="found" aria-pressed="' + !byYear + '">Как нашли</button>' +
-        '<button type="button" data-act="sort" data-mode="year" aria-pressed="' + byYear + '">По годам</button></div>';
-    }
-    h += '<div class="pl-letters" aria-label="Буквы">' + b.map(function (c) { return '<span>' + esc(c.letter) + '</span>'; }).join('') + '</div>';
-    if (inSheet) h += '<div class="pl-board">' + b.map(function (c) { return clueCard(c, false); }).join('') + '</div>';
-    else h += '<p class="pl-small" style="margin-top:8px">' + b.map(function (c) { return esc(c.year) + ' · ' + esc(c.letter); }).join(' &nbsp; ') + '</p>';
+  // Буквы улик; rest — показать пустые места под ещё не найденные улики
+  function boardLetters(rest, list) {
+    var b = list || S.board;
+    var h = '<div class="pl-letters" role="img" aria-label="Буквы улик: ' + (b.length ? esc(b.map(function (c) { return c.letter; }).join(' ')) : 'пока нет') + '">' +
+      b.map(function (c) { return '<span aria-hidden="true">' + esc(c.letter) + '</span>'; }).join('');
+    if (rest) for (var i = b.length; i < clueTotal(); i++) h += '<span class="todo" aria-hidden="true"></span>';
+    h += '</div>';
+    if (!rest && b.length) h += '<p class="pl-small" style="margin-top:8px">' + b.map(function (c) { return esc(c.year) + ' · ' + esc(c.letter); }).join(' &nbsp; ') + '</p>';
     return h;
   }
   var sortMode = 'found';
-
-  function render() {
-    var n = Q.points.length;
-    var h = '';
-    var tabs = document.getElementById('tabs');
-    tabs.hidden = S.phase === 'idle';
-    document.getElementById('badge').textContent = S.board.length ? String(S.board.length) : '';
-    var shown = S.phase === 'walk' || S.phase === 'step' || S.phase === 'point_done' ? pt().n : (S.phase === 'done' ? n : 0);
-    document.getElementById('count').textContent = shown ? String(shown).padStart(2, '0') + '/' + n : '';
-    var prog = '';
-    for (var i = 0; i < n; i++) {
-      var done = S.phase === 'done' || i < S.p || (i === S.p && S.phase === 'point_done');
-      var cur = !done && i === S.p && (S.phase === 'walk' || S.phase === 'step');
-      prog += '<i class="' + (done ? 'done' : cur ? 'cur' : '') + '"></i>';
+  function boardView() {
+    var b = S.board.slice();
+    var byYear = S.sort && sortMode === 'year';
+    if (byYear) b.sort(function (a, c) { return a.year - c.year; });
+    var h = head(caseName(), 'Доска улик', b.length ? 'Собрано ' + b.length + ' из ' + clueTotal() : '', 2);
+    if (!b.length) return h + '<p class="pl-empty">Доска пока пуста. Первая улика — на точке 1: за каждую точку вы получаете букву, год и слова свидетеля.</p>' + boardLetters(true);
+    if (S.sort) {
+      h += '<div class="pl-seg" role="group" aria-label="Порядок улик"><button type="button" data-act="sort" data-mode="found" aria-pressed="' + !byYear + '">Как нашли</button>' +
+        '<button type="button" data-act="sort" data-mode="year" aria-pressed="' + byYear + '">По годам</button></div>';
     }
-    document.getElementById('progress').innerHTML = S.phase === 'idle' ? '' : prog;
-
+    return h + boardLetters(!byYear, b).replace(/<p class="pl-small"[\s\S]*$/, '') +
+      '<div class="pl-board">' + b.map(function (c) { return clueCard(c, false); }).join('') + '</div>';
+  }
+  // Карта: схема по настоящим координатам. Показываем только пройденные точки и текущую — маршрут вперёд не раскрываем
+  function mapView() {
+    var n = Q.points.length, all = S.phase === 'done';
+    var upto = all ? n - 1 : (S.phase === 'intro' ? 0 : S.p);
+    var arrived = S.phase === 'step' || S.phase === 'point_done';
+    var known = Q.points.slice(0, upto + 1);
+    var cur = all ? null : Q.points[upto];
+    var k = Math.cos(Q.points[0].lat * Math.PI / 180);
+    // рамка схемы — по известным точкам, а не по всему маршруту: пустое место не подсказывает, куда идёт путь дальше
+    var xs = known.map(function (p) { return p.lon * k; }), ys = known.map(function (p) { return -p.lat; });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    var W = 320, H = 210, pad = 26;
+    var MIN = .004; // ≈ 400 м: первые точки рядом не растягиваются на всю схему
+    var sc = Math.min((W - 2 * pad) / Math.max(x1 - x0, MIN), (H - 2 * pad) / Math.max(y1 - y0, MIN));
+    var ox = (W - (x1 - x0) * sc) / 2, oy = (H - (y1 - y0) * sc) / 2;
+    var pos = known.map(function (p, i) { return [(xs[i] - x0) * sc + ox, (ys[i] - y0) * sc + oy]; });
+    // соседние точки ближе диаметра кружка раздвигаем, чтобы номера не слипались
+    for (var it = 0; it < 8; it++) for (var a = 0; a < pos.length; a++) for (var b = a + 1; b < pos.length; b++) {
+      var dx = pos[b][0] - pos[a][0], dy = pos[b][1] - pos[a][1], d = Math.sqrt(dx * dx + dy * dy);
+      if (d >= 25) continue;
+      if (d < .01) { dx = 1; dy = 0; d = 1; }
+      var push = (25 - d) / 2;
+      pos[a][0] -= dx / d * push; pos[a][1] -= dy / d * push; pos[b][0] += dx / d * push; pos[b][1] += dy / d * push;
+    }
+    var xy = function (i) { return pos[i]; };
+    var path = known.map(function (p, i) { var c = xy(i); return (i ? 'L' : 'M') + c[0].toFixed(1) + ' ' + c[1].toFixed(1); }).join('');
+    var dots = known.map(function (p, i) {
+      var c = xy(i), isCur = cur && i === upto;
+      return (isCur ? '<circle class="pl-map-cur" cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" r="11"/>' : '') +
+        '<circle class="pl-map-dot' + (isCur ? ' pl-map-dot--cur' : '') + '" cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" r="11"/>' +
+        '<text' + (isCur ? ' class="cur"' : '') + ' x="' + c[0].toFixed(1) + '" y="' + c[1].toFixed(1) + '">' + p.n + '</text>';
+    }).join('');
+    var done = all ? n : upto + (S.phase === 'point_done' ? 1 : 0);
+    var h = head(caseName(), 'Карта', all ? 'Маршрут пройден: ' + n + ' из ' + n + ' точек' : 'Пройдено точек: ' + done + ' из ' + n, 0) +
+      '<figure class="pl-map"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Схема пути: ' + (all ? 'все точки' : 'точки с 1 по ' + (upto + 1)) + '">' +
+      (known.length > 1 ? '<path class="pl-map-path" d="' + path + '"/>' : '') + dots + '</svg></figure>';
+    if (cur) h += '<a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + esc(mapLink(cur)) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + cur.n + '">' + ico('out') + 'Точка ' + cur.n + ' в Яндекс Картах</a>';
+    h += '<ol class="pl-stops">' + known.map(function (p, i) {
+      var isCur = cur && i === upto;
+      return '<li' + (isCur ? ' class="cur"' : '') + '><span class="n" aria-hidden="true">' + p.n + '</span><div><b>' + esc(plain(p.title)) + '</b><small>' +
+        (isCur ? (arrived ? 'Вы здесь · ' : 'Идёте сюда · ') : '') + esc(plain(p.place)) + '</small></div></li>';
+    }).join('') + '</ol>';
+    if (!all && n - upto - 1 > 0) h += '<p class="pl-small">Остальные точки появятся на карте по ходу дела.</p>';
+    return h;
+  }
+  function sideHtml() {
+    var b = S.board;
+    return '<span class="pl-label">' + esc(caseName()) + (Q.district ? ' · ' + esc(Q.district) : '') + '</span><h2>' + esc(plain(Q.title)) + '</h2>' +
+      '<span class="pl-label" style="margin-top:20px">Улики: ' + b.length + ' из ' + clueTotal() + '</span>' + boardLetters(true) +
+      '<p class="pl-small">' + (b.length ? 'Слова свидетелей — в разделе «Улики».' : 'За каждую точку — буква, год и слова свидетеля.') + '</p>';
+  }
+  function pointView() {
+    var n = Q.points.length, h = '';
     if (S.paused) {
-      h = '<header class="pl-head" id="top">' + SHAPES[2] + '<div class="pl-num">Пауза</div><h1>Дело отложено</h1>' +
-        '<p class="pl-place">Прогресс сохранён на этом телефоне' + (S.phase === 'done' ? '' : ': точка ' + pt().n + ' из ' + n) + '.</p></header>' +
+      h = head('Пауза', 'Дело отложено', 'Прогресс сохранён на этом телефоне' + (S.phase === 'done' ? '' : ': точка ' + pt().n + ' из ' + n) + '.', 2) +
         '<div class="pl-actions"><button class="pl-btn" type="button" data-act="resume">Продолжить</button>' +
         (S.field ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт</button>' : '') +
         '<button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>';
     } else if (S.phase === 'idle') {
-      h = '<header class="pl-head pl-cover" id="top">' + SHAPES[0] + '<div class="pl-num">' + esc(Q.district || '') + ' · Дело № 1</div>' +
-        '<h1>' + esc(plain(Q.title)) + '</h1><p class="pl-place">' + esc(plain(Q.summary || '')) + '</p></header>' +
-        (S.field ? '<section class="pl-card pl-field"><span class="pl-label">Режим полевого теста</span><p class="pl-small">На каждой точке — список «что проверить». Время, ошибки, подсказки и заметки сохраняются сами. В конце, а при желании и раньше («Ещё» → «Отправить отчёт»), отправьте отчёт одним сообщением в Telegram.</p></section>' : '') +
+      h = head((Q.district ? Q.district + ' · ' : '') + caseName(), Q.title, Q.summary || '', 0) +
+        (S.field ? '<section class="pl-field"><span class="pl-label">Режим полевого теста</span><p class="pl-small">На каждой точке — список «что проверить». Время, ошибки, подсказки и заметки сохраняются сами. В конце, а при желании и раньше (меню → «Отправить отчёт»), отправьте отчёт одним сообщением в Telegram.</p></section>' : '') +
         '<div class="pl-actions"><button class="pl-btn" type="button" data-act="start">Открыть дело</button></div>' +
         '<p class="pl-small">Прогресс сохраняется на этом телефоне: можно закрыть страницу и вернуться.</p>';
     } else if (S.phase === 'intro') {
-      h = Q.intro.map(function (m, i) {
-        return '<section class="pl-card' + (i === Q.intro.length - 1 ? ' pl-card--paper' : '') + '"' + (i === 0 ? ' id="top"' : '') + '><div class="pl-prose">' + prose(m) + '</div></section>';
+      h = '<h1 class="visually-hidden" id="top">Вступление</h1>' + Q.intro.map(function (m, i) {
+        return '<section class="pl-card' + (i === Q.intro.length - 1 ? ' pl-card--paper' : '') + '"><div class="pl-prose">' + prose(m) + '</div></section>';
       }).join('') +
         '<div class="pl-actions"><button class="pl-btn" type="button" data-act="go">К точке 1</button></div>';
     } else if (S.phase === 'walk') {
       var p = pt();
-      var link = 'https://yandex.ru/maps/?pt=' + p.lon + ',' + p.lat + '&z=18&l=map';
-      h = head(p) +
-        '<section class="pl-card"><span class="pl-label">Как дойти</span>' +
-        (p.walk_m ? '<div class="pl-dist">≈ ' + p.walk_m + ' м</div>' : '') +
+      h = pointHead(p, 'дорога') +
+        '<section class="pl-card">' + (p.walk_m ? '<p class="pl-dist">≈ ' + p.walk_m + ' м <span>пешком</span></p>' : '') +
         '<div class="pl-prose">' + prose(p.walk) + '</div>' +
-        '<a class="pl-maplink" href="' + esc(link) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + p.n + '">Открыть в Яндекс Картах</a></section>' +
+        '<a class="pl-btn pl-btn--ghost pl-btn--sm pl-maplink" href="' + esc(mapLink(p)) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + p.n + '">' + ico('out') + 'Открыть в Яндекс Картах</a></section>' +
         checkBlock(p, false) +
         '<div class="pl-actions"><button class="pl-btn" type="button" data-act="here">Мы на месте</button></div>' + issueBtn();
     } else if (S.phase === 'step') {
       var p2 = pt();
-      h = head(p2) + '<section class="pl-card"><span class="pl-label">Сцена</span><div class="pl-prose">' + prose(p2.scene) + '</div></section>';
+      h = pointHead(p2, 'на месте') + '<section class="pl-scene"><div class="pl-prose">' + prose(p2.scene) + '</div></section>';
       for (var k = 0; k < S.k; k++) h += doneStep(p2.steps[k], S.res[k], k);
       h += activeStep(p2.steps[S.k]);
       h += checkBlock(p2, true);
@@ -390,26 +493,63 @@
     } else if (S.phase === 'point_done') {
       var p3 = pt();
       var last = S.p + 1 >= n;
-      h = head(p3, 'пройдена');
-      if (p3.clue) h += '<span class="pl-label" id="active" style="margin-top:16px">Улика № ' + S.board.length + '</span>' + clueCard(p3.clue, true);
-      if (p3.outro) h += '<section class="pl-card"' + (p3.clue ? '' : ' id="active"') + '><div class="pl-prose">' + prose(p3.outro) + '</div></section>';
+      h = pointHead(p3, 'пройдена');
+      if (p3.clue) h += '<div id="active" style="scroll-margin-top:96px"><span class="pl-label">Улика № ' + S.board.length + ' — на вашей доске</span>' + clueCard(p3.clue, true) + '</div>';
+      if (p3.outro) h += '<section class="pl-scene"' + (p3.clue ? '' : ' id="active"') + '><div class="pl-prose">' + prose(p3.outro) + '</div></section>';
       h += '<div class="pl-actions"><button class="pl-btn" type="button" data-act="nextpoint">' + (last ? 'К финалу' : 'К точке ' + (S.p + 2)) + '</button></div>' + issueBtn();
     } else if (S.phase === 'done') {
-      h = '<header class="pl-head" id="top">' + SHAPES[1] + '<div class="pl-num">Финал</div><h1>Дело закрыто</h1></header>' +
+      h = head('Финал', 'Дело закрыто', '', 1) +
         (Q.finale || []).map(function (m) { return '<section class="pl-card"><div class="pl-prose">' + prose(m) + '</div></section>'; }).join('') +
-        '<section class="pl-card"><span class="pl-label">Время прохождения</span><div class="pl-dist" style="font-size:28px">' + dur((S.t_end || Date.now()) - S.t_start) + '</div></section>' +
-        (S.field ? '<section class="pl-card pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
+        '<section class="pl-card"><span class="pl-label">Время прохождения</span><p class="pl-dist" style="font-size:28px;margin:0">' + dur((S.t_end || Date.now()) - S.t_start) + '</p></section>' +
+        (S.field ? '<section class="pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
           '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="note">Заметка</button><button class="pl-btn" type="button" data-act="report">Отправить отчёт</button></div></section>' : '') +
         '<section class="pl-card"><span class="pl-label">Как вам дело?</span><p class="pl-small">Минута в Telegram: оценка и пара слов. Честный отзыв помогает нам больше всего — особенно если где-то было непонятно.</p>' +
           '<div class="pl-actions"><a class="pl-btn" href="' + esc(botLink('review-' + QID)) + '" target="_blank" rel="noopener" data-track="review_click" data-track-quest="' + esc(QID) + '">Оценить квест</a></div></section>' +
         '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>' + issueBtn();
     }
-    app.innerHTML = h;
-    var sun = document.documentElement.dataset.theme === 'sun';
-    var sb = document.querySelector('.pl-sun'); sb.setAttribute('aria-pressed', String(sun)); sb.textContent = sun ? 'Тёмная тема' : 'Светлая тема';
+    return h;
+  }
+
+  var lastKey = null, lastBadge = 0;
+  function render() {
+    var n = Q.points.length;
+    var playing = S.phase !== 'idle' && !S.paused;
+    if (!playing) view = 'point';
+    // шапка дела и прогресс по точкам
+    var shown = (S.phase === 'walk' || S.phase === 'step' || S.phase === 'point_done') ? pt().n : (S.phase === 'done' ? n : 0);
+    var where = document.getElementById('where');
+    where.innerHTML = esc(CASE_NO ? caseName() : '') + (shown ? (CASE_NO ? ' · ' : '') + '<b>' + shown + ' из ' + n + '</b>' : '');
+    where.setAttribute('aria-label', (CASE_NO ? caseName() : '') + (shown ? ', точка ' + shown + ' из ' + n : ''));
+    var prog = '', passed = 0;
+    for (var i = 0; i < n; i++) {
+      var done = S.phase === 'done' || i < S.p || (i === S.p && S.phase === 'point_done');
+      var cur = !done && i === S.p && (S.phase === 'walk' || S.phase === 'step');
+      if (done) passed++;
+      prog += '<i class="' + (done ? 'done' : cur ? 'cur' : '') + '"></i>';
+    }
+    var bar = document.getElementById('progress');
+    bar.innerHTML = S.phase === 'idle' ? '' : prog;
+    bar.setAttribute('aria-label', 'Пройдено точек: ' + passed + ' из ' + n);
+    // навигация
+    var nav = document.getElementById('tabs');
+    nav.hidden = !playing;
+    [].forEach.call(nav.querySelectorAll('button'), function (b) {
+      if (b.dataset.view === view) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    var badge = document.getElementById('badge');
+    badge.textContent = S.board.length ? String(S.board.length) : '';
+    if (S.board.length > lastBadge && lastKey !== null) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
+    lastBadge = S.board.length;
+    document.getElementById('side').innerHTML = playing ? sideHtml() : '';
+    // «живые» детали играют один раз — когда игрок продвинулся, а не при каждой перерисовке
+    var key = [S.phase, S.p, S.k, S.paused].join(':');
+    app.classList.toggle('pl-fresh', key !== lastKey && view === 'point');
+    lastKey = key;
+    app.innerHTML = view === 'board' ? boardView() : view === 'map' ? mapView() : pointView();
   }
 
   function commit(focus) {
+    view = 'point';
     save();
     render();
     if (focus === 'top') {
@@ -427,10 +567,7 @@
   function openSheet(kind) {
     sheetKind = kind;
     var title = '', body = '';
-    if (kind === 'board') {
-      title = 'Доска улик';
-      body = boardHtml(true);
-    } else if (kind === 'note') {
+    if (kind === 'note') {
       var n = curN();
       title = 'Заметка';
       var notes = S.events.filter(function (e) { return e.kind === 'note' && e.point === n; });
@@ -441,14 +578,19 @@
         (notes.length ? '<span class="pl-label" style="margin-top:20px">Уже записано' + (n ? ' к точке ' + n : '') + '</span><ul class="pl-notes">' +
           notes.map(function (e) { return '<li><time>' + hm(e.t) + '</time>' + esc(e.text) + '</li>'; }).join('') + '</ul>' : '');
     } else if (kind === 'menu') {
-      title = 'Ещё';
+      title = 'Меню';
       var sun = document.documentElement.dataset.theme === 'sun';
+      var row = function (act, icon, name, note, extra) {
+        return '<button type="button" data-act="' + act + '"' + (extra || '') + '>' + ico(icon) + '<span><b>' + name + '</b>' + (note ? '<small>' + note + '</small>' : '') + '</span>' +
+          (act === 'theme' ? '<i class="pl-switch" aria-hidden="true"></i>' : '') + '</button>';
+      };
       body = '<div class="pl-menu">' +
-        '<button class="pl-btn pl-btn--ghost" type="button" data-act="theme">' + (sun ? 'Тёмная тема' : 'Светлая тема — для яркого солнца') + '</button>' +
-        (S.field ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт</button>' : '') +
-        '<button class="pl-btn pl-btn--ghost" type="button" data-act="issue">Что-то не так?</button>' +
-        (S.phase !== 'idle' && S.phase !== 'done' ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="stop">Закончить</button>' : '') +
-        '<button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>' +
+        (S.phase !== 'idle' ? row('note', 'note', 'Заметка', curN() ? 'сохранится к точке ' + curN() : 'для себя' + (S.field ? ' и для отчёта' : '')) : '') +
+        row('theme', 'sun', 'Светлая тема', 'экран лучше читается на ярком солнце', ' role="switch" aria-checked="' + sun + '"') +
+        row('issue', 'alert', 'Сообщить об ошибке', 'квест не прервётся') +
+        (S.field ? row('report', 'send', 'Отправить отчёт', 'полевой тест') : '') +
+        (S.phase !== 'idle' && S.phase !== 'done' && !S.paused ? row('stop', 'pause', 'Закончить на сегодня', 'прогресс сохранится') : '') +
+        (S.phase !== 'idle' ? row('restart', 'restart', 'Начать заново', 'прогресс и улики сотрутся') : '') + '</div>' +
         '<p class="pl-small" style="margin-top:16px">Прогресс хранится только на этом телефоне и в этом браузере.</p>';
     } else if (kind === 'issue') {
       title = 'Что-то не так?';
@@ -657,28 +799,31 @@
     reveal: reveal,
     skip: skip,
     nextpoint: nextPoint,
-    board: function () { openSheet('board'); },
+    view: function (el) {
+      var v = el.dataset.view;
+      if (v === view && v !== 'point') return;
+      var same = v === view;
+      view = v; render();
+      if (!same) { window.scrollTo(0, 0); return; }
+      // повторное нажатие «Точка» — вернуться к текущему заданию
+      var t = document.getElementById('active') || document.getElementById('top');
+      if (!t) return;
+      t.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      t.classList.remove('pulse'); void t.offsetWidth; t.classList.add('pulse');
+    },
     note: function () { openSheet('note'); },
     menu: function () { openSheet('menu'); },
     report: function () { openSheet('report'); },
     issue: function () { issueCat = ''; issueDraft = ''; openSheet('issue'); },
     issuecopy: function () { copyText(issueLast).then(function (ok) { toast(ok ? 'Скопировано — вставьте в Telegram' : 'Не получилось скопировать'); }); },
     close: closeSheet,
-    sort: function (el) { sortMode = el.dataset.mode; openSheet('board'); },
-    repeat: function () {
-      closeSheet();
-      var el = document.getElementById('active') || document.getElementById('top');
-      if (!el) return;
-      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
-    },
+    sort: function (el) { sortMode = el.dataset.mode; render(); },
     theme: function () {
       var r = document.documentElement;
       var sun = r.dataset.theme !== 'sun';
       if (sun) r.dataset.theme = 'sun'; else delete r.dataset.theme;
       store.set(THEME_KEY, sun ? 'sun' : 'dark');
-      var meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', sun ? '#F4F1EA' : '#141414');
+      themeColor();
       render();
       if (sheetKind === 'menu') openSheet('menu');
     },
@@ -756,14 +901,12 @@
       Q = q;
       S = load();
       if (S.phase !== 'idle') { log('reload'); save(); }
-      var sun = document.documentElement.dataset.theme === 'sun';
-      var meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', sun ? '#F4F1EA' : '#141414');
+      themeColor();
       render();
       var el = document.getElementById('active');
       if (el && S.phase === 'step') el.scrollIntoView({ block: 'start' });
     }).catch(function (err) {
-      app.innerHTML = '<section class="pl-card"><span class="pl-label">Не загрузилось</span><p>Нет связи или файл квеста недоступен (' + esc(err.message) + '). Проверьте интернет и попробуйте ещё раз.</p>' +
+      app.innerHTML = '<section class="pl-card" id="top"><span class="pl-label">Не загрузилось</span><p>Нет связи или файл квеста недоступен (' + esc(err.message) + '). Проверьте интернет и попробуйте ещё раз.</p>' +
         '<div class="pl-actions"><button class="pl-btn" type="button" onclick="location.reload()">Обновить</button></div></section>';
     });
   }

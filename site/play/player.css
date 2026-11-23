@@ -1,41 +1,59 @@
-/* Дворами — плеер квеста (экран прохождения).
-   Токены — имена из platform/design/BRAND.md, раздел 1; значения — скин «Авангард» (раздел 3).
-   Тёмная тема по умолчанию, светлая тема (для солнца) — html[data-theme="sun"]. Mobile-first, контейнер до 520 px. */
+/* Дворами — плеер квеста: ЕДИНЫЙ КАРКАС экрана прохождения (решение A-30, вариант А).
+   Каркас один для всех дел: шапка дела → прогресс по точкам → задание → ответ → подсказки → артефакт → навигация.
+   Дело меняет только значения переменных ниже (файл site/play/<id>/theme.css) и вид артефакта.
+   Здесь значения по умолчанию — платформа «Синий час». Описание: platform/design/player-frame.md.
+   Правила каркаса: без opacity у неактивных элементов, текст ≥ 4,5:1, элементы ≥ 3:1, подписи ≥ 15 px. */
 
 :root {
-  --bg: #141414;
-  --surface: #1E1E1E;
-  --surface-2: #262626;
-  --line: #333333;
-  --control: #9A968E;
-  --text: #F2EFE8;
-  --text-2: #C9C5BC;
-  --text-3: #9A968E;
-  --accent: #E1251B;
-  --accent-text: #FF5A4E;
-  --accent-btn: #C81E17;
-  --on-accent: #F2EFE8;
-  --ok: #7CC47F;
-  --font-display: 'Oswald', 'Oswald Fallback', 'Arial Narrow', system-ui, sans-serif;
-  --font-text: 'Onest', 'Onest Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --radius: 0;
+  /* ----- контракт темы: цвета ----- */
+  --bg: #0E1630;            /* фон экрана */
+  --surface: #17224A;       /* карточка задания, дорога */
+  --surface-2: #1E2B57;     /* поле ввода, раскрытая подсказка */
+  --line: #2B3A70;          /* разделители — только декор */
+  --control: #8291C4;       /* рамки полей и вторых кнопок, ≥ 3:1 к фону */
+  --text: #F3F1EA;
+  --text-2: #D5D9E6;
+  --text-3: #A9B1C7;        /* подписи, ≥ 4,5:1 к фону и карточке */
+  --accent: #FFC53D;        /* заливки: прогресс, маркер, метка улики */
+  --on-accent-fill: #0E1630;/* текст на заливке --accent */
+  --accent-text: #FFC53D;   /* мелкий акцентный текст, ≥ 4,5:1 */
+  --accent-btn: #FFC53D;    /* фон главной кнопки */
+  --on-accent: #0E1630;     /* текст на главной кнопке */
+  --ok: #8FD694;            /* штамп «Верно» */
+  --paper: #F3F1EA;         /* бумага артефакта */
+  --ink: #0E1630;           /* текст на бумаге */
+  --ink-2: #34437A;         /* подписи на бумаге */
+  /* ----- контракт темы: шрифты ----- */
+  --font-display: 'Unbounded', 'Unbounded Fallback', 'Arial Black', system-ui, sans-serif;
+  --font-text: 'Golos Text', 'Golos Text Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-doc: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; /* текст артефакта-документа */
+  --h1-size: clamp(28px, 8vw, 38px);
+  --h1-line: 1.08;
+  --h1-weight: 800;
+  --h1-case: none;          /* uppercase — только если так требует стиль дела */
+  --h1-track: -.01em;
+  --btn-font: 600 17px/1.15 var(--font-display);
+  --btn-case: none;
+  --btn-track: 0;
+  --tag-font: 600 13px/1 var(--font-display);
+  --tag-track: .02em;
+  /* ----- контракт темы: форма ----- */
+  --radius: 16px;           /* карточки, поля */
+  --radius-btn: 999px;      /* кнопки */
+  --btn-shadow: none;       /* тень главной кнопки */
+  --page-bg: none;          /* фоновый рисунок экрана (сетка, зерно) */
+  /* ----- размеры каркаса: дело их не меняет ----- */
   --top-h: 56px;
-  --tabs-h: 64px;
+  --nav-h: 64px;
+  --col: 600px;
   color-scheme: dark;
 }
+/* Светлая тема («Солнце») — те же имена, свои значения */
 :root[data-theme="sun"] {
-  --bg: #F4F1EA;
-  --surface: #FFFFFF;
-  --surface-2: #ECE8DF;
-  --line: #D6D0C4;
-  --control: #6E6A62;
-  --text: #141414;
-  --text-2: #3A3833;
-  --text-3: #55524C;
-  --accent-text: #B81B14;
-  --accent-btn: #B81B14;
-  --on-accent: #FFFFFF;
-  --ok: #1F6B2A;
+  --bg: #F3F1EA; --surface: #FFFFFF; --surface-2: #E9E6DC; --line: #D5D0C2; --control: #6B7391;
+  --text: #0E1630; --text-2: #2B3558; --text-3: #4B5576;
+  --accent: #C98A00; --on-accent-fill: #0E1630; --accent-text: #7A5300; --accent-btn: #0E1630; --on-accent: #F3F1EA;
+  --ok: #1F6B2A; --paper: #FFFFFF; --ink: #0E1630; --ink-2: #34437A;
   color-scheme: light;
 }
 
@@ -43,267 +61,331 @@
 html { -webkit-text-size-adjust: 100%; background: var(--bg); }
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--bg) var(--page-bg);
   color: var(--text);
   font: 400 18px/1.5 var(--font-text);
   overflow-x: hidden;
   min-height: 100vh;
 }
-h1, h2, h3, p, ul, ol { margin: 0; }
+h1, h2, h3, p, ul, ol, figure { margin: 0; }
 a { color: var(--accent-text); text-underline-offset: 3px; }
 button, input, textarea { font: inherit; color: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
 [hidden] { display: none !important; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 b, strong { font-weight: 600; }
-code {
-  font: 500 16px/1.4 ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  letter-spacing: .06em;
-}
+code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
+.pl-ico { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ---------- Шапка ---------- */
+/* ---------- 1. Шапка дела + прогресс по точкам (одно целое) ---------- */
 .pl-top {
   position: sticky; top: 0; z-index: 5;
-  display: flex; align-items: center; gap: 12px;
-  height: var(--top-h);
-  padding: 0 16px;
-  padding-top: env(safe-area-inset-top);
-  box-sizing: content-box;
   background: var(--bg);
+  padding-top: env(safe-area-inset-top);
   border-bottom: 1px solid var(--line);
-  max-width: 520px; margin: 0 auto;
 }
-.pl-logo { display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none;
-  font: 700 20px/1 var(--font-display); letter-spacing: .04em; }
-.pl-logo svg { width: 30px; height: 30px; }
-.pl-count { margin-left: auto; font: 700 20px/1 var(--font-display); letter-spacing: .04em; color: var(--text-2); }
-.pl-sun {
-  min-height: 44px; padding: 0 14px; border: 2px solid var(--control); background: transparent;
-  font: 500 15px/1 var(--font-display); text-transform: uppercase; letter-spacing: .1em; cursor: pointer;
+.pl-top-in {
+  display: flex; align-items: center; gap: 12px;
+  height: var(--top-h); max-width: var(--col); margin: 0 auto; padding: 0 4px 0 16px;
 }
-.pl-sun[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
-.pl-sun { white-space: nowrap; flex: none; }
-/* Узкие экраны: «Светлая тема» длиннее прежнего «Солнце» — ужимаем шапку, чтобы не было переноса и выезда за край */
-@media (max-width: 400px) {
-  .pl-top { gap: 8px; padding-left: 12px; padding-right: 12px; }
-  .pl-logo { gap: 6px; font-size: 17px; letter-spacing: .02em; }
-  .pl-logo svg { width: 26px; height: 26px; }
-  .pl-count { font-size: 17px; }
-  .pl-sun { padding: 0 8px; font-size: 13px; letter-spacing: .03em; }
-}
-@media (max-width: 340px) { .pl-logo span { display: none; } }
+.pl-logo { display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; min-height: 44px; }
+.pl-logo svg { width: 28px; height: 28px; }
+.pl-logo .logo-light { fill: var(--accent); }
+/* Единый логотип (указание 23.11): слово «дворами» — Unbounded 800 на всех страницах, включая плеер */
+.pl-logo span { font: 800 15px/1 'Unbounded', 'Unbounded Fallback', 'Arial Black', sans-serif; letter-spacing: -.01em; }
+.pl-where { margin-left: auto; font: 500 16px/1.2 var(--font-text); color: var(--text-2); white-space: nowrap; }
+.pl-where b { color: var(--text); font-weight: 600; }
+.pl-menu-btn { width: 48px; height: 48px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; color: var(--text); border-radius: var(--radius-btn); }
+.pl-menu-btn:active { background: var(--surface-2); }
+@media (max-width: 380px) { .pl-logo span { display: none; } }
 
-.pl-progress { display: flex; gap: 3px; max-width: 520px; margin: 0 auto; padding: 8px 16px 0; }
-.pl-progress i { flex: 1; height: 6px; background: var(--surface-2); }
-.pl-progress i.done { background: var(--accent); }
-.pl-progress i.cur { background: var(--text-3); }
+/* Прогресс: пройденные точки — толстые в цвет дела, текущая — светлая, впереди — тонкая линия (различие формой, не только цветом) */
+.pl-progress { display: flex; align-items: center; gap: 3px; height: 8px; max-width: var(--col); margin: 0 auto; padding: 0 16px; }
+.pl-progress:empty { display: none; }
+.pl-progress i { flex: 1; height: 2px; background: var(--control); }
+.pl-progress i.done { height: 6px; background: var(--accent); }
+.pl-progress i.cur { height: 6px; background: var(--text); }
 
-/* ---------- Основной поток ---------- */
+/* ---------- 2. Основной поток ---------- */
 .pl-main {
-  max-width: 520px; margin: 0 auto;
-  padding: 16px 16px calc(var(--tabs-h) + 32px + env(safe-area-inset-bottom));
+  max-width: var(--col); margin: 0 auto;
+  padding: 20px 16px calc(var(--nav-h) + 40px + env(safe-area-inset-bottom));
   outline: none;
 }
-.pl-main > * + * { margin-top: 12px; }
+.pl-main > * + * { margin-top: 16px; }
 .pl-loading { padding: 48px 0; color: var(--text-2); }
-
-.pl-label {
-  display: block; font: 500 15px/1.2 var(--font-display); text-transform: uppercase; letter-spacing: .1em;
-  color: var(--text-3); margin-bottom: 8px;
-}
+.pl-label { display: block; font: 600 15px/1.3 var(--font-text); color: var(--text-3); margin-bottom: 8px; }
+.pl-small { font-size: 15px; color: var(--text-2); }
 .pl-prose p + p { margin-top: 12px; }
-.pl-prose code { display: inline-block; background: var(--surface-2); padding: 4px 8px; border-left: 4px solid var(--accent); }
-.pl-prose p > code:only-child { display: block; padding: 12px 14px; font-size: 17px; }
+.pl-prose code { display: inline-block; background: var(--surface-2); padding: 2px 8px; border-radius: 4px; }
 
-.pl-card { background: var(--surface); padding: 20px 16px; border: 1px solid var(--line); scroll-margin-top: calc(var(--top-h) + 24px); }
-.pl-card--paper { background: var(--text); color: var(--bg); border-color: var(--text); }
-.pl-card--paper .pl-label { color: var(--bg); opacity: .75; }
-.pl-card--paper .pl-prose code { background: transparent; color: var(--bg); border-left-color: var(--accent); font-weight: 600; }
-
-/* Заголовок точки */
-.pl-head { position: relative; padding: 16px 0 8px; overflow: hidden; scroll-margin-top: calc(var(--top-h) + 24px); }
-.pl-head .pl-num { font: 700 17px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-text); }
+/* Заголовок экрана: где мы и что это за точка */
+.pl-head { position: relative; padding: 4px 0 4px; scroll-margin-top: calc(var(--top-h) + 32px); }
+.pl-eyebrow { font: 600 16px/1.2 var(--font-text); color: var(--accent-text); }
 .pl-head h1 {
-  font: 700 clamp(36px, 11vw, 52px)/.98 var(--font-display); text-transform: uppercase; letter-spacing: .005em;
-  margin-top: 16px; overflow-wrap: break-word; hyphens: auto;
+  font-family: var(--font-display); font-weight: var(--h1-weight); font-size: var(--h1-size); line-height: var(--h1-line);
+  text-transform: var(--h1-case); letter-spacing: var(--h1-track);
+  margin-top: 10px; overflow-wrap: break-word; hyphens: auto; text-wrap: balance;
 }
-.pl-head .pl-place { margin-top: 10px; color: var(--text-2); font-size: 16px; }
-.pl-shape { position: absolute; right: -14px; top: 0; width: 48px; height: 48px; pointer-events: none; }
-.pl-head h1, .pl-head .pl-num, .pl-head .pl-place { position: relative; z-index: 1; }
+.pl-place { margin-top: 10px; color: var(--text-2); font-size: 16px; }
+.pl-head > * { position: relative; z-index: 1; }
+.pl-deco { position: absolute; z-index: 0; right: -6px; top: -4px; width: 44px; height: 44px; pointer-events: none; display: none; } /* фигуру задаёт тема */
 
-/* Обложка */
-.pl-cover h1 { font-size: clamp(44px, 13vw, 60px); }
-.pl-meta { font-size: 16px; color: var(--text-2); }
+/* Карточка: одна поверхность без рамки. Рамку получает только активное задание — так главное на экране одно */
+.pl-card { background: var(--surface); padding: 20px 16px; border-radius: var(--radius); scroll-margin-top: calc(var(--top-h) + 32px); }
+.pl-scene { padding: 2px 0 2px 16px; border-left: 2px solid var(--control); }
+.pl-dist { font: 600 17px/1.2 var(--font-text); color: var(--text); margin-bottom: 10px; }
+.pl-dist span { color: var(--text-3); font-weight: 400; }
 
-/* Кнопки */
+/* ---------- 3. Кнопки ---------- */
 .pl-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
   min-height: 56px; padding: 14px 20px; border: 0; cursor: pointer; text-decoration: none;
-  background: var(--accent-btn); color: var(--on-accent);
-  font: 700 20px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .05em;
-  box-shadow: 4px 4px 0 var(--text);
-  -webkit-tap-highlight-color: transparent;
+  background: var(--accent-btn); color: var(--on-accent); border-radius: var(--radius-btn);
+  font: var(--btn-font); text-transform: var(--btn-case); letter-spacing: var(--btn-track);
+  box-shadow: var(--btn-shadow);
 }
-.pl-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--text); }
+.pl-btn:active { transform: translate(2px, 2px); }
 .pl-btn--ghost { background: transparent; color: var(--text); border: 2px solid var(--control); box-shadow: none; }
-.pl-btn--ghost:active { transform: none; box-shadow: none; background: var(--surface-2); }
-.pl-btn--sm { min-height: 48px; font-size: 17px; padding: 10px 14px; }
+.pl-btn--ghost:active { transform: none; background: var(--surface-2); }
+/* Вторые по важности кнопки — обычным шрифтом, без капса: главная кнопка на экране одна */
+.pl-btn--sm { min-height: 48px; padding: 10px 14px; font: 600 17px/1.2 var(--font-text); text-transform: none; letter-spacing: 0; }
 .pl-row { display: flex; gap: 8px; }
 .pl-row > * { flex: 1; }
 .pl-actions { margin-top: 16px; display: grid; gap: 12px; }
-.pl-maplink {
-  display: flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 16px;
-  border: 2px solid var(--control); color: var(--text); text-decoration: none;
-  font: 500 16px/1 var(--font-display); text-transform: uppercase; letter-spacing: .08em;
-}
-.pl-dist { font: 700 17px/1 var(--font-display); letter-spacing: .06em; color: var(--text-2); margin-bottom: 10px; }
+.pl-maplink { margin-top: 16px; }
 
-/* Шаги */
-.pl-step { scroll-margin-top: calc(var(--top-h) + 24px); }
+/* ---------- 4. Задание ---------- */
+.pl-task { border: 2px solid var(--control); padding: 18px 14px 14px; }
+.pl-task-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; min-height: 28px; }
+.pl-stepno { font-size: 15px; color: var(--text-3); margin-left: auto; }
 .pl-tag {
-  display: inline-block; padding: 5px 10px 4px; margin-bottom: 12px;
-  font: 700 17px/1 var(--font-display); text-transform: uppercase; letter-spacing: .08em;
-  border: 2px solid var(--text); color: var(--text);
+  display: inline-block; padding: 6px 10px 5px; border-radius: min(var(--radius), 6px);
+  font: var(--tag-font); text-transform: uppercase; letter-spacing: var(--tag-track);
+  background: var(--text); color: var(--bg); border: 2px solid var(--text);
 }
-.pl-tag--krut { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
-.pl-tag--dum { background: var(--text); color: var(--bg); }
-.pl-tag--mal { border-style: dashed; border-color: var(--text-3); color: var(--text-2); }
-.pl-step--mal { border-style: dashed; border-color: var(--text-3); background: transparent; }
-.pl-step.is-active { border-color: var(--text-3); border-width: 2px; }
-.pl-step.pulse { animation: pulse 1s ease 2; }
-@keyframes pulse { 50% { border-color: var(--accent); } }
-@media (prefers-reduced-motion: reduce) { .pl-step.pulse { animation: none; } }
+.pl-tag--look { background: transparent; color: var(--text); }
+.pl-tag--turn { background: var(--accent); border-color: var(--accent); color: var(--on-accent-fill); }
+.pl-tag--opt, .pl-tag--brk { background: transparent; color: var(--text-2); border-style: dashed; border-color: var(--control); }
+.pl-tag--cat { background: transparent; color: var(--accent-text); border-color: var(--accent-text); }
+.pl-task--opt { border-style: dashed; }
+.pl-task.pulse { animation: pl-pulse .9s ease 2; }
+@keyframes pl-pulse { 50% { border-color: var(--accent-text); } }
 
-.pl-done { padding: 14px 16px; background: transparent; }
-.pl-done .pl-prose { color: var(--text-2); font-size: 16px; }
+/* Пройденные шаги точки: без плашек, тише основного */
+.pl-past { padding: 0 0 16px; border-bottom: 1px solid var(--line); }
+.pl-past .pl-tag { margin-bottom: 10px; }
+.pl-past .pl-prose, .pl-past .pl-ok { color: var(--text-2); font-size: 16px; }
 .pl-stamp {
-  display: inline-block; margin: 12px 0 6px; padding: 4px 10px 3px; transform: rotate(-2deg);
-  font: 700 17px/1 var(--font-display); text-transform: uppercase; letter-spacing: .1em;
-  border: 2px solid var(--ok); color: var(--ok);
+  display: inline-block; margin: 12px 0 6px; padding: 5px 10px 4px; transform: rotate(-2deg); transform-origin: left center;
+  font: var(--tag-font); text-transform: uppercase; letter-spacing: var(--tag-track);
+  border: 2px solid var(--ok); color: var(--ok); border-radius: min(var(--radius), 6px);
 }
-.pl-stamp--ans { border-color: var(--text-3); color: var(--text-2); }
+.pl-stamp--ans { border-color: var(--control); color: var(--text-2); }
 .pl-ok { margin-top: 4px; }
-.pl-done .pl-ok { font-size: 16px; }
 
-/* Ответ */
+/* ---------- 5. Ввод ответа ---------- */
 .pl-form { margin-top: 16px; display: grid; gap: 10px; }
 .pl-input {
-  width: 100%; min-height: 56px; padding: 12px 14px; border: 2px solid var(--control); border-radius: 0;
+  width: 100%; min-height: 56px; padding: 12px 16px; border: 2px solid var(--control); border-radius: min(var(--radius), 12px);
   background: var(--surface-2); font-size: 19px; -webkit-appearance: none; appearance: none;
 }
+.pl-input::placeholder { color: var(--text-3); opacity: 1; }
 .pl-input:focus { outline: none; border-color: var(--text); }
-.pl-wrong { color: var(--text-2); font-size: 16px; padding-left: 12px; border-left: 4px solid var(--accent); }
+.pl-wrong { margin-top: 12px; color: var(--text); font-size: 16px; padding-left: 12px; border-left: 4px solid var(--accent-text); }
 
-/* Лестница подсказок */
-.pl-ladder { margin-top: 16px; display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 6px; }
-.pl-rung {
-  min-height: 56px; padding: 8px 6px; border: 2px solid var(--control); background: transparent; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center;
+/* ---------- 6. Подсказки: одна крупная кнопка-ступень вместо трёх мелких плиток ---------- */
+.pl-hints { margin-top: 14px; display: grid; gap: 8px; }
+.pl-hint { padding: 12px 14px; background: var(--surface-2); border-radius: min(var(--radius), 12px); font-size: 17px; }
+.pl-hint b { display: block; font: 600 15px/1.3 var(--font-text); color: var(--text-3); margin-bottom: 2px; }
+.pl-hintbtn {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 14px; text-align: left;
+  border: 0; border-top: 1px solid var(--line); background: transparent; cursor: pointer; color: var(--text);
 }
-.pl-rung b { font: 700 16px/1 var(--font-display); text-transform: uppercase; letter-spacing: .05em; }
-.pl-rung small { font-size: 13px; line-height: 1.15; color: var(--text-3); }
-.pl-rung:disabled { opacity: .5; cursor: default; }
-.pl-rung.used, .pl-rung.used:disabled { opacity: 1; border-color: var(--line); background: var(--surface-2); }
-.pl-rung.used b::after { content: ' ✓'; }
-.pl-hint { margin-top: 10px; padding: 12px 14px; background: var(--surface-2); font-size: 17px; }
-.pl-hint .pl-label { margin-bottom: 4px; }
-.pl-skip { margin-top: 10px; background: none; border: 0; padding: 10px 0; color: var(--text-2);
-  text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 16px; min-height: 44px; }
+.pl-hintbtn .pl-ico { color: var(--accent-text); }
+.pl-hintbtn > span:not(.pl-pips) { flex: 1; min-width: 0; }
+.pl-hintbtn b { display: block; font: 600 17px/1.25 var(--font-text); }
+.pl-hintbtn small { display: block; font-size: 15px; line-height: 1.3; color: var(--text-3); }
+.pl-hintbtn:active { background: var(--surface-2); }
+.pl-pips { display: flex; gap: 4px; flex: none; }
+.pl-pips i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--control); }
+.pl-pips i.on { background: var(--accent-text); border-color: var(--accent-text); }
+.pl-skip, .pl-issue {
+  display: block; min-height: 44px; padding: 10px 0; background: none; border: 0; cursor: pointer;
+  color: var(--text-2); font-size: 16px; text-decoration: underline; text-underline-offset: 3px;
+}
+.pl-skip { margin-top: 6px; }
+.pl-issue { margin: 24px auto 0; color: var(--text-3); font-size: 15px; }
 
-/* Улика */
-.pl-clue { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: start; }
-.pl-letter {
-  width: 72px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: var(--accent); color: #FFFFFF; font: 700 40px/1 var(--font-display);
+/* ---------- 7. Артефакт дела: улика и документ ---------- */
+/* Улика: метка (буква + год) и слова свидетеля. Тема меняет бумагу, шрифт и наклон — не разметку */
+.pl-art { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: start; padding: 16px; background: var(--paper); color: var(--ink); border-radius: var(--radius); }
+.pl-art-mark {
+  width: 72px; height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--accent); color: var(--on-accent-fill); border-radius: min(var(--radius), 8px);
+  font: 800 40px/1 var(--font-display);
 }
-.pl-letter small { font: 500 13px/1 var(--font-display); letter-spacing: .06em; margin-top: 4px; }
-.pl-clue .who { font: 700 19px/1.2 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
-.pl-clue .says { margin-top: 6px; color: var(--text-2); font-size: 16px; }
-.pl-new { border: 2px solid var(--accent); }
+.pl-art-mark small { font: 600 14px/1 var(--font-text); margin-top: 6px; }
+.pl-art-who { display: block; font: 600 18px/1.25 var(--font-text); }
+.pl-art-says { margin-top: 6px; font-size: 16px; color: var(--ink-2); }
+/* Документ: абзац из одной строки <code> в тексте дела (телеграмма, шифр, строка ведомости) */
+.pl-doc { margin: 4px 0; padding: 14px 16px; background: var(--paper); color: var(--ink); border-radius: min(var(--radius), 8px); }
+.pl-doc code { display: block; background: none; padding: 0; font: 600 17px/1.5 var(--font-doc); letter-spacing: .06em; }
+.pl-card--paper { background: var(--paper); color: var(--ink); }
+.pl-card--paper .pl-doc { background: none; padding: 12px 0; border-top: 2px dashed var(--ink-2); border-bottom: 2px dashed var(--ink-2); border-radius: 0; }
+
+/* «Живой» артефакт: улика ложится на стол, метка ставится штампом, документ печатается по букве.
+   Играет один раз при появлении экрана (.pl-fresh), только transform/opacity — без перерисовки раскладки. */
+@media (prefers-reduced-motion: no-preference) {
+  .pl-fresh .pl-art.is-new { animation: pl-drop .5s cubic-bezier(.2, .9, .3, 1.15) both; }
+  .pl-fresh .pl-art.is-new .pl-art-mark { animation: pl-stamp .32s .42s cubic-bezier(.3, 1.4, .5, 1) both; }
+  .pl-fresh .pl-past:last-of-type .pl-stamp { animation: pl-stamp .3s .1s cubic-bezier(.3, 1.4, .5, 1) both; }
+  .pl-fresh .pl-doc code i { animation: pl-type .01s steps(1) both; animation-delay: calc(var(--i) * 42ms + 350ms); }
+  .pl-badge.bump { animation: pl-bump .5s ease; }
+  .pl-map-cur { animation: pl-halo 2.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+}
+.pl-doc code i { font-style: normal; }
+@keyframes pl-drop { from { opacity: 0; transform: translateY(-18px) rotate(-5deg) scale(1.04); } }
+@keyframes pl-stamp { from { opacity: 0; transform: scale(1.9) rotate(-14deg); } }
+@keyframes pl-type { from { opacity: 0; } }
+@keyframes pl-bump { 40% { transform: scale(1.45); } }
+@keyframes pl-halo { from { transform: scale(1); opacity: .9; } to { transform: scale(2.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pl-task.pulse { animation: none; } .pl-btn:active { transform: none; } }
+
+/* Доска улик */
+.pl-letters { display: flex; flex-wrap: wrap; gap: 6px; }
+.pl-letters span { width: 40px; height: 48px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--paper); color: var(--ink); border-radius: min(var(--radius), 6px); font: 800 22px/1 var(--font-display); }
+.pl-letters span.todo { background: transparent; border: 2px dashed var(--control); }
+.pl-board { display: grid; gap: 10px; }
+.pl-seg { display: flex; border: 2px solid var(--control); border-radius: var(--radius-btn); overflow: hidden; }
+.pl-seg button { flex: 1; min-height: 44px; border: 0; background: transparent; cursor: pointer; font: 600 16px/1 var(--font-text); }
+.pl-seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+.pl-empty { color: var(--text-2); }
+
+/* Карта: схема пройденного пути по настоящим координатам точек */
+.pl-map { background: var(--surface); border-radius: var(--radius); padding: 8px; }
+.pl-map svg { display: block; width: 100%; height: auto; }
+.pl-map-path { fill: none; stroke: var(--control); stroke-width: 2; stroke-dasharray: 2 6; stroke-linecap: round; }
+.pl-map-dot { fill: var(--accent); }
+.pl-map-dot--cur { fill: var(--text); }
+.pl-map-cur { fill: none; stroke: var(--text); stroke-width: 1.5; }
+.pl-map text { font: 700 13px/1 var(--font-text); fill: var(--on-accent-fill); text-anchor: middle; dominant-baseline: central; }
+.pl-map text.cur { fill: var(--bg); }
+.pl-stops { list-style: none; padding: 0; display: grid; }
+.pl-stops li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.pl-stops .n { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent-fill); font: 700 15px/1 var(--font-text); }
+.pl-stops .cur .n { background: var(--text); color: var(--bg); }
+.pl-stops b { display: block; font-size: 17px; line-height: 1.3; }
+.pl-stops small { display: block; font-size: 15px; color: var(--text-3); margin-top: 2px; }
 
 /* Полевой тест */
-.pl-field { border: 2px dashed var(--accent-text); background: transparent; }
-.pl-field .pl-label { color: var(--accent-text); }
+.pl-field { border: 2px dashed var(--accent-text); background: transparent; padding: 16px; border-radius: var(--radius); }
+.pl-field .pl-label, details.pl-field summary { color: var(--accent-text); }
 .pl-field ul { padding-left: 20px; font-size: 16px; }
 .pl-field li + li { margin-top: 6px; }
-details.pl-field summary { cursor: pointer; font: 500 15px/1.2 var(--font-display); text-transform: uppercase; letter-spacing: .1em; color: var(--accent-text); min-height: 24px; }
+details.pl-field summary { cursor: pointer; font: 600 15px/1.6 var(--font-text); }
 details.pl-field[open] summary { margin-bottom: 10px; }
 
-/* «Что-то не так?» — тихая ссылка под действиями точки, не спорит с основной кнопкой */
-.pl-issue { display: block; margin: 20px auto 0; min-height: 44px; padding: 10px 4px; background: none; border: 0; cursor: pointer;
-  color: var(--text-3); font-size: 15px; text-decoration: underline; text-underline-offset: 3px; }
-.pl-issue:active { color: var(--text); }
+/* ---------- 8. Навигация: три постоянных раздела, одинаковые во всех делах ---------- */
+.pl-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--bg); border-top: 1px solid var(--line);
+  padding: 0 max(8px, calc((100% - var(--col)) / 2)) env(safe-area-inset-bottom);
+}
+.pl-nav button {
+  position: relative; min-height: var(--nav-h); border: 0; background: transparent; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  font: 500 15px/1 var(--font-text); color: var(--text-2);
+}
+.pl-nav button::before { content: ''; position: absolute; top: -1px; left: 22%; right: 22%; height: 3px; background: transparent; }
+.pl-nav button[aria-current="page"] { color: var(--text); font-weight: 600; }
+.pl-nav button[aria-current="page"]::before { background: var(--accent); }
+.pl-nav button[aria-current="page"] .pl-ico { stroke-width: 2.2; }
+.pl-badge { position: absolute; top: 8px; left: calc(50% + 8px); min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+  background: var(--accent); color: var(--on-accent-fill); font: 700 13px/20px var(--font-text); text-align: center; }
+.pl-badge:empty { display: none; }
+.pl-side { display: none; }
+
+/* ---------- Шторка: меню, заметка, сообщение об ошибке, отчёт ---------- */
+.pl-sheet {
+  width: 100%; max-width: var(--col); max-height: 88vh; margin: auto auto 0; padding: 0;
+  border: 0; border-top: 3px solid var(--accent); background: var(--bg); color: var(--text);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.pl-sheet::backdrop { background: rgba(0, 0, 0, .6); }
+.pl-sheet-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 4px 8px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.pl-sheet-head h2 { font: 600 20px/1.2 var(--font-text); }
+.pl-x { width: 48px; height: 48px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; }
+.pl-sheet-body { padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); }
+.pl-sheet-body > * + * { margin-top: 12px; }
+.pl-menu { display: grid; }
+.pl-menu button {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 60px; padding: 8px 0; text-align: left;
+  border: 0; border-bottom: 1px solid var(--line); background: transparent; cursor: pointer;
+}
+.pl-menu button > span { flex: 1; }
+.pl-menu b { display: block; font: 600 18px/1.25 var(--font-text); }
+.pl-menu small { display: block; font-size: 15px; color: var(--text-3); }
+.pl-menu .pl-ico { color: var(--text-2); }
+.pl-switch { flex: none; width: 48px; height: 28px; border-radius: 14px; border: 2px solid var(--control); position: relative; }
+.pl-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--control); }
+[aria-checked="true"] .pl-switch { background: var(--text); border-color: var(--text); }
+[aria-checked="true"] .pl-switch::after { left: 23px; background: var(--bg); }
 .pl-cats { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
 .pl-cats legend { padding: 0; }
 .pl-cat { display: block; cursor: pointer; }
 .pl-cat input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.pl-cat span { display: flex; align-items: center; min-height: 48px; padding: 10px 14px; border: 2px solid var(--line); font-size: 17px; }
+.pl-cat span { display: flex; align-items: center; min-height: 48px; padding: 10px 14px; border: 2px solid var(--control); border-radius: min(var(--radius), 12px); font-size: 17px; }
 .pl-cat input:checked + span { border-color: var(--text); background: var(--surface-2); font-weight: 600; }
 .pl-cat input:checked + span::before { content: '✓'; margin-right: 10px; color: var(--accent-text); }
 .pl-cat input:focus-visible + span { outline: 3px solid var(--text); outline-offset: 2px; }
-
-/* Нижние вкладки */
-.pl-tabs {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  max-width: 520px; margin: 0 auto;
-  background: var(--bg); border-top: 1px solid var(--line);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.pl-tabs button {
-  position: relative; min-height: var(--tabs-h); border: 0; background: transparent; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  font: 500 14px/1 var(--font-display); text-transform: uppercase; letter-spacing: .08em; color: var(--text-2);
-}
-.pl-tab-ico { font-size: 20px; line-height: 1; color: var(--text); }
-.pl-badge { position: absolute; top: 8px; left: calc(50% + 10px); min-width: 20px; height: 20px; padding: 0 5px;
-  background: var(--accent); color: #FFFFFF; font: 700 13px/20px var(--font-display); }
-.pl-badge:empty { display: none; }
-
-/* Шторка */
-.pl-sheet {
-  width: 100%; max-width: 520px; max-height: 88vh; margin: auto auto 0; padding: 0;
-  border: 0; border-top: 3px solid var(--accent); background: var(--bg); color: var(--text);
-}
-.pl-sheet::backdrop { background: rgba(0, 0, 0, .6); }
-.pl-sheet-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
-.pl-sheet-head h2 { font: 700 24px/1 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
-.pl-x { width: 48px; height: 48px; border: 0; background: transparent; font-size: 32px; line-height: 1; cursor: pointer; }
-.pl-sheet-body { padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); }
-.pl-sheet-body > * + * { margin-top: 12px; }
-.pl-board { display: grid; gap: 8px; }
-.pl-letters { display: flex; flex-wrap: wrap; gap: 6px; }
-.pl-letters span { width: 40px; height: 48px; display: inline-flex; align-items: center; justify-content: center;
-  background: var(--surface-2); border: 2px solid var(--text); font: 700 24px/1 var(--font-display); }
-.pl-seg { display: flex; border: 2px solid var(--control); }
-.pl-seg button { flex: 1; min-height: 44px; border: 0; background: transparent; cursor: pointer;
-  font: 500 15px/1 var(--font-display); text-transform: uppercase; letter-spacing: .08em; }
-.pl-seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
-.pl-empty { color: var(--text-2); }
-.pl-textarea { width: 100%; min-height: 140px; padding: 12px 14px; border: 2px solid var(--control); border-radius: 0;
+.pl-textarea { width: 100%; min-height: 140px; padding: 12px 14px; border: 2px solid var(--control); border-radius: min(var(--radius), 12px);
   background: var(--surface-2); font-size: 18px; resize: vertical; }
 .pl-notes { list-style: none; padding: 0; display: grid; gap: 8px; font-size: 16px; }
-.pl-notes li { padding: 10px 12px; background: var(--surface); border-left: 3px solid var(--text-3); }
-.pl-notes time { display: block; font: 500 13px/1.2 var(--font-display); letter-spacing: .08em; color: var(--text-3); }
-.pl-menu { display: grid; gap: 10px; }
+.pl-notes li { padding: 10px 12px; background: var(--surface); border-left: 3px solid var(--control); }
+.pl-notes time { display: block; font-size: 15px; color: var(--text-3); }
 .pl-log { white-space: pre-wrap; font: 400 13px/1.45 ui-monospace, Menlo, Consolas, monospace; background: var(--surface);
   padding: 12px; max-height: 40vh; overflow: auto; border: 1px solid var(--line); }
-.pl-small { font-size: 15px; color: var(--text-2); }
 
 .pl-toast {
-  position: fixed; left: 50%; top: calc(var(--top-h) + 16px + env(safe-area-inset-top)); z-index: 20;
+  position: fixed; left: 50%; top: calc(var(--top-h) + 20px + env(safe-area-inset-top)); z-index: 20;
   transform: translateX(-50%) translateY(-20px); opacity: 0; pointer-events: none;
-  background: var(--text); color: var(--bg); padding: 12px 18px; border-left: 4px solid var(--accent); font-size: 16px; max-width: calc(100% - 32px);
-  transition: opacity .2s, transform .2s;
+  background: var(--text); color: var(--bg); padding: 12px 18px; border-left: 4px solid var(--accent); font-size: 16px;
+  width: max-content; max-width: calc(100% - 32px); transition: opacity .2s, transform .2s;
 }
 .pl-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-@media (min-width: 700px) {
-  .pl-main { padding-top: 24px; }
-  .pl-tabs { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+/* ---------- Планшет и компьютер: тот же каркас, навигация уходит в левую колонку, досье — в правую ---------- */
+@media (min-width: 560px) {
+  .pl-form { grid-template-columns: 1fr auto; }
+  .pl-form .pl-btn { width: auto; min-width: 168px; }
 }
-
-/* Единый логотип (указание 23.11): слово «дворами» — Unbounded 800 на всех страницах, включая плеер */
-.pl-logo span { font: 800 15px/1 'Unbounded', 'Unbounded Fallback', 'Arial Black', sans-serif; letter-spacing: -0.01em; text-transform: none; }
-@media (max-width: 400px) { .pl-logo span { font-size: 13px; } }
+@media (min-width: 1024px) {
+  :root { --rail: 184px; --aside: 0px; --gap: 48px; --frame: calc(var(--rail) + var(--gap) + var(--col)); }
+  body { display: grid; grid-template-columns: 1fr var(--rail) minmax(0, var(--col)) 1fr; column-gap: var(--gap); grid-template-rows: auto 1fr; align-items: start; }
+  .pl-top { grid-column: 1 / -1; }
+  .pl-top-in, .pl-progress { max-width: var(--frame); padding-left: 0; padding-right: 0; }
+  .pl-main { grid-column: 3; grid-row: 2; width: 100%; margin: 0; padding: 40px 0 80px; }
+  .pl-nav {
+    grid-column: 2; grid-row: 2; position: sticky; top: calc(var(--top-h) + 48px); left: auto; right: auto; bottom: auto;
+    display: grid; grid-template-columns: 1fr; gap: 4px; padding: 0; border: 0; background: transparent;
+  }
+  .pl-nav button { flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 52px; padding: 0 16px; font-size: 17px; border-radius: min(var(--radius), 12px); }
+  .pl-nav button::before { top: 12px; bottom: 12px; left: 0; right: auto; width: 3px; height: auto; }
+  .pl-nav button[aria-current="page"] { background: var(--surface); }
+  .pl-badge { position: static; margin-left: auto; }
+  .pl-sheet { margin: auto; border-radius: var(--radius); border-top-width: 3px; }
+}
+@media (min-width: 1280px) {
+  :root { --aside: 300px; --frame: calc(var(--rail) + var(--gap) * 2 + var(--col) + var(--aside)); }
+  body { grid-template-columns: 1fr var(--rail) minmax(0, var(--col)) var(--aside) 1fr; }
+  .pl-side { display: block; grid-column: 4; grid-row: 2; position: sticky; top: calc(var(--top-h) + 48px); margin-top: 40px; padding: 20px; background: var(--surface); border-radius: var(--radius); }
+  .pl-side:empty { display: none; }
+  .pl-side > * + * { margin-top: 12px; }
+  .pl-side h2 { font: 600 20px/1.25 var(--font-text); }
+  .pl-side .pl-letters span { width: 34px; height: 42px; font-size: 19px; }
+}
