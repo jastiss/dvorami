@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="t d">
+  <title id="t">Дворами — знак «Золотая арка»</title>
+  <desc id="d">Высокая арка-проход с золотым сводом из двух рёбер; в глубине — свет двора.</desc>
+  <path class="logo-wall" fill="#0E1630" d="M6 45V21A18 18 0 0 1 42 21V45Z"/> <path class="logo-gold" fill="#FFC53D" d="M9 42V21A15 15 0 0 1 39 21V42H35V21A11 11 0 0 0 13 21V42Z M15.5 42V21A8.5 8.5 0 0 1 32.5 21V42H29V21A5 5 0 0 0 19 21V42Z"/> <path class="logo-far" fill="#F3F1EA" d="M19 33V21A5 5 0 0 1 29 21V33Z"/> <path class="logo-wall" fill="#0E1630" d="M19 33H29L33.5 42.1H14.5Z"/>
+</svg>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Логотип «Дворами» — версия 2</title>
+<title>Логотип «Дворами» — четыре финалиста</title>
 <style>
   @font-face{font-family:'Unbounded';font-weight:800;font-display:swap;src:url(../../../site/assets/fonts/unbounded-cyrillic-800-normal.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
   @font-face{font-family:'Unbounded';font-weight:800;font-display:swap;src:url(../../../site/assets/fonts/unbounded-latin-800-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
@@ -27,13 +27,14 @@
   .mark{display:block;flex:none;color:inherit}
   .word{font-family:var(--disp);font-weight:800;letter-spacing:-.01em;line-height:1}
 
-  /* сравнение трёх */
+  /* сравнение четырёх */
   .trio{display:grid;gap:12px;margin:28px 0 0;grid-template-columns:1fr}
-  @media(min-width:760px){.trio{grid-template-columns:repeat(3,1fr)}}
+  @media(min-width:620px){.trio{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1040px){.trio{grid-template-columns:repeat(4,1fr)}}
   .trio a{display:flex;align-items:center;gap:12px;padding:20px 18px;border:1px solid var(--line);border-radius:18px;
     background:var(--surface);color:var(--text);text-decoration:none;min-width:0}
   .trio .mark{width:44px;height:44px}
-  .trio .word{font-size:clamp(22px,2.3vw,27px)}
+  .trio .word{font-size:clamp(20px,1.9vw,23px)}
 
   section{margin-top:64px}
   .head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
@@ -72,13 +73,25 @@
   .btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:var(--ink);border-radius:999px;padding:11px 20px 11px 12px;font-weight:600;font-size:16px;white-space:nowrap}
   .btn .mark{width:26px;height:26px}
   .btn .logo-light{fill:#F3F1EA}
+  .who{font-size:14px;font-weight:600;border:1px solid var(--line);color:var(--text-2);border-radius:999px;padding:2px 12px}
+  /* эскиз fal рядом со знаком */
+  .src{grid-column:1/-1;display:grid;gap:14px;grid-template-columns:1fr;align-items:center;border:1px solid var(--line);border-radius:18px;padding:16px;background:var(--surface)}
+  @media(min-width:640px){.src{grid-template-columns:200px 200px 1fr}}
+  .src figure{margin:0}
+  .src img{display:block;width:100%;max-width:240px;height:auto;aspect-ratio:1;border-radius:12px;object-fit:cover}
+  .src figcaption{font-size:13px;color:var(--text-3);margin-top:6px}
+  .src .vec{display:grid;place-items:center;aspect-ratio:1;max-width:240px;border-radius:12px;background:var(--bg);color:var(--text)}
+  .src .vec.pap{background:var(--paper);color:var(--ink)}
+  .src .vec .mark{width:62%;height:62%}
+  .src p{margin:0;color:var(--text-2);font-size:15px}
+  .out{opacity:.78}
   .app{width:60px;height:60px;border-radius:15px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--text)}
   .app .mark{width:42px;height:42px}
 
   /* черновики */
   .drafts{display:grid;gap:8px;grid-template-columns:repeat(2,1fr)}
   @media(min-width:640px){.drafts{grid-template-columns:repeat(4,1fr)}}
-  .drafts.pro{grid-template-columns:repeat(3,1fr);max-width:840px}
+  .drafts.pro{grid-template-columns:repeat(2,1fr);max-width:560px}
   .drafts figure{margin:0}
   .drafts img{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:12px;background:var(--paper)}
   .drafts figcaption{font-size:13px;color:var(--text-3);margin-top:4px}
@@ -89,36 +102,46 @@
 </head>
 <body>
 <div class="wrap">
-  <p class="hand">вторая попытка</p>
+  <p class="hand">выбираем из четырёх</p>
   <h1>Логотип «Дворами»</h1>
-  <p class="lead">Три новых знака вместо буквы «Д». Каждый — один предмет со своим характером: свет в&nbsp;окне, ключ от&nbsp;двора, дворовый кот. Эскизы сгенерированы в&nbsp;fal, финальные знаки начерчены в&nbsp;векторе вручную.</p>
+  <p class="lead">Четыре финалиста: «Ключ» и&nbsp;«Кот» из&nbsp;прошлого раунда и&nbsp;два новых знака&nbsp;— «Золотая арка» и&nbsp;«Д-арка». У&nbsp;каждого рядом эскиз fal, по&nbsp;которому он начерчен. «Окно» отклонено и&nbsp;оставлено в&nbsp;конце для&nbsp;сравнения.</p>
 
   <div class="trio" id="trio"></div>
   <div id="variants"></div>
 
   <section>
     <p class="hand">откуда это взялось</p>
-    <h2>Эскизы fal</h2>
-    <p class="idea">12 черновиков (по&nbsp;4 на&nbsp;направление) и&nbsp;3 доработки. Это сырьё: в&nbsp;вектор перенесена идея, а&nbsp;формы упрощены под&nbsp;16&nbsp;px.</p>
+    <h2>Эскизы fal, раунд 2</h2>
+    <p class="idea">8 черновиков (по&nbsp;4 на&nbsp;направление) и&nbsp;2 доработки. «Золотая арка» сделана по&nbsp;фотографии прохода в&nbsp;ЗИЛАРТе, «Д-арка»&nbsp;— по&nbsp;эскизу владельца. Черновики первого раунда&nbsp;— в&nbsp;папке fal/ (draft-a, draft-b, draft-c).</p>
     <h3>Черновики</h3>
     <div class="drafts" id="drafts"></div>
     <h3>Доработка</h3>
     <div class="drafts pro" id="pro"></div>
   </section>
 
-  <footer>platform/design/logo/ · v2-okno.svg, v2-klyuch.svg, v2-kot.svg (знаки), v2-*-lockup.svg (знак + слово) · промпты — specs/01-logo-fal.md · на сайт не поставлено, выбирает владелец</footer>
+  <div id="rejected"></div>
+
+  <footer>platform/design/logo/ · v2-klyuch.svg, v2-kot.svg, v2-arka.svg, v2-d.svg (знаки), v2-*-lockup.svg (знак + слово, в&nbsp;кривых) · промпты&nbsp;— specs/01-logo-fal.md и&nbsp;specs/02-logo-fal-arch.md · на&nbsp;сайт не&nbsp;поставлено, выбирает владелец</footer>
 </div>
 
 <script>
-const MARKS = {"okno": "<path class=\"logo-d\" fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M7 5H27.5A2 2 0 0 1 29.5 7V16.5H41A2 2 0 0 1 43 18.5V42A2 2 0 0 1 41 44H7A2 2 0 0 1 5 42V7A2 2 0 0 1 7 5Z M8.5 9.5V17.5H16.5V9.5Z M8.5 21V29H16.5V21Z M20 21V29H28V21Z M31.5 21V29H39.5V21Z M8.5 32.5V40.5H16.5V32.5Z M20 32.5V40.5H28V32.5Z M31.5 32.5V40.5H39.5V32.5Z\"/> <rect class=\"logo-light\" x=\"20\" y=\"9.5\" width=\"8\" height=\"8\" rx=\".6\" fill=\"#FFC53D\"/>", "klyuch": "<g transform=\"translate(13 13) rotate(45)\"> <path class=\"logo-d\" fill=\"currentColor\" d=\"M0 -11A11 11 0 1 0 0 11A11 11 0 1 0 0 -11Z M8 -3.2H18.5V-15H24.5V-3.2H26V-9L30.25 -13.5L34.5 -9V-3.2H36V-8H41V-3.2H41.3A3.2 3.2 0 0 1 41.3 3.2H8Z\"/> <circle class=\"logo-light\" r=\"5.6\" fill=\"#FFC53D\"/> </g>", "kot": "<g class=\"logo-d\" fill=\"currentColor\"> <circle cx=\"33.5\" cy=\"16.8\" r=\"8.6\"/> <path d=\"M25 16L24.8 4.5L32.6 9.4Z M42 16L42.2 4.5L34.4 9.4Z\"/> <path d=\"M29.5 23C24.5 27.5 22.3 35.5 24 44H43.6C45 35.5 42.5 27.5 37.5 23Z\"/> <path fill=\"none\" stroke=\"currentColor\" stroke-width=\"4.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M25 40.5C18.5 40.5 14.5 36 14.5 30C14.5 24.5 20.5 22.5 20.5 16A6.6 6.6 0 0 0 7.3 16\"/> </g> <g class=\"logo-light\" fill=\"#FFC53D\"> <circle cx=\"30.1\" cy=\"16.6\" r=\"2.3\"/> <circle cx=\"36.9\" cy=\"16.6\" r=\"2.3\"/> <circle cx=\"9.6\" cy=\"41.4\" r=\"2.8\"/> </g>"};
+const MARKS = {"okno": "<path class=\"logo-d\" fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M7 5H27.5A2 2 0 0 1 29.5 7V16.5H41A2 2 0 0 1 43 18.5V42A2 2 0 0 1 41 44H7A2 2 0 0 1 5 42V7A2 2 0 0 1 7 5Z M8.5 9.5V17.5H16.5V9.5Z M8.5 21V29H16.5V21Z M20 21V29H28V21Z M31.5 21V29H39.5V21Z M8.5 32.5V40.5H16.5V32.5Z M20 32.5V40.5H28V32.5Z M31.5 32.5V40.5H39.5V32.5Z\"/> <rect class=\"logo-light\" x=\"20\" y=\"9.5\" width=\"8\" height=\"8\" rx=\".6\" fill=\"#FFC53D\"/>", "klyuch": "<g transform=\"translate(13.2 13.2) rotate(45)\"> <path class=\"logo-d\" fill=\"currentColor\" d=\"M0 -11.6A11.6 11.6 0 1 1 0 11.6A11.6 11.6 0 1 1 0 -11.6Z M8 -3.3H17.2V-8.6H15.8L20.4 -13.6L25 -8.6H23.6V-3.3H26V-15.6H31.4V-3.3H33.8V-7.6H32.4L37 -12.6L41.6 -7.6H40.2V-3.3H40.6A3.3 3.3 0 0 1 40.6 3.3H8Z\"/> <circle class=\"logo-light\" r=\"6.9\" fill=\"#FFC53D\"/> </g>", "kot": "<g class=\"logo-d\" fill=\"currentColor\"> <circle cx=\"33.5\" cy=\"16.8\" r=\"8.6\"/> <path d=\"M25 16L24.8 4.5L32.6 9.4Z M42 16L42.2 4.5L34.4 9.4Z\"/> <path d=\"M29.5 23C24.5 27.5 22.3 35.5 24 44H43.6C45 35.5 42.5 27.5 37.5 23Z\"/> <path fill=\"none\" stroke=\"currentColor\" stroke-width=\"4.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M25 40.5C18.5 40.5 14.5 36 14.5 30C14.5 24.5 20.5 22.5 20.5 16A6.6 6.6 0 0 0 7.3 16\"/> </g> <g class=\"logo-light\" fill=\"#FFC53D\"> <circle cx=\"30.1\" cy=\"16.6\" r=\"2.3\"/> <circle cx=\"36.9\" cy=\"16.6\" r=\"2.3\"/> <circle cx=\"9.6\" cy=\"41.4\" r=\"2.8\"/> </g>", "arka": "<path class=\"logo-wall\" fill=\"#0E1630\" d=\"M6 45V21A18 18 0 0 1 42 21V45Z\"/> <path class=\"logo-gold\" fill=\"#FFC53D\" d=\"M9 42V21A15 15 0 0 1 39 21V42H35V21A11 11 0 0 0 13 21V42Z M15.5 42V21A8.5 8.5 0 0 1 32.5 21V42H29V21A5 5 0 0 0 19 21V42Z\"/> <path class=\"logo-far\" fill=\"#F3F1EA\" d=\"M19 33V21A5 5 0 0 1 29 21V33Z\"/> <path class=\"logo-wall\" fill=\"#0E1630\" d=\"M19 33H29L33.5 42.1H14.5Z\"/>", "d": "<path class=\"logo-d\" fill=\"currentColor\" d=\"M3 44.5V33H9V19A15 15 0 0 1 39 19V33H45V44.5H39V39.5H32V19A8 8 0 0 0 16 19V39.5H9V44.5Z\"/> <path class=\"logo-light\" fill=\"#FFC53D\" d=\"M17.5 21V19.5A6.5 6.5 0 0 1 30.5 19.5V21Z\"/>"};
 const V = [
-  {id:'okno', name:'Окно', rec:false,
-   idea:'Ночной дом, все спят, одно окно горит. Самая короткая завязка дела: там что-то случилось — пойдём посмотрим.'},
-  {id:'klyuch', name:'Ключ', rec:false,
-   idea:'Ключ, у которого бородка — крыши домов, а в головке — свет двора. Каждое дело открывает свой двор.'},
-  {id:'kot', name:'Кот', rec:true,
-   idea:'Дворовый кот видел всё и знает каждый проход. Хвост загнут вопросом: он знает ответ, но сначала спросит вас.'}
+  {id:'klyuch', name:'Ключ', who:'нравится владельцу', fal:'pro-b-klyuch',
+   idea:'Ключ с толстым кольцом: в кольце горит свет двора, бородка — три домика. Каждое дело открывает свой двор.',
+   diff:'Вектор подтянут к эскизу: кольцо толще, жёлтый круг заполняет его целиком, домики стоят в том же порядке — дом, башня, дом.'},
+  {id:'kot', name:'Кот', who:'нравится супруге', fal:'pro-c-kot',
+   idea:'Дворовый кот видел всё и знает каждый проход. Хвост загнут вопросом: он знает ответ, но сначала спросит вас.',
+   diff:'Без изменений с прошлого раунда: хвост соединён с котом, точка вопроса — жёлтая.'},
+  {id:'arka', name:'Золотая арка', who:'новый', fal:'pro-d-arka',
+   idea:'Высокий проход с золотым сводом, как в ЗИЛАРТе: два золотых ребра уходят вглубь, в конце — светлый двор. Знак зовёт войти.',
+   diff:'В векторе рёбра шире, а зазоры крупнее, чем в эскизе, чтобы не слипались в 16 px. Стена всегда тёмно-синяя: на тёмном фоне остаются золотой свод и светлый проём.'},
+  {id:'d', name:'Д-арка', who:'новый', rec:true, fal:'pro-e-d',
+   idea:'Первая буква названия и арка во двор — одна фигура. Ножки «Д» — опоры арки, под сводом горит свет, проход открыт.',
+   diff:'В отличие от отвергнутой «Арки-Д», здесь нет трапеции с маленькой дверцей: вся буква — это арка, и через неё можно пройти.'}
 ];
+const OUT = {id:'okno', name:'Окно', who:'отклонено', fal:'pro-a-okno',
+   idea:'Ночной дом, одно окно горит. Не вошло в финал: похоже на значок недвижимости и не понравилось владельцу.'};
 const mk = (id, cls='') => `<svg class="mark ${cls}" viewBox="0 0 48 48" aria-hidden="true">${MARKS[id]}</svg>`;
 
 document.getElementById('trio').innerHTML = V.map(v =>
@@ -134,12 +157,17 @@ const card = (v, light) => `
     <div class="lock">${mk(v.id)}<span class="word">дворами</span></div>
   </div>`;
 
-document.getElementById('variants').innerHTML = V.map(v => `
-  <section id="${v.id}">
-    <div class="head"><h2>${v.name}</h2>${v.rec?'<span class="rec">рекомендуем</span>':''}</div>
+const block = (v, out) => `
+  <section id="${v.id}" class="${out?'out':''}">
+    <div class="head"><h2>${v.name}</h2>${v.rec?'<span class="rec">рекомендуем</span>':''}<span class="who">${v.who}</span></div>
     <p class="idea">${v.idea}</p>
     <div class="grid">
       ${card(v,false)}${card(v,true)}
+      ${out?'':`<div class="src">
+        <figure><img src="fal/${v.fal}.webp" alt="Эскиз fal: ${v.name}" width="512" height="512" loading="lazy"><figcaption>эскиз fal</figcaption></figure>
+        <figure><div class="vec ${v.id==='d'?'':'pap'}">${mk(v.id)}</div><figcaption>вектор</figcaption></figure>
+        <p>${v.diff}</p>
+      </div>
       <div class="use">
         <div class="hdr"><div class="brand">${mk(v.id)}<span class="word">дворами</span></div>
           <nav><span>Как это устроено</span><span>Дела</span><span>Вопросы</span></nav><span class="pill">Выбрать квест</span></div>
@@ -148,17 +176,19 @@ document.getElementById('variants').innerHTML = V.map(v => `
           <span class="app">${mk(v.id)}</span>
           <span class="tab"><span class="ico">${mk(v.id)}</span>Дворами — квесты</span>
         </div>
-      </div>
+      </div>`}
     </div>
-  </section>`).join('');
+  </section>`;
+document.getElementById('variants').innerHTML = V.map(v => block(v,false)).join('');
+document.getElementById('rejected').innerHTML = block(OUT,true);
 
-const names = {a:['okno','Окно'], b:['klyuch','Ключ'], c:['kot','Кот']};
+const names = {d:['arka','Золотая арка'], e:['d','Д-арка']};
 let d = '';
-for (const k of 'abc') for (let i = 1; i <= 4; i++)
+for (const k of 'de') for (let i = 1; i <= 4; i++)
   d += `<figure><img src="fal/draft-${k}-${names[k][0]}-${i}.webp" alt="Черновик: ${names[k][1]}, ${i}" width="512" height="512" loading="lazy"><figcaption>${names[k][1]} · ${i}</figcaption></figure>`;
 document.getElementById('drafts').innerHTML = d;
-document.getElementById('pro').innerHTML = Object.values(names).map(([f, n], i) =>
-  `<figure><img src="fal/pro-${'abc'[i]}-${f}.webp" alt="Доработка: ${n}" width="512" height="512" loading="lazy"><figcaption>${n} · доработка</figcaption></figure>`).join('');
+document.getElementById('pro').innerHTML = Object.entries(names).map(([k,[f, n]]) =>
+  `<figure><img src="fal/pro-${k}-${f}.webp" alt="Доработка: ${n}" width="512" height="512" loading="lazy"><figcaption>${n} · доработка</figcaption></figure>`).join('');
 </script>
 </body>
 </html>

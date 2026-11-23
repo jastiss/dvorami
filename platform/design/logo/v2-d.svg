@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="t d">
+  <title id="t">Дворами — знак «Д-арка»</title>
+  <desc id="d">Буква «Д» как арка во двор: ножки буквы — опоры, под сводом горит свет.</desc>
+  <path class="logo-d" fill="currentColor" d="M3 44.5V33H9V19A15 15 0 0 1 39 19V33H45V44.5H39V39.5H32V19A8 8 0 0 0 16 19V39.5H9V44.5Z"/> <path class="logo-light" fill="#FFC53D" d="M17.5 21V19.5A6.5 6.5 0 0 1 30.5 19.5V21Z"/>
+</svg>
