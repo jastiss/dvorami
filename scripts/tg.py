@@ -99,7 +99,7 @@ def _strip_tags(s):
     return s.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
 
-def send(token, chat_id, html, reply_to=None):
+def send(token, chat_id, html, reply_to=None, reply_markup=None):
     ok = True
     for chunk in split(html):
         params = {
@@ -111,6 +111,8 @@ def send(token, chat_id, html, reply_to=None):
         if reply_to:
             params["reply_to_message_id"] = reply_to
             params["allow_sending_without_reply"] = True
+        if reply_markup:
+            params["reply_markup"] = reply_markup
         r = call(token, "sendMessage", params)
         if not r.get("ok"):
             # запасной вариант: без разметки

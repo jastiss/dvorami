@@ -19,7 +19,7 @@
   var sheetKind = null;
 
   // Игровой бот — то же имя, что BOT в site/assets/site.js (без @). Пусто — ссылки ведут в канал.
-  var BOT = '';
+  var BOT = 'dvorami_bot';
   var CHANNEL = 'https://t.me/dvorami_quest';
   // Ключи категорий совпадают с REPORT_CATS в scripts/feedback_bot.py
   var ISSUE_CATS = [['fact', 'Факт не тот'], ['riddle', 'Загадка не решается'], ['place', 'Место или объект не там'],

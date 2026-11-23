@@ -45,6 +45,11 @@ QUEST_MSG = (
 )
 
 
+# Бот команды — без клавиатуры. Старая клавиатура квеста (quest_bot.py) остаётся
+# у клиента, пока бот явно её не уберёт: каждый ответ снимает её.
+NO_KB = {"remove_keyboard": True}
+
+
 def read_offset():
     try:
         return int(OFFSET_FILE.read_text().strip())
@@ -116,27 +121,27 @@ def main():
         text = (msg.get("text") or msg.get("caption") or "").strip()
         mid = msg.get("message_id")
         if not text:
-            tg.send(token, chat_id, "Пока понимаю только текст.", reply_to=mid)
+            tg.send(token, chat_id, "Пока понимаю только текст.", reply_to=mid, reply_markup=NO_KB)
             continue
         cmd = text.split()[0].split("@")[0].lower()
         if cmd == "/quest":
-            tg.send(token, chat_id, "Квесты теперь в боте для игроков @dvorami_bot. Этот бот — только для команды.", reply_to=mid)
+            tg.send(token, chat_id, "Квесты теперь в боте для игроков @dvorami_bot. Этот бот — только для команды.", reply_to=mid, reply_markup=NO_KB)
         elif cmd in ("/start", "/help"):
-            tg.send(token, chat_id, HELP, reply_to=mid)
+            tg.send(token, chat_id, HELP, reply_to=mid, reply_markup=NO_KB)
         elif cmd == "/status":
-            tg.send(token, chat_id, tg.md_to_html(STATUS.read_text(encoding="utf-8")), reply_to=mid)
+            tg.send(token, chat_id, tg.md_to_html(STATUS.read_text(encoding="utf-8")), reply_to=mid, reply_markup=NO_KB)
         elif cmd == "/approvals":
-            tg.send(token, chat_id, tg.md_to_html(pending_approvals()), reply_to=mid)
+            tg.send(token, chat_id, tg.md_to_html(pending_approvals()), reply_to=mid, reply_markup=NO_KB)
         elif is_run(text):
             ts = datetime.datetime.fromtimestamp(msg.get("date", 0), MSK).strftime("%Y-%m-%d %H:%M")
             extra = text.split(maxsplit=1)[1] if len(text.split(maxsplit=1)) > 1 else ""
             entries.append(format_entry(ts, "Принудительный запуск итерации" + (f": {extra}" if extra else "")))
             request_run(f"Принудительный запуск из Telegram, {ts}")
-            tg.send(token, chat_id, "🚀 Принял. Сохраняю ваши указания и запускаю команду…", reply_to=mid)
+            tg.send(token, chat_id, "🚀 Принял. Сохраняю ваши указания и запускаю команду…", reply_to=mid, reply_markup=NO_KB)
         else:
             ts = datetime.datetime.fromtimestamp(msg.get("date", 0), MSK).strftime("%Y-%m-%d %H:%M")
             entries.append(format_entry(ts, text))
-            tg.send(token, chat_id, "📝 Записал. Команда учтёт в следующей итерации.", reply_to=mid)
+            tg.send(token, chat_id, "📝 Записал. Команда учтёт в следующей итерации.", reply_to=mid, reply_markup=NO_KB)
 
     if entries:
         append_directives(entries)

@@ -200,7 +200,7 @@
    (https://t.me/<бот>?start=review|suggest), бот сразу начинает нужный диалог. */
 (function () {
   'use strict';
-  var BOT = '';
+  var BOT = 'dvorami_bot';
   if (!BOT) return;
   var START = { review: 'review', suggest: 'suggest' };
   document.querySelectorAll('[data-tg]').forEach(function (a) {
