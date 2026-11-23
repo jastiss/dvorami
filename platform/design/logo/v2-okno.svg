@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="t d">
+  <title id="t">Дворами — знак «Окно»</title>
+  <desc id="d">Ночной дом в два уступа: все окна тёмные, одно горит тёплым светом.</desc>
+  <path class="logo-d" fill="currentColor" fill-rule="evenodd"
+        d="M7 5H27.5A2 2 0 0 1 29.5 7V16.5H41A2 2 0 0 1 43 18.5V42A2 2 0 0 1 41 44H7A2 2 0 0 1 5 42V7A2 2 0 0 1 7 5Z
+           M8.5 9.5V17.5H16.5V9.5Z
+           M8.5 21V29H16.5V21Z M20 21V29H28V21Z M31.5 21V29H39.5V21Z
+           M8.5 32.5V40.5H16.5V32.5Z M20 32.5V40.5H28V32.5Z M31.5 32.5V40.5H39.5V32.5Z"/>
+  <rect class="logo-light" x="20" y="9.5" width="8" height="8" rx=".6" fill="#FFC53D"/>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="t d">
+  <title id="t">Дворами — знак «Кот»</title>
+  <desc id="d">Дворовый кот сидит и смотрит на вас; его хвост загнут вопросительным знаком, под ним — точка.</desc>
+  <g class="logo-d" fill="currentColor">
+    <circle cx="33.5" cy="16.8" r="8.6"/>
+    <path d="M25 16L24.8 4.5L32.6 9.4Z M42 16L42.2 4.5L34.4 9.4Z"/>
+    <path d="M29.5 23C24.5 27.5 22.3 35.5 24 44H43.6C45 35.5 42.5 27.5 37.5 23Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"
+          d="M25 40.5C18.5 40.5 14.5 36 14.5 30C14.5 24.5 20.5 22.5 20.5 16A6.6 6.6 0 0 0 7.3 16"/>
+  </g>
+  <g class="logo-light" fill="#FFC53D">
+    <circle cx="30.1" cy="16.6" r="2.3"/>
+    <circle cx="36.9" cy="16.6" r="2.3"/>
+    <circle cx="9.6" cy="41.4" r="2.8"/>
+  </g>
+</svg>

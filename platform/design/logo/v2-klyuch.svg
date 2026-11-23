@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="t d">
+  <title id="t">Дворами — знак «Ключ»</title>
+  <desc id="d">Ключ, бородка которого — силуэт домов; в кольце головки — свет двора.</desc>
+  <g transform="translate(13 13) rotate(45)">
+    <path class="logo-d" fill="currentColor"
+          d="M0 -11A11 11 0 1 0 0 11A11 11 0 1 0 0 -11Z
+             M8 -3.2H18.5V-15H24.5V-3.2H26V-9L30.25 -13.5L34.5 -9V-3.2H36V-8H41V-3.2H41.3A3.2 3.2 0 0 1 41.3 3.2H8Z"/>
+    <circle class="logo-light" r="5.6" fill="#FFC53D"/>
+  </g>
+</svg>

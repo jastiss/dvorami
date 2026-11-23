@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Логотип «Дворами» — версия 2</title>
+<style>
+  @font-face{font-family:'Unbounded';font-weight:800;font-display:swap;src:url(../../../site/assets/fonts/unbounded-cyrillic-800-normal.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+  @font-face{font-family:'Unbounded';font-weight:800;font-display:swap;src:url(../../../site/assets/fonts/unbounded-latin-800-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+  @font-face{font-family:'Golos Text';font-weight:400;font-display:swap;src:url(../../../site/assets/fonts/golos-text-cyrillic-400-normal.woff2) format('woff2')}
+  @font-face{font-family:'Golos Text';font-weight:600;font-display:swap;src:url(../../../site/assets/fonts/golos-text-cyrillic-600-normal.woff2) format('woff2')}
+  @font-face{font-family:'Caveat';font-weight:700;font-display:swap;src:url(../../../site/assets/fonts/caveat-cyrillic-700-normal.woff2) format('woff2')}
+  :root{
+    --bg:#0E1630; --surface:#17224A; --surface-2:#1E2B57; --line:#2B3A70; --text:#F3F1EA; --text-2:#D5D9E6;
+    --text-3:#A9B1C7; --accent:#FFC53D; --paper:#F3F1EA; --ink:#0E1630;
+    --font:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --disp:'Unbounded','Arial Black',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.5;
+    background-image:linear-gradient(180deg,#17224A,var(--bg) 640px);background-repeat:no-repeat}
+  .wrap{max-width:1120px;margin:0 auto;padding:40px 16px 72px}
+  .hand{font-family:'Caveat',cursive;font-weight:700;font-size:26px;color:var(--accent);display:inline-block;transform:rotate(-2deg);margin:0 0 2px}
+  h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,5vw,52px);letter-spacing:-.02em;line-height:1.05;margin:0 0 12px}
+  .lead{color:var(--text-2);font-size:18px;max-width:44em;margin:0}
+  .mark{display:block;flex:none;color:inherit}
+  .word{font-family:var(--disp);font-weight:800;letter-spacing:-.01em;line-height:1}
+
+  /* сравнение трёх */
+  .trio{display:grid;gap:12px;margin:28px 0 0;grid-template-columns:1fr}
+  @media(min-width:760px){.trio{grid-template-columns:repeat(3,1fr)}}
+  .trio a{display:flex;align-items:center;gap:12px;padding:20px 18px;border:1px solid var(--line);border-radius:18px;
+    background:var(--surface);color:var(--text);text-decoration:none;min-width:0}
+  .trio .mark{width:44px;height:44px}
+  .trio .word{font-size:clamp(22px,2.3vw,27px)}
+
+  section{margin-top:64px}
+  .head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+  h2{font-family:var(--disp);font-weight:800;font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-.01em}
+  .rec{font-size:14px;font-weight:600;background:var(--accent);color:var(--ink);border-radius:999px;padding:3px 12px}
+  .idea{color:var(--text-2);max-width:46em;margin:6px 0 20px}
+
+  .grid{display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:860px){.grid{grid-template-columns:1fr 1fr}}
+  .card{border:1px solid var(--line);border-radius:18px;padding:22px 20px;color:var(--text);background:var(--bg);min-width:0}
+  .card.light{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+  .sizes{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
+  .sizes figure{margin:0;text-align:center}
+  .sizes figcaption{font-size:13px;margin-top:8px;opacity:.72}
+  .m160{width:160px;height:160px}.m32{width:32px;height:32px;margin:0 auto}.m16{width:16px;height:16px;margin:0 auto}
+  .lock{display:flex;align-items:center;gap:12px;margin-top:26px}
+  .lock .mark{width:46px;height:46px}
+  .lock .word{font-size:30px}
+
+  /* в деле: шапка, кнопка, вкладка */
+  .use{grid-column:1/-1;display:grid;gap:14px;grid-template-columns:1fr}
+  .hdr{display:flex;align-items:center;justify-content:space-between;gap:16px;border:1px solid var(--line);
+    border-radius:16px;padding:12px 16px;background:#0B1230;min-width:0}
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .brand .mark{width:34px;height:34px}
+  .brand .word{font-size:22px}
+  @media(max-width:420px){.brand .word{font-size:19px}.brand .mark{width:30px;height:30px}.hdr .pill{padding:10px 14px}}
+  .hdr nav{display:none;gap:22px;white-space:nowrap;color:var(--text-2);font-size:15px}
+  @media(min-width:860px){.hdr nav{display:flex}}
+  .pill{background:var(--accent);color:var(--ink);font-weight:600;border-radius:999px;padding:10px 18px;font-size:15px;white-space:nowrap}
+  .side{display:flex;flex-wrap:wrap;gap:14px;align-items:center;border:1px solid var(--line);border-radius:16px;padding:12px 16px;background:var(--surface)}
+  .tab{display:flex;align-items:center;gap:8px;background:#DEE1E6;color:#1F2125;border-radius:10px 10px 0 0;padding:8px 14px 8px 10px;
+    font:13px/1 system-ui,sans-serif;white-space:nowrap}
+  .tab .ico{width:16px;height:16px;border-radius:3px;background:var(--bg);color:var(--text);display:grid;place-items:center}
+  .tab .ico .mark{width:14px;height:14px}
+  .btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:var(--ink);border-radius:999px;padding:11px 20px 11px 12px;font-weight:600;font-size:16px;white-space:nowrap}
+  .btn .mark{width:26px;height:26px}
+  .btn .logo-light{fill:#F3F1EA}
+  .app{width:60px;height:60px;border-radius:15px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;color:var(--text)}
+  .app .mark{width:42px;height:42px}
+
+  /* черновики */
+  .drafts{display:grid;gap:8px;grid-template-columns:repeat(2,1fr)}
+  @media(min-width:640px){.drafts{grid-template-columns:repeat(4,1fr)}}
+  .drafts.pro{grid-template-columns:repeat(3,1fr);max-width:840px}
+  .drafts figure{margin:0}
+  .drafts img{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:12px;background:var(--paper)}
+  .drafts figcaption{font-size:13px;color:var(--text-3);margin-top:4px}
+  h3{font-family:var(--disp);font-weight:800;font-size:18px;margin:28px 0 12px}
+  .note{color:var(--text-3);font-size:15px;max-width:48em}
+  footer{margin-top:56px;color:var(--text-3);font-size:14px;border-top:1px solid var(--line);padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="hand">вторая попытка</p>
+  <h1>Логотип «Дворами»</h1>
+  <p class="lead">Три новых знака вместо буквы «Д». Каждый — один предмет со своим характером: свет в&nbsp;окне, ключ от&nbsp;двора, дворовый кот. Эскизы сгенерированы в&nbsp;fal, финальные знаки начерчены в&nbsp;векторе вручную.</p>
+
+  <div class="trio" id="trio"></div>
+  <div id="variants"></div>
+
+  <section>
+    <p class="hand">откуда это взялось</p>
+    <h2>Эскизы fal</h2>
+    <p class="idea">12 черновиков (по&nbsp;4 на&nbsp;направление) и&nbsp;3 доработки. Это сырьё: в&nbsp;вектор перенесена идея, а&nbsp;формы упрощены под&nbsp;16&nbsp;px.</p>
+    <h3>Черновики</h3>
+    <div class="drafts" id="drafts"></div>
+    <h3>Доработка</h3>
+    <div class="drafts pro" id="pro"></div>
+  </section>
+
+  <footer>platform/design/logo/ · v2-okno.svg, v2-klyuch.svg, v2-kot.svg (знаки), v2-*-lockup.svg (знак + слово) · промпты — specs/01-logo-fal.md · на сайт не поставлено, выбирает владелец</footer>
+</div>
+
+<script>
+const MARKS = {"okno": "<path class=\"logo-d\" fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M7 5H27.5A2 2 0 0 1 29.5 7V16.5H41A2 2 0 0 1 43 18.5V42A2 2 0 0 1 41 44H7A2 2 0 0 1 5 42V7A2 2 0 0 1 7 5Z M8.5 9.5V17.5H16.5V9.5Z M8.5 21V29H16.5V21Z M20 21V29H28V21Z M31.5 21V29H39.5V21Z M8.5 32.5V40.5H16.5V32.5Z M20 32.5V40.5H28V32.5Z M31.5 32.5V40.5H39.5V32.5Z\"/> <rect class=\"logo-light\" x=\"20\" y=\"9.5\" width=\"8\" height=\"8\" rx=\".6\" fill=\"#FFC53D\"/>", "klyuch": "<g transform=\"translate(13 13) rotate(45)\"> <path class=\"logo-d\" fill=\"currentColor\" d=\"M0 -11A11 11 0 1 0 0 11A11 11 0 1 0 0 -11Z M8 -3.2H18.5V-15H24.5V-3.2H26V-9L30.25 -13.5L34.5 -9V-3.2H36V-8H41V-3.2H41.3A3.2 3.2 0 0 1 41.3 3.2H8Z\"/> <circle class=\"logo-light\" r=\"5.6\" fill=\"#FFC53D\"/> </g>", "kot": "<g class=\"logo-d\" fill=\"currentColor\"> <circle cx=\"33.5\" cy=\"16.8\" r=\"8.6\"/> <path d=\"M25 16L24.8 4.5L32.6 9.4Z M42 16L42.2 4.5L34.4 9.4Z\"/> <path d=\"M29.5 23C24.5 27.5 22.3 35.5 24 44H43.6C45 35.5 42.5 27.5 37.5 23Z\"/> <path fill=\"none\" stroke=\"currentColor\" stroke-width=\"4.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M25 40.5C18.5 40.5 14.5 36 14.5 30C14.5 24.5 20.5 22.5 20.5 16A6.6 6.6 0 0 0 7.3 16\"/> </g> <g class=\"logo-light\" fill=\"#FFC53D\"> <circle cx=\"30.1\" cy=\"16.6\" r=\"2.3\"/> <circle cx=\"36.9\" cy=\"16.6\" r=\"2.3\"/> <circle cx=\"9.6\" cy=\"41.4\" r=\"2.8\"/> </g>"};
+const V = [
+  {id:'okno', name:'Окно', rec:false,
+   idea:'Ночной дом, все спят, одно окно горит. Самая короткая завязка дела: там что-то случилось — пойдём посмотрим.'},
+  {id:'klyuch', name:'Ключ', rec:false,
+   idea:'Ключ, у которого бородка — крыши домов, а в головке — свет двора. Каждое дело открывает свой двор.'},
+  {id:'kot', name:'Кот', rec:true,
+   idea:'Дворовый кот видел всё и знает каждый проход. Хвост загнут вопросом: он знает ответ, но сначала спросит вас.'}
+];
+const mk = (id, cls='') => `<svg class="mark ${cls}" viewBox="0 0 48 48" aria-hidden="true">${MARKS[id]}</svg>`;
+
+document.getElementById('trio').innerHTML = V.map(v =>
+  `<a href="#${v.id}">${mk(v.id)}<span class="word">дворами</span></a>`).join('');
+
+const card = (v, light) => `
+  <div class="card ${light?'light':''}">
+    <div class="sizes">
+      <figure>${mk(v.id,'m160')}<figcaption>крупно</figcaption></figure>
+      <figure>${mk(v.id,'m32')}<figcaption>32 px</figcaption></figure>
+      <figure>${mk(v.id,'m16')}<figcaption>16 px</figcaption></figure>
+    </div>
+    <div class="lock">${mk(v.id)}<span class="word">дворами</span></div>
+  </div>`;
+
+document.getElementById('variants').innerHTML = V.map(v => `
+  <section id="${v.id}">
+    <div class="head"><h2>${v.name}</h2>${v.rec?'<span class="rec">рекомендуем</span>':''}</div>
+    <p class="idea">${v.idea}</p>
+    <div class="grid">
+      ${card(v,false)}${card(v,true)}
+      <div class="use">
+        <div class="hdr"><div class="brand">${mk(v.id)}<span class="word">дворами</span></div>
+          <nav><span>Как это устроено</span><span>Дела</span><span>Вопросы</span></nav><span class="pill">Выбрать квест</span></div>
+        <div class="side">
+          <span class="btn">${mk(v.id)}Взять дело</span>
+          <span class="app">${mk(v.id)}</span>
+          <span class="tab"><span class="ico">${mk(v.id)}</span>Дворами — квесты</span>
+        </div>
+      </div>
+    </div>
+  </section>`).join('');
+
+const names = {a:['okno','Окно'], b:['klyuch','Ключ'], c:['kot','Кот']};
+let d = '';
+for (const k of 'abc') for (let i = 1; i <= 4; i++)
+  d += `<figure><img src="fal/draft-${k}-${names[k][0]}-${i}.webp" alt="Черновик: ${names[k][1]}, ${i}" width="512" height="512" loading="lazy"><figcaption>${names[k][1]} · ${i}</figcaption></figure>`;
+document.getElementById('drafts').innerHTML = d;
+document.getElementById('pro').innerHTML = Object.values(names).map(([f, n], i) =>
+  `<figure><img src="fal/pro-${'abc'[i]}-${f}.webp" alt="Доработка: ${n}" width="512" height="512" loading="lazy"><figcaption>${n} · доработка</figcaption></figure>`).join('');
+</script>
+</body>
+</html>
