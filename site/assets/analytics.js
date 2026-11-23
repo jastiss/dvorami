@@ -119,7 +119,7 @@
 
   // ---------- согласие на cookie (152-ФЗ) ----------
   var STATE_TEXT = {
-    yes: 'Сейчас: вы согласились на cookie и Яндекс Метрику.',
+    yes: 'Сейчас: вы согласились на cookie для статистики.',
     no: 'Сейчас: вы отказались — Метрика не загружается, cookie не ставятся.',
     none: 'Сейчас: вы ещё не ответили — Метрика не загружается до согласия.'
   };
@@ -138,8 +138,8 @@
     box.className = 'dv-consent';
     box.setAttribute('role', 'region');
     box.setAttribute('aria-label', 'Cookie и статистика');
-    box.innerHTML = '<p>Мы используем cookie и Яндекс Метрику, чтобы понимать, что на сайте работает, а что нет. ' +
-      '<a href="' + POLICY_URL + '">Политика и cookie</a></p><div>' +
+    box.innerHTML = '<p>Сайт использует cookie, чтобы понимать, что работает, а что нет. ' +
+      '<a href="' + POLICY_URL + '">Подробнее</a></p><div>' +
       (CONSENT === 'opt-in' ? '<button type="button" data-consent="no">Отказаться</button>' : '') +
       '<button type="button" data-consent="yes">' + (CONSENT === 'opt-in' ? 'Согласен' : 'Понятно') + '</button></div>';
     if (!document.getElementById('dv-consent-css')) {

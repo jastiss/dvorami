@@ -185,7 +185,6 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 
 /* 3. Как это устроено — лента-маршрут: вертикально на телефоне, горизонтально на широком экране */
 .how-head { display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; margin: 0 auto 44px; max-width: 30em; }
-.how-head .h2 { font-size: clamp(28px, 3.2vw, 44px); }
 .timeline { list-style: none; padding: 0; position: relative; display: grid; gap: 28px; }
 .timeline::before { content: ""; position: absolute; left: 23px; top: 24px; bottom: 24px; border-left: 3px dashed var(--control); }
 .timeline li { position: relative; padding-left: 68px; display: flex; flex-direction: column; gap: 6px; }
@@ -212,8 +211,9 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 /* 4. Как это выглядит — заголовок слева, телефоны веером внахлёст справа */
 .screens-grid { display: grid; gap: 28px; }
 .screens-head { display: flex; flex-direction: column; gap: 12px; }
-.screens-h { font: 800 clamp(34px, 5vw, 64px)/1 var(--font-display); letter-spacing: -0.02em; }
-.fan { position: relative; width: 100%; max-width: 560px; aspect-ratio: 1 / 1.02; margin: 0 auto; }
+/* Заголовок секции — тот же размер, что у .h2 (одна роль — один размер, site_check) */
+.screens-h { font: 800 clamp(30px, 4vw, 52px)/1.08 var(--font-display); letter-spacing: -0.01em; }
+.fan { position: relative; width: 100%; max-width: 560px; aspect-ratio: 1 / .97; margin: 0 auto; }
 .fan-phone { position: absolute; top: 4%; width: 43%; transition: transform .3s ease; }
 .fan-phone:nth-child(1) { left: 3%; transform: rotate(-7deg); z-index: 1; }
 .fan-phone:nth-child(2) { left: 28%; top: 0; transform: rotate(1deg); z-index: 3; }
@@ -296,8 +296,9 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 .map-canal { fill: none; stroke: #2E4C8F; stroke-width: 3; stroke-linecap: round; }
 .map-ring { fill: none; stroke: var(--line); stroke-width: 2; }
 .map-mkad { fill: none; stroke: var(--control); stroke-width: 2.5; stroke-dasharray: 2 8; stroke-linecap: round; opacity: .8; }
+/* Карта: одна роль — один размер. Места — 20px, служебные (МКАД, ТТК, река) — 22px, ориентир — 16px; тесноту решаем выносками, не кеглем (site_check) */
 .map-label { font: 700 22px var(--font-hand); fill: var(--text-3); }
-.map-label--river { font-size: 21px; fill: var(--sky); }
+.map-label--river { fill: var(--sky); }
 .map-kremlin path { fill: var(--text-3); }
 .map-kremlin text { font: 500 16px var(--font-text); fill: var(--text-3); }
 .map-pin .num { font: 800 14px var(--font-display); }
@@ -308,8 +309,7 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 .map-pin--soon .num { fill: var(--text); }
 .map-pin .name, .map-kremlin text { paint-order: stroke; stroke: var(--surface); stroke-width: 5px; stroke-linejoin: round; }
 .map-pin .name { font: 600 20px var(--font-text); fill: var(--text-2); }
-.map-pin--live .name { fill: var(--accent); font-weight: 700; font-size: 22px; }
-.map-pin--live .name.sub { fill: var(--text-2); font-weight: 500; font-size: 17px; }
+.map-pin--live .name { fill: var(--accent); font-weight: 700; }
 
 .next-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
 .next-list li { border-top: 1px dashed var(--control); padding: 18px 0 18px 52px; position: relative; display: flex; flex-direction: column; gap: 4px; }
@@ -806,13 +806,11 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 .map-row { display: grid; gap: 28px; margin-top: 56px; }
 @media (min-width: 900px) { .map-row { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; align-items: center; } }
 .map-legend { display: flex; flex-direction: column; gap: 14px; }
-.map-legend .hand { font-size: 30px; }
 .map-legend ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 14px; }
 .map-legend li { position: relative; padding-left: 40px; color: var(--text-2); }
 .map-legend li b { color: var(--text); }
 .lg { position: absolute; left: 0; top: 2px; width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--sky); background: var(--surface-2); display: grid; place-items: center; font: 800 13px var(--font-display); }
 .lg--live { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.map-label--ttk { font-size: 20px; }
 
 /* Картинки в «Искусстве вокруг»: показываются, когда файл загрузился */
 .art .art-img { display: none; aspect-ratio: auto; background: #0B0B0B; }
@@ -1198,7 +1196,6 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 
 /* Карта: 7 точек; точки в центре — мельче, подписи вынесены выносками */
 .map-row { margin-top: 48px; }
-.map-pin--sm .name { font-size: 17px; }
 .map-lead path { stroke: var(--text-3); stroke-width: 1.5; fill: none; }
 .map-legend ul { gap: 12px; }
 .map-legend li { font-size: 17px; }
@@ -1309,7 +1306,7 @@ img.is-broken { visibility: hidden; }
 .hero-art { margin-bottom: 38px; }
 .hero-art-note { bottom: -38px; }
 @media (min-width: 1000px) { .facts { flex-direction: column; gap: 10px; } }
-.qcard--suggest .btn { font-size: 16px; padding: 12px 22px; white-space: nowrap; }
+.qcard--suggest .btn { font-size: 17px; padding: 12px 22px; white-space: nowrap; }
 /* Страница ЗИЛАРТа на телефоне: круги и треугольники не заходят на текст и не выглядят кнопками —
    остаются только полосы. Фигуры — для широкого экрана, где им есть место. */
 @media (max-width: 899px) {
@@ -1361,7 +1358,14 @@ img.is-broken { visibility: hidden; }
 .map-legend .map-btn { align-self: flex-start; margin-top: 6px; }
 
 /* Экраны квеста: номер третьего экрана — справа, его не закрывает средний; средний экран крупнее */
-.fan-phone:nth-child(3) .fan-n { left: auto; right: 6px; }
+.fan-phone:nth-child(3) .fan-n { left: auto; right: 0; }
+/* 23.11: светлые экраны не спорят с тёмной страницей — в центре тёмный экран, боковые уходят на задний план
+   (синее затемнение в цвет фона); при наведении экран показывается как есть. Номер стоит на углу рамки и не закрывает экран. */
+.fan .fan-n { top: -24px; left: -10px; }
+.fan .phone-frame { position: relative; border-color: #0A1028; box-shadow: 0 30px 50px -30px rgba(0,0,0,.8), 0 0 0 1px var(--control); }
+.fan-phone--back .phone-frame::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(23,34,74,.56), rgba(14,22,48,.74)); mix-blend-mode: multiply; transition: opacity .3s ease; }
+.fan-phone--back:hover .phone-frame::after { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .fan-phone, .fan-phone--back .phone-frame::after { transition: none; } }
 .fan-phone:nth-child(2) { width: 47%; left: 26.5%; top: 0; }
 @media (min-width: 900px) { .fan { max-width: 640px; } }
 @media (min-width: 1300px) { .screens-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); } .fan { max-width: 700px; } }
@@ -1414,8 +1418,6 @@ img.is-broken { visibility: hidden; }
 .art-cloth i:nth-child(3) { left: 60px; background: var(--paper); clip-path: polygon(0 0, 100% 50%, 0 100%); }
 .art-cloth i:nth-child(4) { left: 90px; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 12px); }
 .art.has-img .art-emb, .art.has-img .art-hex { display: none; }
-/* Ревью итерации 9: подписи в центре карты мельче, чтобы не упираться в край; блок «Куда пойти» без пустоты сверху */
-.map-pin .name--sm { font-size: 17px; }
 @media (min-width: 900px) { .about-head { align-self: start; } }
 /* .is-away (кнопка уходила при прокрутке вниз) убрана 23.11: CTA должен быть доступен стабильно */
 
@@ -1436,5 +1438,4 @@ img.is-broken { visibility: hidden; }
   .guide-places img { width: 80px; height: 60px; border-radius: 10px; }
   .guide-places li > div { padding: 0; }
 }
-.screens-h { font-size: clamp(34px, 4vw, 54px); }
 .map-legend li a { color: var(--text); }

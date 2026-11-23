@@ -213,7 +213,7 @@ body.case-page .site-footer a { color: var(--text-2); }
    ===================================================================== */
 .t-avangard { --h-transform: uppercase; --h-spacing: .01em; --h-size: clamp(36px, 5.6vw, 64px); }
 .t-avangard .c-hero::before { content: ""; position: absolute; right: -120px; top: -80px; width: 420px; height: 420px; border-radius: 50%; background: var(--accent); opacity: .9; }
-.t-avangard .c-hero::after { content: ""; position: absolute; left: -40px; bottom: 40px; width: 55%; height: 18px; background: #F2EFE8; transform: rotate(-8deg); opacity: .9; }
+.t-avangard .c-hero::after { content: ""; position: absolute; left: -40px; bottom: 6px; width: 55%; height: 18px; background: #F2EFE8; transform: rotate(-8deg); opacity: .9; }
 @media (max-width: 999px) { .t-avangard .c-hero::before { width: 220px; height: 220px; right: -110px; top: -60px; } .t-avangard .c-hero::after { display: none; } }
 .t-avangard .c-cover img { border: 3px solid #F2EFE8; box-shadow: 14px 14px 0 var(--accent); }
 .t-avangard .c-cover { margin-right: 14px; }
@@ -231,7 +231,7 @@ body.case-page .site-footer a { color: var(--text-2); }
 .js .t-avangard .c-artifact:not(.in-view) .telegram .ch { opacity: 0; }
 .js .t-avangard .c-artifact.in-view .telegram .ch { opacity: 0; animation: tgType .01s linear forwards; animation-delay: calc(var(--c) * 55ms); }
 @keyframes tgType { to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .js .t-avangard .c-artifact .telegram .ch { opacity: 1; animation: none; } }
+@media (prefers-reduced-motion: reduce) { .js .t-avangard .c-artifact:is(.in-view, :not(.in-view)) .telegram .ch { opacity: 1; animation: none; } }
 
 /* =====================================================================
    №2 Чистые пруды — «Гравюра»: петровское барокко, медь, охра, бумага

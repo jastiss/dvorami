@@ -9,6 +9,9 @@
  *   - локальные ссылки, картинки, стили и скрипты, которые не отвечают 200; ссылки на несуществующие якоря;
  *   - ссылки на Wikipedia/Wikimedia; запрещённые на странице слова-спойлеры (scripts/site_spoilers.json);
  *   - страницы дел: одинаковый набор и порядок блоков, главная кнопка «Взять дело» в шапке, первом экране и плавающей кнопке;
+ *   - типографика: элементы одной роли (заголовки секций, рукописные надзаголовки, кнопки карточек дел) — одного размера;
+ *     в схемах-картах (.city-map svg) подписи одной роли одного размера и не наезжают друг на друга и на точки;
+ *     осознанное исключение — атрибут data-size-exception="почему" на элементе и комментарий в CSS;
  *   - ошибки в консоли и ошибки JS; предупреждения о неиспользованном preload шрифтов.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
@@ -137,6 +140,39 @@ function inPage(MAIN_CTA) {
         break;
       }
     }
+  });
+
+  // 3a. Типографика: одна роль — один размер (ловили 23.11: подписи на карте разного кегля, h2 «Как это выглядит» крупнее h1)
+  const px = el => Math.round(parseFloat(getComputedStyle(el).fontSize) * 10) / 10;
+  const sameSize = (what, els) => {
+    els = els.filter(el => visible(el) && !el.closest('[data-size-exception]'));
+    const by = {};
+    els.forEach(el => { (by[px(el)] = by[px(el)] || []).push((el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 28)); });
+    const sizes = Object.keys(by);
+    if (sizes.length > 1) out.problems.push(`типографика: ${what} — разный размер: ` + sizes.sort((a, b) => b - a).map(k => `${k}px («${by[k].slice(0, 3).join('», «')}»${by[k].length > 3 ? '…' : ''})`).join(' / '));
+  };
+  const all = sel => Array.from(document.querySelectorAll(sel));
+  sameSize('заголовки секций', all('main > section h2.h2, main > section h2.screens-h, main > section h2.c-h'));
+  sameSize('рукописные надзаголовки секций', all('main > section :is([class$="-head"], .guide-intro, .faq-side, .map-legend) > :is(.hand, .c-kicker)'));
+  sameSize('кнопки карточек дел', all('.qgrid a.qc-btn, .qgrid a.btn'));
+
+  // 3b. Схемы-карты: подписи одной роли одного размера; подписи не пересекаются между собой и с точками
+  document.querySelectorAll('.city-map svg').forEach(svg => {
+    if (!visible(svg)) return;
+    const texts = Array.from(svg.querySelectorAll('text')).filter(visible);
+    const role = t => t.closest('.map-pin') ? 'подписи мест' : t.closest('.map-kremlin') ? 'подписи ориентиров' : 'служебные подписи (МКАД, ТТК, река)';
+    const roles = {};
+    texts.forEach(t => (roles[role(t)] = roles[role(t)] || []).push(t));
+    Object.entries(roles).forEach(([name, els]) => sameSize('карта, ' + name, els));
+    const k = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width; // подписи меряем в единицах схемы, чтобы порог не зависел от ширины экрана
+    const box = el => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, n: (el.textContent || '').trim() || 'точка' }; };
+    const hit = (a, b, gap) => a.l < b.r + gap && b.l < a.r + gap && a.t < b.b + gap && b.t < a.b + gap;
+    // у текста рамка выше самих букв (место под выносные элементы) — берём «тело» строки
+    const tb = texts.map(t => { const b = box(t), h = b.b - b.t; return Object.assign(b, { t: b.t + h * .18, b: b.b - h * .12 }); });
+    for (let i = 0; i < tb.length; i++) for (let j = i + 1; j < tb.length; j++) if (hit(tb[i], tb[j], 2 * k)) out.problems.push(`карта: подписи наезжают друг на друга: «${tb[i].n}» и «${tb[j].n}»`);
+    svg.querySelectorAll('.map-pin circle.dot').forEach(d => { const db = box(d); tb.forEach(b => { if (hit(db, b, 1 * k)) out.problems.push(`карта: подпись «${b.n}» наезжает на точку (${d.closest('.map-pin').textContent.trim()})`); }); });
+    const sr = svg.getBoundingClientRect();
+    tb.forEach(b => { if (b.l < sr.left - 1 || b.r > sr.right + 1) out.problems.push(`карта: подпись «${b.n}» выходит за край схемы`); });
   });
 
   // 4. Набор блоков страницы
