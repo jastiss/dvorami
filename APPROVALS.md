@@ -42,11 +42,13 @@
 - **A-38. Ещё домены для исходников.** Рекомендуем разрешить: `pastvu.com`, `img.pastvu.com`, `www.loc.gov`, `tile.loc.gov` (Прокудин-Горский), `www.europeana.eu`, `api.europeana.eu`, `api.openverse.org`, `live.staticflickr.com`; по надобности `archive.org`. Не нужно: russiainphoto.ru, mos.ru, goskatalog.ru (свободных лицензий нет). Разбор: https://github.com/jastiss/dvorami/blob/main/docs/sources-domains.md . «Бедная Лиза» и Симонов монастырь не сделаны: Wikimedia временно ответил «слишком много запросов» (429) — повторим в следующей итерации.
 
 
-- **A-40. Логотип «Ключ».** _(23.11, третий круг: башня — простой прямоугольник, без крыши — `platform/design/logo/fal/pro-b-klyuch-rect-1.png` и `-rect-2.png`; ответ «A-40 rect-1 / rect-2» → вектор один в один и на сайт. Второй круг: башня с плоской крышей по основе windows-1 — `platform/design/logo/fal/pro-b-klyuch-flat-1.png` и `-flat-2.png`; ответ «A-40 flat-1 / flat-2». Первый круг: векторные A/B/C отклонены — берём fal-эскиз; сделана правка fal: 6 окон в башне, круг без тени — `platform/design/logo/fal/pro-b-klyuch-windows-1.png` и `-2.png`. Ответ: «A-40 1» / «2» → переводим в вектор максимально близко к эскизу и ставим на сайт.)_ Было: По вашим правкам домики разные (один с трубой, разного размера), в башне прямоугольные окна. A — по эскизу (малый дом с трубой, башня в 2 окна), B — широкая башня в 3 окна, C — башня со шпилем. Плюс упрощённый знак для 16 px. Страница: https://github.com/jastiss/dvorami/blob/main/platform/design/logo/logo-options-v4.html · картинкой: https://github.com/jastiss/dvorami/blob/main/platform/design/screens/2026-11-23/logo-key-v4.png . **Рекомендуем A.** Ответ: «A-40 A/B/C» (можно скрестить: «башня из B, дома из A»). После ответа — ставим на сайт.
 
+
+- **A-42. Аватарка канала.** Аватарка бота @dvorami_bot уже стоит (инверсия: кремовый ключ на синем). Для канала боту не хватает права: канал → «Администраторы» → @dvorami_bot → включить «Изменение профиля канала» (Change channel info). Потом скажите «A-42 готово» — запущу workflow «Telegram — аватарки» ещё раз. Либо поставьте сами: https://github.com/jastiss/dvorami/blob/main/docs/marketing/channel/avatar-channel.png
 
 ## Решено
 
+- **A-40. Логотип** — 2026-11-23: «Ключ» rect-2. Вектор один в один, стоит на всём сайте, в плеере, иконках и аватарке бота (`platform/design/logo/key*.svg`, BRAND.md «1а»).
 - **Голос Зили** — 2026-11-23: v3b с вокованием coo02a (`quests/zilart/media/assets/audio/zilya-01-intro-v3b-callum-coo02a-norm.mp3`). Оживление (видео) — отложено: «добавим живые элементы, но не сейчас».
 - **A-41. Оживить Зилю** — 2026-11-23: «да». Сделано ($1,21): Kling 5 с и OmniHuman 5,4 с с голосом — `quests/zilart/media/assets/video/`. Голос — v3b (Callum, «Курлык-курлык»), воркование перегенерировано чистым.
 - **A-36 / A-39. Логотип** — 2026-11-23: «Д» отвергнута (похожа на надгробие) → возвращаемся к «Ключу» с правками (A-40).
