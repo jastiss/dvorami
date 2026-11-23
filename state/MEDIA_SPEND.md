@@ -5,3 +5,4 @@
 | Дата | Что | Модель | Штук | Оценка $ | request_id | Одобрение | Куда сохранено |
 |---|---|---|---|---|---|---|---|
 | 2026-11-23 | Тест: портрет Зили (A-FAL-1 п.1) | fal-ai/nano-banana-pro | 1 | 0,15 | 01a2091a-8c1a-7453-8e73-f680fa7d1fcb | A-FAL-1 (владелец в чате 23.11) | только fal: https://v3b.fal.media/files/b/0ab3a34a/XARjAQqLIz9H2vMDlcg39_PFQlqUi5.png (скачать не дала сеть, A-32) |
+| 2026-11-23 | Тест: реплика Зили, озвучка (A-FAL-1 п.2) | elevenlabs/tts/eleven-v4, голос Charlie | 1 (~255 символов, 15 с) | ≈0,02 | 01a20982-9ef8-7f30-b5f2-84579bb8c6e5 | A-FAL-1 (владелец в чате 23.11) | только fal: https://v3b.fal.media/files/b/0ab3a5f5/1WGmtEvtdDbJzc4o8yFZk_output.mp3 (A-32) |
