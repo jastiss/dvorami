@@ -17,7 +17,7 @@ fal — платный сервис владельца (pay-as-you-go) с дес
 2. **Модель выбирает `recommend_model`** — с `operation`, `requirements` (формат, язык, длительность) и `budget` (потолок в $). Не угадывать endpoint по памяти, копировать ID точно.
 3. **Сначала черновик дешёвой моделью, финал — дорогой**, и только когда черновик принят.
 4. Запуск — `run_model` (картинки, озвучка) или `submit_job` + `wait_for_jobs` (видео, музыка, 3D — долго). Входные данные строить по `input_contract` из `recommend_model`.
-5. Результат скачать в `quests/<id>/media/assets/` (крупное видео — оставить ссылку fal и сохранить в fal Assets), записать в `MEDIA_SPEND.md` и `media/LICENSES.md` (модель, дата, условия коммерческого использования).
+5. Результат скачать в `quests/<id>/media/assets/` — **через workflow «Медиа — скачать из fal»** (среда Claude не достаёт до *.fal.media; включено владельцем 23.11): `gh api -X POST repos/jastiss/dvorami/actions/workflows/fetch-media.yml/dispatches -f ref=main -f 'inputs[url]=<ссылка fal>' -f 'inputs[path]=<путь в репозитории>'`, через ~1 мин `git pull` (крупное видео — оставить ссылку fal и сохранить в fal Assets), записать в `MEDIA_SPEND.md` и `media/LICENSES.md` (модель, дата, условия коммерческого использования).
 
 ## Ориентиры по моделям (проверять через `recommend_model` — каталог меняется)
 

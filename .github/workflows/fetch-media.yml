@@ -1,0 +1,62 @@
+name: Медиа — скачать из fal
+
+# Среда Claude не может скачивать файлы с *.fal.media (сеть закрыта), а GitHub Actions — может.
+# Команда запускает этот workflow сама:
+#   gh api -X POST repos/jastiss/dvorami/actions/workflows/fetch-media.yml/dispatches \
+#     -f ref=main -f 'inputs[url]=https://v3b.fal.media/files/...png' -f 'inputs[path]=quests/zilart/media/assets/test/zilya-portrait.png'
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Ссылка на файл fal (только *.fal.media)"
+        required: true
+      path:
+        description: "Куда положить в репозитории (quests/, site/assets/, platform/design/, docs/)"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-media
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Проверить и скачать
+        env:
+          URL: ${{ inputs.url }}
+          DEST: ${{ inputs.path }}
+        run: |
+          python3 - <<'PY'
+          import os, re, sys, urllib.parse, urllib.request, pathlib
+          url, dest = os.environ["URL"].strip(), os.environ["DEST"].strip()
+          host = urllib.parse.urlparse(url).hostname or ""
+          if urllib.parse.urlparse(url).scheme != "https" or not (host == "fal.media" or host.endswith(".fal.media")):
+              sys.exit(f"Разрешены только https-ссылки *.fal.media, получено: {host}")
+          p = pathlib.PurePosixPath(dest)
+          if p.is_absolute() or ".." in p.parts or not re.match(r"^(quests|site/assets|platform/design|docs)/", dest):
+              sys.exit("Путь должен быть внутри quests/, site/assets/, platform/design/ или docs/")
+          if not re.search(r"\.(png|jpe?g|webp|gif|mp3|wav|ogg|m4a|mp4|webm)$", dest, re.I):
+              sys.exit("Неподдерживаемое расширение файла")
+          data = urllib.request.urlopen(url, timeout=120).read()
+          if len(data) > 50 * 1024 * 1024:
+              sys.exit("Файл больше 50 МБ — хранить в репозитории нельзя")
+          out = pathlib.Path(dest); out.parent.mkdir(parents=True, exist_ok=True); out.write_bytes(data)
+          print(f"Сохранено {len(data)} байт → {dest}")
+          PY
+      - name: Сохранить в репозиторий
+        env:
+          DEST: ${{ inputs.path }}
+        run: |
+          git config user.name "dvorami-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$DEST"
+          git diff --cached --quiet && exit 0
+          git commit -m "Медиа из fal: $DEST"
+          for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 5; done
+          exit 1
