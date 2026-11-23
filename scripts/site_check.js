@@ -312,7 +312,7 @@ async function ctaAlwaysThere(page) {
       if (shots) {
         fs.mkdirSync(shots, { recursive: true });
         await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(300);
-        await page.screenshot({ path: path.join(shots, (rel.replace(/\//g, '_') || 'home') + '-' + vp.width + '.png'), fullPage: true });
+        await page.screenshot({ path: path.join(shots, (rel.replace(/\//g, '_') || 'home') + '-' + vp.width + '.jpg'), fullPage: true, quality: 80 }); /* полностраничные — JPEG: PNG весит 2–10 МБ */
       }
       await ctx.close();
     }

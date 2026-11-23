@@ -115,7 +115,7 @@ const initCalls = page => page.evaluate(() =>
     }
     const state = await s.page.locator('[data-consent-state]').innerText();
     if (!/согласились/.test(state)) err(`${tag}: состояние согласия на странице: «${state}»`);
-    if (shots) { await s.page.evaluate(() => window.scrollTo(0, 0)); await s.page.screenshot({ path: path.join(shots, `privacy-${tag}-full.png`), fullPage: true }); }
+    if (shots) { await s.page.evaluate(() => window.scrollTo(0, 0)); await s.page.screenshot({ path: path.join(shots, `privacy-${tag}-full.jpg`), fullPage: true, quality: 80 }); }
 
     /* Решение помнится после перезагрузки */
     await s.page.reload({ waitUntil: 'load' });
@@ -164,7 +164,7 @@ const initCalls = page => page.evaluate(() =>
 
     /* Страница согласия: скриншоты и отсутствие ошибок */
     s = await open(browser, vp, '/legal/consent/');
-    if (shots) { await s.page.screenshot({ path: path.join(shots, `consent-${tag}-full.png`), fullPage: true }); }
+    if (shots) { await s.page.screenshot({ path: path.join(shots, `consent-${tag}-full.jpg`), fullPage: true, quality: 80 }); }
     s.consoleErr.forEach(e => err(`${tag}: консоль (/legal/consent/): ${e.slice(0, 200)}`));
     await s.ctx.close();
   }
