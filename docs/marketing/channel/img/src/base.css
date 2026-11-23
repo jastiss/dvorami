@@ -1,0 +1,25 @@
+/* «Синий час» для картинок канала. Шрифты — локальные из site/assets/fonts (OFL). */
+@font-face{font-family:Unbounded;font-weight:800;src:url(../../../../../site/assets/fonts/unbounded-cyrillic-800-normal.woff2) format("woff2");unicode-range:U+0400-04FF}
+@font-face{font-family:Unbounded;font-weight:800;src:url(../../../../../site/assets/fonts/unbounded-latin-800-normal.woff2) format("woff2");unicode-range:U+0000-03FF,U+2000-206F,U+2116,U+2190-21FF}
+@font-face{font-family:Unbounded;font-weight:600;src:url(../../../../../site/assets/fonts/unbounded-cyrillic-600-normal.woff2) format("woff2");unicode-range:U+0400-04FF}
+@font-face{font-family:Unbounded;font-weight:600;src:url(../../../../../site/assets/fonts/unbounded-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-03FF,U+2000-206F,U+2116,U+2190-21FF}
+@font-face{font-family:Golos;font-weight:400;src:url(../../../../../site/assets/fonts/golos-text-cyrillic-400-normal.woff2) format("woff2");unicode-range:U+0400-04FF}
+@font-face{font-family:Golos;font-weight:400;src:url(../../../../../site/assets/fonts/golos-text-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-03FF,U+2000-206F,U+2116,U+2190-21FF}
+@font-face{font-family:Golos;font-weight:600;src:url(../../../../../site/assets/fonts/golos-text-cyrillic-600-normal.woff2) format("woff2");unicode-range:U+0400-04FF}
+@font-face{font-family:Golos;font-weight:600;src:url(../../../../../site/assets/fonts/golos-text-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-03FF,U+2000-206F,U+2116,U+2190-21FF}
+:root{--bg:#0E1630;--surface:#17224A;--surface-2:#1E2B57;--line:#2B3A70;--text:#F3F1EA;--text-2:#D5D9E6;--text-3:#A9B1C7;--accent:#FFC53D;--sky:#8FC2FF;--on-accent:#0E1630}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1350px;overflow:hidden}
+body{background:linear-gradient(180deg,#17224A 0%,#0E1630 62%);color:var(--text);font-family:Golos,sans-serif;position:relative}
+body::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.10;mix-blend-mode:overlay;
+ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='300' height='300' filter='url(%23n)'/></svg>")}
+.frame{position:absolute;inset:80px;display:flex;flex-direction:column}
+.top{display:flex;justify-content:space-between;align-items:center}
+.logo{font-family:Unbounded;font-weight:800;font-size:40px;letter-spacing:-.02em;display:flex;align-items:center;gap:14px}
+.logo i{width:22px;height:22px;border-radius:50%;background:var(--accent);display:inline-block}
+.label{font-family:Golos;font-weight:600;font-size:28px;letter-spacing:.12em;text-transform:uppercase;color:var(--sky)}
+.h1{font-family:Unbounded;font-weight:800;letter-spacing:-.02em;line-height:1.04}
+.y{color:var(--accent)}
+.lead{font-size:42px;line-height:1.35;color:var(--text-2)}
+.foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;font-size:30px;color:var(--text-3);font-weight:600;letter-spacing:.04em}
+.foot b{color:var(--text)}

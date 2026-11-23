@@ -210,12 +210,12 @@ def zilart_spots():
 
 
 # ---------------------------------------------------------------- синька-чертёж (№4)
-BP_BG = '#123E6E'
-BP = '#EAF2FA'
+BP_BG = '#0B2C7D'
+BP = '#F1F6FF'
 BP_DEFS = f'''<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#FFFFFF" stroke-opacity=".08" stroke-width="1"/></pattern>
 <pattern id="grid5" width="200" height="200" patternUnits="userSpaceOnUse"><path d="M200 0H0V200" fill="none" stroke="#FFFFFF" stroke-opacity=".12" stroke-width="1.4"/></pattern>
 <filter id="paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .5 -.2"/></filter>
-<radialGradient id="bpv" cx="600" cy="450" r="760" gradientUnits="userSpaceOnUse"><stop offset=".5" stop-color="#0A2B52" stop-opacity="0"/><stop offset="1" stop-color="#0A2B52" stop-opacity=".55"/></radialGradient>'''
+<radialGradient id="bpv" cx="600" cy="450" r="760" gradientUnits="userSpaceOnUse"><stop offset=".5" stop-color="#061A55" stop-opacity="0"/><stop offset="1" stop-color="#061A55" stop-opacity=".6"/></radialGradient>'''
 
 
 def bp_bg():
@@ -245,10 +245,10 @@ def vdim(x, y1, y2):
 
 
 def axis(x1, y1, x2, y2):
-    return f'<path d="M{x1} {y1}L{x2} {y2}" stroke="#F2B8A8" stroke-width="1.6" stroke-dasharray="26 8 4 8" opacity=".9"/>'
+    return f'<path d="M{x1} {y1}L{x2} {y2}" stroke="#FFC94A" stroke-width="2" stroke-dasharray="26 8 4 8" opacity=".9"/>'
 
 
-def pencil(d, w=2.2, op=.9, col='#F2B8A8'):
+def pencil(d, w=2.2, op=.95, col='#FFC94A'):
     return f'<path d="{d}" fill="none" stroke="{col}" stroke-width="{w}" stroke-linecap="round" opacity="{op}"/>'
 
 
@@ -525,12 +525,12 @@ def nabor_spots():
 
 
 # ---------------------------------------------------------------- театральная сцена (№6)
-TH_DEFS = '''<linearGradient id="velvet" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3A0812"/><stop offset=".25" stop-color="#7A1728"/><stop offset=".5" stop-color="#4A0C18"/><stop offset=".75" stop-color="#8A1D30"/><stop offset="1" stop-color="#3A0812"/></linearGradient>
+TH_DEFS = '''<linearGradient id="velvet" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5E0A18"/><stop offset=".25" stop-color="#C4182F"/><stop offset=".5" stop-color="#7A0E1F"/><stop offset=".75" stop-color="#D62038"/><stop offset="1" stop-color="#5E0A18"/></linearGradient>
 <pattern id="fold" width="80" height="900" patternUnits="userSpaceOnUse"><rect width="80" height="900" fill="url(#velvet)"/></pattern>
-<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBE3A0"/><stop offset=".45" stop-color="#D4A84B"/><stop offset="1" stop-color="#7C5A1E"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1C4"/><stop offset=".45" stop-color="#E8B84A"/><stop offset="1" stop-color="#9A6A16"/></linearGradient>
 <radialGradient id="spot" cx="600" cy="560" r="420" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFE7B0" stop-opacity=".55"/><stop offset=".6" stop-color="#FFC56E" stop-opacity=".12"/><stop offset="1" stop-color="#FFC56E" stop-opacity="0"/></radialGradient>
-<linearGradient id="back" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0F0A14"/><stop offset="1" stop-color="#22101A"/></linearGradient>
-<pattern id="harl" width="80" height="60" patternUnits="userSpaceOnUse"><path d="M40 0L80 30L40 60L0 30Z" fill="#7A2230"/><path d="M0 0L40 0L0 30Z M80 0L40 0L80 30Z M0 60L40 60L0 30Z M80 60L40 60L80 30Z" fill="#2E4A2E"/><path d="M40 0L80 30L40 60L0 30Z" fill="none" stroke="#C9A24A" stroke-width="1.5" opacity=".7"/></pattern>
+<linearGradient id="back" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#150A22"/><stop offset="1" stop-color="#4A1230"/></linearGradient>
+<pattern id="harl" width="80" height="60" patternUnits="userSpaceOnUse"><path d="M40 0L80 30L40 60L0 30Z" fill="#C4182F"/><path d="M0 0L40 0L0 30Z M80 0L40 0L80 30Z M0 60L40 60L0 30Z M80 60L40 60L80 30Z" fill="#1E7A55"/><path d="M40 0L80 30L40 60L0 30Z" fill="none" stroke="#E8B84A" stroke-width="1.5" opacity=".7"/></pattern>
 <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="5" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .8 0 0 0 .4 -.16"/></filter>'''
 
 
@@ -538,7 +538,7 @@ def th_stage(inner, floor=760):
     s = '<rect width="1200" height="900" fill="url(#back)"/>'
     s += '<rect width="1200" height="900" fill="url(#spot)"/>'
     s += inner
-    s += f'<path d="M0 {floor}H1200V900H0Z" fill="url(#harl)" opacity=".85"/>'
+    s += f'<path d="M0 {floor}H1200V900H0Z" fill="url(#harl)" opacity=".95"/>'
     s += f'<path d="M0 {floor}H1200" stroke="#D4A84B" stroke-width="6"/>'
     # кулисы
     s += '<path d="M0 0H170Q130 300 190 600Q150 760 210 900H0Z" fill="url(#fold)"/>'

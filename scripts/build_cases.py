@@ -29,13 +29,13 @@ FONTS = {  # что нужно первому экрану темы — подг
     'avangard': ['onest-cyrillic-600-normal', 'oswald-cyrillic-700-normal', 'onest-cyrillic-400-normal', 'caveat-cyrillic-700-normal'],
     'gravura': ['pt-serif-cyrillic-700-normal', 'cormorant-garamond-cyrillic-700-normal', 'pt-serif-cyrillic-400-normal', 'caveat-cyrillic-700-normal'],
     'tuman': ['alegreya-sans-cyrillic-700-normal', 'alegreya-cyrillic-700-normal', 'alegreya-sans-cyrillic-400-normal', 'neucha-cyrillic-400-normal'],
-    'chertezh': ['golos-text-cyrillic-700-normal', 'golos-text-cyrillic-400-normal', 'neucha-cyrillic-400-normal'],
+    'chertezh': ['tektur-cyrillic-700-normal', 'golos-text-cyrillic-700-normal', 'golos-text-cyrillic-400-normal', 'neucha-cyrillic-400-normal'],
     'nabor': ['alegreya-cyrillic-700-normal', 'pt-serif-cyrillic-700-normal', 'alegreya-cyrillic-500-normal', 'caveat-cyrillic-700-normal'],
-    'teatr': ['alegreya-sans-cyrillic-700-normal', 'cormorant-garamond-cyrillic-700-normal', 'alegreya-sans-cyrillic-400-normal', 'caveat-cyrillic-700-normal'],
+    'teatr': ['yeseva-one-cyrillic-400-normal', 'philosopher-cyrillic-700-normal', 'philosopher-cyrillic-400-normal', 'caveat-cyrillic-700-normal'],
     'otkrytka': ['onest-cyrillic-600-normal', 'alegreya-cyrillic-500-italic', 'onest-cyrillic-400-normal', 'caveat-cyrillic-700-normal'],
 }
-THEME_COLOR = {'avangard': '#141414', 'gravura': '#EFE2C4', 'tuman': '#17201C', 'chertezh': '#123E6E',
-               'nabor': '#F1E6CF', 'teatr': '#170A10', 'otkrytka': '#F4EBD9'}
+THEME_COLOR = {'avangard': '#141414', 'gravura': '#EFE2C4', 'tuman': '#17201C', 'chertezh': '#061A55',
+               'nabor': '#F1E6CF', 'teatr': '#12050B', 'otkrytka': '#F4EBD9'}
 
 KICKERS = {  # рукописные названия блоков — одинаковые на всех делах
     'story': 'сюжет', 'cast': 'кто ведёт дело', 'spots': 'что увидите', 'learn': 'что узнаете по дороге',
@@ -47,8 +47,8 @@ STATUS = {'soon': 'Скоро в продаже', 'dev': 'В разработк�
 ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 ARROW_L = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H6M11 6.5 5.5 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 TG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.5 3.6 2.9 10.8c-1.3.5-1.3 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM8.8 13.4l9.6-6c.5-.3.9-.1.5.2l-8 7.3-.3 3.4-1.8-4.9z" fill="currentColor"/></svg>'
-LOGO = ('<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M9 44V23a15 15 0 0 1 30 0v21" fill="none" stroke="#F2EFE8" stroke-width="5"/>'
-        '<path d="M17 44V26a7 7 0 0 1 14 0v18" fill="none" stroke="#F2EFE8" stroke-width="2.5"/><path class="logo-light" d="M24 27.5l6 10.5H18z" fill="#E1251B"/></svg>')
+# Знак «Д-арка» (23.11): буква Д, просвет — арка во двор. Цвет Д — цвет текста темы, свет в арке — акцент темы (case.css).
+LOGO = ('<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path class="logo-d" fill="currentColor" fill-rule="evenodd" d="M16 4H40V34H45V46H38.5V40H9.5V46H3V34H10ZM20 34V20a6.5 6.5 0 0 1 13 0V34Z"/><path class="logo-light" d="M20 34V20a6.5 6.5 0 0 1 13 0V34Z" fill="#E1251B"/></svg>')
 
 
 def esc(s):
@@ -109,6 +109,7 @@ def head(c):
 <link rel="canonical" href="{url}">
 <meta name="theme-color" content="{THEME_COLOR[c['theme']]}">
 <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Дворами">
@@ -326,7 +327,7 @@ def body(c):
 
 <footer class="site-footer">
   <div class="wrap">
-    <a class="logo" href="../../" aria-label="Дворами — на главную">{LOGO.replace(' class="logo-light"', '')}<span>ДВОРАМИ</span></a>
+    <a class="logo" href="../../" aria-label="Дворами — на главную">{LOGO}<span>ДВОРАМИ</span></a>
     <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../#faq">Вопросы</a><a href="../../#reviews">Отзывы</a><a data-tg="channel" href="{TG}" target="_blank" rel="noopener">Telegram-канал @dvorami_quest</a></nav>
   </div>
 </footer>

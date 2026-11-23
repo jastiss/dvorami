@@ -1,0 +1,48 @@
+name: Канал — публикация постов
+
+# Публикует в @dvorami_quest посты из docs/marketing/channel/posts/ со status: approved,
+# у которых наступили date + time (МСК). После отправки коммитит status: published + message_id.
+# Токен — PLAYER_BOT_TOKEN (@dvorami_bot должен быть админом канала с правом «Публикация сообщений»).
+# Пока секрета нет или одобренных постов нет — скрипт ничего не делает и ничего не коммитит.
+on:
+  schedule:
+    - cron: "7 * * * *"   # раз в час, в :07 UTC (= :07 МСК, сдвиг ровно 3 часа)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Только показать, что ушло бы (ничего не отправлять)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: channel-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Опубликовать одобренные посты
+        env:
+          PLAYER_BOT_TOKEN: ${{ secrets.PLAYER_BOT_TOKEN }}
+          CHANNEL_ID: "@dvorami_quest"
+        run: python3 scripts/channel_post.py ${{ inputs.dry_run && '--dry-run' || '' }}
+      - name: Сохранить статусы в репозиторий
+        if: always()
+        run: |
+          p=docs/marketing/channel/posts
+          if [ -z "$(git status --porcelain -- $p)" ]; then exit 0; fi
+          git config user.name "dvorami-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- $p
+          git commit -m "Канал: опубликован пост"
+          for i in 1 2 3; do
+            git pull --rebase && git push && exit 0
+            sleep 5
+          done
+          exit 1

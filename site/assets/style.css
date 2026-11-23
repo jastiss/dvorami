@@ -96,8 +96,15 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 .logo:hover { color: var(--text); }
 .logo svg { width: 34px; height: 34px; flex: none; transition: transform .3s ease; }
 .logo:hover svg { transform: translateY(-2px) scale(1.06); }
-.logo .logo-light { transition: transform .4s ease; transform-origin: 24px 33px; }
-.logo:hover .logo-light { transform: scale(1.35); }
+.logo .logo-light { transition: filter .4s ease; }
+.logo:hover .logo-light { filter: brightness(1.18) drop-shadow(0 0 3px currentColor); }
+/* Сборка знака при загрузке: буква встаёт на ножки, потом в арке загорается свет */
+@media (prefers-reduced-motion: no-preference) {
+  .site-header .logo .logo-d { animation: logo-rise .7s cubic-bezier(.2,.9,.3,1.2) both; transform-origin: 24px 46px; }
+  .site-header .logo .logo-light { animation: logo-lit .6s .55s both; transform-origin: 26.5px 27px; }
+  @keyframes logo-rise { from { transform: translateY(10px) scaleY(.55); opacity: 0; } }
+  @keyframes logo-lit { from { opacity: 0; transform: scale(.3); } }
+}
 
 /* ---------- Шапка ---------- */
 .site-header { position: relative; z-index: 3; }
