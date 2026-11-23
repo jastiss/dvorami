@@ -12,7 +12,10 @@
 Канал задаётся CHANNEL_CHAT_ID (по умолчанию @dvorami_quest).
 
 Frontmatter:
-    date: 2026-11-25          # дата публикации (МСК)
+    rubric: Вопрос             # рубрика из docs/marketing/content-plan.md (обязательно)
+    visual: без картинки       # что за картинка и откуда, или «без картинки» (обязательно)
+    slot: Н1 чт                # место в сетке плана; date ставится при одобрении
+    date: 2026-11-25          # дата публикации (МСК); у draft может не быть
     time: "19:30"             # время МСК, 24ч
     status: draft|approved|published
     image: img/001-...png     # относительно папки поста; нет — пост текстом
@@ -24,7 +27,8 @@ Frontmatter:
 Тело после второго '---' — HTML-подпись/текст (Telegram-HTML).
 
 Флаги:
-    --check     проверить все draft/approved посты (разметка, длина, картинка, спойлеры) и выйти
+    --check     проверить все draft/approved посты (разметка, длина, картинка, спойлеры,
+                рубрика и визуал, признаки машинного текста) и выйти
     --dry-run   показать, что было бы опубликовано, без отправки
 Запуск в CI — без флагов: публикует один готовый пост.
 
@@ -83,7 +87,7 @@ def dump(path, meta, body, order):
     pathlib.Path(path).write_text("\n".join(lines) + "\n" + body + "\n", encoding="utf-8")
 
 
-FM_ORDER = ["date", "time", "status", "image", "message_id",
+FM_ORDER = ["rubric", "slot", "date", "time", "status", "image", "visual", "message_id",
             "poll_question", "poll_options", "poll_multiple"]
 
 
@@ -123,6 +127,39 @@ def spoiler_terms():
                     walk(vv)
         walk(q)
     return terms
+
+
+# Признаки машинного текста — docs/marketing/tone-of-voice.md, «Признаки машинного текста».
+# Здесь только то, что ловится механически; остальное по списку проверяет человек.
+AI_STAMPS = [
+    r"давайте\s+(разбер|посмотр|вспомн|узна)", r"представьте", r"\bименно\b", r"а вы знали", r"знаете ли вы", r"оказывается",
+    r"в мире, где", r"не просто\b", r"больше,? чем просто", r"стоит отметить", r"важно понимать",
+    r"подпишитесь,? чтобы", r"не пропустит", r"а что думаете вы", r"делитесь в комментариях",
+    r"уникальн", r"невероятн", r"удивительн", r"легендарн", r"по-настоящему", r"погрузит",
+    r"незабываем", r"мало кто знает", r"является", r"в рамках", r"данн(ый|ая|ое|ые)\b",
+]
+EMOJI_RE = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F]")
+MAX_DASHES = 3      # длинных тире на пост
+MAX_QUESTIONS = 1   # вопросительных знаков на пост
+
+
+def check_style(body):
+    """Механическая часть проверки на «нейросетевой» стиль. Возвращает список ошибок."""
+    errs = []
+    text = re.sub(r"<[^>]+>", "", body)
+    low = text.lower()
+    hits = [m.group(0) for p in AI_STAMPS for m in [re.search(p, low)] if m]
+    if hits:
+        errs.append("штампы машинного текста: " + ", ".join(hits))
+    if "!" in text:
+        errs.append("восклицательный знак")
+    if EMOJI_RE.search(text):
+        errs.append("эмодзи в тексте поста")
+    if text.count("—") > MAX_DASHES:
+        errs.append(f"длинных тире {text.count('—')} > {MAX_DASHES}")
+    if text.count("?") > MAX_QUESTIONS:
+        errs.append(f"вопросительных знаков {text.count('?')} > {MAX_QUESTIONS}")
+    return errs
 
 
 def check_html(s):
@@ -169,13 +206,23 @@ def check_post(path, terms):
         if not 2 <= len(opts) <= 10:
             errs.append("в опросе должно быть 2–10 вариантов (poll_options через |)")
     else:
-        limit = CAPTION_LIMIT if img else TEXT_LIMIT
+        # Картинка запланирована (visual не «без картинки»), но файла ещё нет — длину всё равно
+        # считаем как у подписи, чтобы текст не пришлось резать, когда картинка появится.
+        planned_img = "без картинки" not in meta.get("visual", "без картинки").lower()
+        limit = CAPTION_LIMIT if (img or planned_img) else TEXT_LIMIT
         vl = visible_len(body)
         if not body.strip():
             errs.append("пустой текст поста")
         if vl > limit:
             errs.append(f"текст {vl} символов > лимита {limit}")
         errs += check_html(body)
+        errs += check_style(body)
+
+    for key in ("rubric", "visual"):
+        if not meta.get(key):
+            errs.append(f"нет поля {key} (рубрика и визуал обязательны; визуал может быть «без картинки»)")
+    if img and "без картинки" in meta.get("visual", "").lower():
+        errs.append("visual: «без картинки», но указано поле image")
 
     if img:
         p = (POSTS.parent / img).resolve()
@@ -190,9 +237,10 @@ def check_post(path, terms):
 
     if status not in ("draft", "approved", "published"):
         warns.append(f"неизвестный status: {status}")
-    for key in ("date", "time"):
-        if not meta.get(key):
-            warns.append(f"нет поля {key}")
+    if not meta.get("time"):
+        warns.append("нет поля time")
+    if not meta.get("date") and status != "draft":
+        errs.append("нет поля date (у draft допустимо, у approved обязательно)")
     return errs, warns
 
 
