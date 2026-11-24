@@ -4,7 +4,7 @@
 
 | Дело | Документ | Источник в репо |
 |---|---|---|
-| №1 ЗИЛАРТ | [режиссёрский сценарий v3.1](https://docs.google.com/document/d/1w3wYEnV8_iLPlX6rBEomw38DKvHJ2sAoa7lIjCDMnrk/edit) (в корне Drive) | quests/zilart/story/screenplay.md |
+| №1 ЗИЛАРТ | **v5 (25.11):** [1. Сценарий](https://docs.google.com/document/d/1Rw_YQ1IgHAIRYPSViJgd0Mp3k4RsYxeSuGlS-4xFa88/edit) · [2. Точки маршрута](https://docs.google.com/document/d/1PKgor0Ky9mVqjoXY8axmLR70Nvig9c-AxPBafyRBlmM/edit) · [3. Загадки и ответы](https://docs.google.com/document/d/1QOC03HIAU6tfNSznW79cscja-K0fmPDS6EfmHEQLodo/edit) (старый v3.1 с комментариями владельца — [здесь](https://docs.google.com/document/d/1w3wYEnV8_iLPlX6rBEomw38DKvHJ2sAoa7lIjCDMnrk/edit)) | quests/zilart/story/v5/screenplay-v5.md, owner-route.md, owner-riddles.md |
 | №2 Чистые пруды | [набросок v0](https://docs.google.com/document/d/1kJdaiOEUQXrPavVsYdyd_gTtt3YtJYoy_mnjcDBqv-E/edit) | quests/chistye-prudy/story/draft-v0.md |
 | №3 Коломенское | [набросок v0](https://docs.google.com/document/d/1r5kJDCcFFAzr48tWhZoCK2T9G-3EHKW4AQUm_7X4wCI/edit) | quests/kolomenskoe/story/draft-v0.md |
 | №4 Красная площадь | [сценарий v2](https://docs.google.com/document/d/1mCrQgDId-Hgpcvy7w-6-_JJBea9chLp6yOQtHDq9nkg/edit) (v1 — [старый](https://docs.google.com/document/d/1QbwQWKQJQOxyLSJTQwL75HWQZrIBiYfec1acdPqbj7c/edit)) | quests/krasnaya-ploshchad/story/scenario-v2.md |
