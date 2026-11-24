@@ -1,13 +1,5 @@
 {
- "dialogs": {
-  "e66e33384f83b6ad": {
-   "data": {},
-   "flow": "review",
-   "sid": 2,
-   "step": "rating",
-   "ts": 1795477444.1337779,
-   "user": "e66e33384f83b6ad"
-  }
- },
- "seq": 2
+ "dialogs": {},
+ "reminders": [],
+ "seq": 5
 }
