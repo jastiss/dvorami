@@ -29,10 +29,11 @@ jobs:
         run: python3 scripts/telegram_inbox.py
       - name: Сохранить в репозиторий
         run: |
-          if [ -z "$(git status --porcelain -- DIRECTIVES.md .telegram/offset)" ]; then exit 0; fi
+          if [ -z "$(git status --porcelain -- DIRECTIVES.md .telegram/offset inbox)" ]; then exit 0; fi
           git config user.name "dvorami-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add DIRECTIVES.md .telegram/offset
+          [ -d inbox ] && git add inbox
           git commit -m "Telegram: указания владельца"
           for i in 1 2 3; do
             git pull --rebase && git push && exit 0

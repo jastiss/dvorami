@@ -2,6 +2,8 @@ name: Telegram — аватарки канала и бота
 # Ручной запуск. Канал — avatar-channel.png, бот — avatar-bot.png (docs/marketing/channel/).
 on:
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   set:
     runs-on: ubuntu-latest

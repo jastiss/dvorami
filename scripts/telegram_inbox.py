@@ -9,6 +9,7 @@ import os
 import pathlib
 import re
 import sys
+import urllib.request
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -81,6 +82,33 @@ def format_entry(ts, body):
 
 
 RUN_FLAG = ROOT / ".telegram" / "run-requested"
+INBOX = ROOT / "inbox"
+MAX_FILE = 10 * 1024 * 1024  # больше — не кладём в репозиторий, просим ссылку
+
+
+def save_attachment(token, msg, ts):
+    """Файл/фото из сообщения владельца — в inbox/; возвращает строку для DIRECTIVES.md или ошибку."""
+    if msg.get("document"):
+        d = msg["document"]
+        fid, size = d["file_id"], d.get("file_size", 0)
+        name = d.get("file_name") or "file"
+    elif msg.get("photo"):
+        ph = msg["photo"][-1]
+        fid, size, name = ph["file_id"], ph.get("file_size", 0), "photo.jpg"
+    else:
+        return None, None
+    if size and size > MAX_FILE:
+        return None, "Файл больше 10 МБ — пришлите ссылку (Google Drive) текстом."
+    r = tg.call(token, "getFile", {"file_id": fid})
+    if not r.get("ok"):
+        return None, "Не смог скачать файл — пришлите ещё раз."
+    safe = re.sub(r"[^\w.\-]+", "_", name, flags=re.U).strip("._") or "file"
+    dest = INBOX / f"{ts[:10]}-{ts[11:13]}{ts[14:16]}-{safe}"
+    INBOX.mkdir(exist_ok=True)
+    url = f"https://api.telegram.org/file/bot{token}/{r['result']['file_path']}"
+    with urllib.request.urlopen(url, timeout=60) as resp:
+        dest.write_bytes(resp.read())
+    return f"[файл: {dest.relative_to(ROOT)}]", None
 
 
 def is_run(text):
@@ -120,6 +148,18 @@ def main():
             continue  # чужие чаты игнорируем
         text = (msg.get("text") or msg.get("caption") or "").strip()
         mid = msg.get("message_id")
+        if msg.get("document") or msg.get("photo"):
+            ts = datetime.datetime.fromtimestamp(msg.get("date", 0), MSK).strftime("%Y-%m-%d %H:%M")
+            ref, err = save_attachment(token, msg, ts)
+            if err:
+                entries.append(format_entry(ts, (text + "\n" if text else "") + f"[файл не сохранён: {err}]"))
+                tg.send(token, chat_id, err, reply_to=mid, reply_markup=NO_KB)
+            else:
+                entries.append(format_entry(ts, (text + "\n" if text else "") + ref))
+                tg.send(token, chat_id, "📎 Файл сохранил, команда изучит в следующей итерации. "
+                        "Репозиторий публичный: приватное лучше присылать ссылкой с доступом по приглашению.",
+                        reply_to=mid, reply_markup=NO_KB)
+            continue
         if not text:
             tg.send(token, chat_id, "Пока понимаю только текст.", reply_to=mid, reply_markup=NO_KB)
             continue

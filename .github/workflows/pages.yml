@@ -11,6 +11,7 @@ on:
       - "quests/**/quest.json"
       - "quests/**/codes.json"
       - "scripts/codes.py"
+      - "scripts/player_check.js"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -44,6 +45,22 @@ jobs:
           python-version: "3.12"
       - name: Пакет для шифрования (cryptography)
         run: python -m pip install --quiet cryptography
+      # T-63 (H-10): прохождение дела целиком в настоящем плеере (3 ширины × 2 темы, экран кода, тестовые коды на лету).
+      # Красный тест — сборка падает, стенд не обновляется (остаётся прежняя рабочая версия).
+      # Идёт ДО шифрования: проверяет исходный site/ и quests/<id>/quest.json, мастер-код ему не нужен.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright + Chromium для автотеста плеера
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Автотест плеера (player_check) — красный блокирует выкладку
+        run: |
+          for d in site/play/*/; do
+            id=$(basename "$d")
+            if [ -f "quests/$id/quest.json" ]; then node scripts/player_check.js --quest="$id"; fi
+          done
       - name: Дела для плеера — зашифрованы кодом доступа
         env:
           QUEST_MASTER_CODE: ${{ secrets.QUEST_MASTER_CODE }}

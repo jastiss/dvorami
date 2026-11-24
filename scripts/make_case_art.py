@@ -114,27 +114,51 @@ def zilart_spots():
     save('zilart-hares', 'ЗИЛАРТ: дом с белыми зайцами',
          'Кирпичный фасад дома в синий час, по нему рядами идут белые маски зайцев с длинными ушами; рядом высокие дома с тёплыми окнами, у фасада гуляют взрослый с ребёнком, горят фонари.', body, BH_DEFS)
 
-    # 2. Рыжий навес
+    # 2. Пергола в парке «Тюфелева роща» — по натуре (фото апреля 2025): низкая плоская лента-кровля
+    #    на наклонных V-опорах петляет по парку между газонами и молодыми берёзами
     body = bh_sky(12)
-    body += bh_tower(80, 360, 120, 300, 5) + bh_tower(220, 420, 100, 240, 6) + bh_tower(930, 330, 130, 330, 7) + bh_tower(1080, 380, 100, 280, 8)
-    body += '<path d="M0 640Q300 600 600 630T1200 620V900H0Z" fill="#1B3A3A"/>'
-    body += '<path d="M0 700Q400 660 700 690T1200 680V900H0Z" fill="url(#gnd)"/>'
-    beams = []
-    for i in range(10):
-        t = i / 9
-        x = 120 + t * 640 - t * t * 160
-        top = 210 + t * 190
-        bot = 830 - t * 170
-        wdt = 34 - t * 24
-        beams.append(f'<rect x="{x:.0f}" y="{top:.0f}" width="{wdt:.0f}" height="{bot-top:.0f}" fill="url(#rust)"/>')
-    body += ''.join(beams)
-    body += '<path d="M90 200L700 395L712 410L100 236Z" fill="url(#rust)"/>'
-    body += '<path d="M90 236L700 410" stroke="#2A140B" stroke-width="3" opacity=".5"/>'
-    body += bh_lamp(860, 760, 160) + bh_lamp(1010, 740, 150)
-    body += '<g opacity=".9">' + bh_person(430, 812) + bh_person(470, 816, child=True) + bh_person(980, 760, .8) + '</g>'
+    body += bh_tower(60, 330, 110, 320, 5) + bh_tower(180, 250, 120, 400, 6) + bh_tower(330, 390, 90, 260, 7) + bh_tower(1040, 400, 120, 250, 8)
+    body += '<path d="M0 640Q300 610 600 628T1200 618V900H0Z" fill="#1B3A3A"/>'
+    body += '<path d="M0 700Q380 668 700 694T1200 690V900H0Z" fill="#16302F"/>'
+    body += '<path d="M1200 900L760 900Q560 760 300 690Q250 676 150 668L170 660Q330 668 420 690Q760 760 1200 800Z" fill="url(#gnd)"/>'
+
+    def perg(t):
+        sc = 1 / (1 + 6.5 * t)
+        x = 1090 - 930 * t ** .72 + 520 * t ** 3
+        yg = 652 + 196 * sc
+        return x, yg, sc
+    st = [perg(i / 13) for i in range(14)]
+    far, near = [], []
+    for x, yg, sc in st:
+        far.append((x - 78 * sc, yg - 318 * sc))
+        near.append((x + 96 * sc, yg - 300 * sc))
+    roof_under = 'M' + 'L'.join(f'{x:.0f} {y:.0f}' for x, y in far) + 'L' + 'L'.join(f'{x:.0f} {y:.0f}' for x, y in reversed(near)) + 'Z'
+    edge = 'M' + 'L'.join(f'{x:.0f} {y:.0f}' for x, y in near) + 'L' + 'L'.join(f'{x:.0f} {y + 30 * sc:.0f}' for (x, y), (_, _, sc) in reversed(list(zip(near, st)))) + 'Z'
+    legs, slats = [], []
+    for i, (x, yg, sc) in reversed(list(enumerate(st))):
+        w = max(2.2, 15 * sc)
+        top = yg - 300 * sc
+        legs.append(f'<path d="M{x - 16 * sc:.0f} {yg:.0f}L{x - 70 * sc:.0f} {top:.0f}M{x + 16 * sc:.0f} {yg:.0f}L{x + 84 * sc:.0f} {top:.0f}" stroke="url(#rust)" stroke-width="{w:.1f}" stroke-linecap="round"/>')
+        if i < 13:
+            (fx, fy), (nx, ny) = far[i], near[i]
+            (fx2, fy2), (nx2, ny2) = far[i + 1], near[i + 1]
+            for k in (0.0, .34, .67):
+                slats.append(f'<path d="M{fx + (fx2 - fx) * k:.0f} {fy + (fy2 - fy) * k:.0f}L{nx + (nx2 - nx) * k:.0f} {ny + (ny2 - ny) * k:.0f}"/>')
+    body += f'<path d="{roof_under}" fill="#3A1B10"/>'
+    body += '<g stroke="#8E3F1D" stroke-width="3" opacity=".75">' + ''.join(slats) + '</g>'
+    body += ''.join(legs)
+    body += f'<path d="{edge}" fill="url(#rust)"/>'
+    body += f'<path d="M' + 'L'.join(f'{x:.0f} {y:.0f}' for x, y in near) + '" fill="none" stroke="#F0A26B" stroke-width="2.5" opacity=".55"/>'
+    birches = []
+    for bx, by, bh in [(520, 700, 150), (640, 716, 190), (236, 664, 70), (980, 668, 110)]:
+        birches.append(f'<rect x="{bx}" y="{by - bh}" width="{max(4, bh // 22)}" height="{bh}" fill="#E8E4DA"/>'
+                       f'<ellipse cx="{bx + 3}" cy="{by - bh}" rx="{bh * .26:.0f}" ry="{bh * .42:.0f}" fill="#22463F" opacity=".92"/>')
+    body += ''.join(birches)
+    body += bh_lamp(420, 700, 120) + bh_lamp(860, 742, 150)
+    body += '<g opacity=".9">' + bh_person(700, 842) + bh_person(738, 846, child=True) + bh_person(352, 700, .45) + '</g>'
     body += bh_finish()
-    save('zilart-pergola', 'ЗИЛАРТ: рыжий навес в парке',
-         'Длинный навес из рыжего металла уходит вдаль ровным рядом опор и балок, вокруг вечерний парк, за деревьями дома с тёплыми окнами, по дорожке идут взрослый с ребёнком.', body, BH_DEFS)
+    save('zilart-pergola', 'ЗИЛАРТ: пергола в парке «Тюфелева роща»',
+         'Вечерний парк: длинная пергола из рыжего металла на наклонных опорах лентой уходит вдаль и петляет между газонами и берёзами, за ней дома с тёплыми окнами, по дорожке идут взрослый с ребёнком.', body, BH_DEFS)
 
     # 3. Кружевной грузовик
     body = bh_sky(13)
@@ -159,24 +183,35 @@ def zilart_spots():
     save('zilart-truck', 'ЗИЛАРТ: кружевной грузовик у музея',
          'Вечер у музея: перед медным фасадом с рядами светящихся окон стоит грузовик-самосвал в натуральную величину, весь сквозной, будто вырезанный из кружева стрельчатых арок; рядом взрослый и ребёнок.', body, BH_DEFS)
 
-    # 4. Пресс у музея
+    # 4. Пресс у музея — тип станка: двухстоечный кривошипный пресс (станина, две стойки, траверса
+    #    с приводом, ползун). Портретного сходства нет: натуру не видели, табличку не рисуем (ответ загадки)
     body = bh_sky(14)
-    body += '<path d="M640 220H1180V680H640Z" fill="#7A5232"/>' + bh_windows(660, 250, 500, 400, 6, 4, 4, on=.65, cw=52, ch=60, base='#4B3520')
-    body += bh_tower(20, 360, 150, 300, 12)
+    body += '<path d="M700 200H1200V680H700Z" fill="#7A5232"/><path d="M700 200H1200V222H700Z" fill="#A9743F"/>'
+    body += bh_windows(720, 250, 470, 400, 5, 4, 4, on=.6, cw=58, ch=64, base='#4B3520')
+    body += bh_tower(0, 380, 130, 290, 12)
     body += '<path d="M0 660H1200V900H0Z" fill="url(#gnd)"/>'
-    body += '<rect x="170" y="680" width="520" height="40" fill="#2A3466"/>'
-    body += '<g fill="#3E4A6E" stroke="#0B1130" stroke-width="4">'
-    body += '<rect x="420" y="250" width="170" height="430"/><rect x="380" y="610" width="250" height="70"/><rect x="400" y="230" width="210" height="60"/>'
+    body += '<ellipse cx="400" cy="800" rx="330" ry="30" fill="#000" opacity=".35"/>'
+    body += '<path d="M150 770H650V800H150Z" fill="#2A3466"/><path d="M150 770H650" stroke="#56628F" stroke-width="3"/>'
+    body += '<g stroke="#0B1130" stroke-width="4" stroke-linejoin="round">'
+    body += '<path d="M205 640H595V770H205Z" fill="#3A4A6B"/>'                                   # станина
+    body += '<path d="M225 300H305V640H225Z" fill="#46587C"/><path d="M495 300H575V640H495Z" fill="#3E4F72"/>'  # стойки
+    body += '<path d="M190 150H610V300H190Z" fill="#46587C"/>'                                   # траверса
+    body += '<path d="M305 420H495V540H305Z" fill="#56688E"/>'                                   # ползун
+    body += '<path d="M325 540H475V572H325Z" fill="#2C3A5A"/>'                                   # штамп
+    body += '<path d="M290 604H510V640H290Z" fill="#2C3A5A"/>'                                   # плита стола
     body += '</g>'
-    body += '<circle cx="300" cy="400" r="150" fill="#2C355A" stroke="#0B1130" stroke-width="6"/>'
-    body += '<circle cx="300" cy="400" r="120" fill="none" stroke="#56628F" stroke-width="10"/>'
-    body += '<g stroke="#56628F" stroke-width="12">' + ''.join(f'<path d="M300 400L{300+115*math.cos(a):.0f} {400+115*math.sin(a):.0f}"/>' for a in [i * math.pi / 3 for i in range(6)]) + '</g>'
-    body += '<circle cx="300" cy="400" r="30" fill="#0B1130"/><path d="M300 400L470 330" stroke="#0B1130" stroke-width="16"/>'
-    body += '<path d="M420 250H590" stroke="#FFC27A" stroke-width="3" opacity=".6"/><path d="M160 300a150 150 0 0 1 120 -48" stroke="#FFC27A" stroke-width="4" fill="none" opacity=".6"/>'
-    body += bh_lamp(740, 760, 160)
-    body += '<g opacity=".9">' + bh_person(860, 790) + bh_person(900, 794, child=True) + '</g>' + bh_finish()
+    body += '<g fill="none" stroke="#0B1130" stroke-width="4"><path d="M345 300V420M455 300V420"/><path d="M400 300V420" stroke-width="14" stroke="#2C3A5A"/></g>'  # шатуны
+    body += '<path d="M305 420V540M495 420V540" stroke="#8FA0C2" stroke-width="5"/>'              # направляющие
+    body += '<g stroke="#0B1130" stroke-width="4"><circle cx="632" cy="225" r="88" fill="#3A4A6B"/><circle cx="632" cy="225" r="60" fill="none" stroke="#56688E" stroke-width="8"/><circle cx="632" cy="225" r="16" fill="#0B1130"/></g>'  # кожух привода
+    body += '<g fill="#2C3A5A" stroke="#0B1130" stroke-width="3">' + ''.join(f'<rect x="{x}" y="128" width="34" height="24"/>' for x in (212, 286, 480, 554)) + '</g>'  # гайки стяжек
+    body += '<g fill="none" stroke="#8FA0C2" stroke-width="3" opacity=".8"><path d="M190 112H520M190 112V150M270 112V150M350 112V150M430 112V150M520 112V150"/></g>'  # ограждение наверху
+    body += '<g fill="#2C3A5A">' + ''.join(f'<circle cx="{x}" cy="{y}" r="5"/>' for x in (240, 290, 510, 560) for y in (330, 470, 610)) + '</g>'
+    body += '<path d="M192 152H608" stroke="#FFC27A" stroke-width="3" opacity=".55"/><path d="M227 302V638" stroke="#FFC27A" stroke-width="3" opacity=".35"/>'
+    body += '<path d="M207 700H593" stroke="#0B1130" stroke-width="3" opacity=".6"/>'
+    body += bh_lamp(790, 770, 170)
+    body += '<g opacity=".9">' + bh_person(700, 820, 1.25) + bh_person(748, 826, 1.25, child=True) + '</g>' + bh_finish()
     save('zilart-press', 'ЗИЛАРТ: заводской пресс у музея',
-         'Огромный заводской станок с маховиком стоит на постаменте перед медным зданием музея со светящимися окнами; рядом фонарь и прохожие.', body, BH_DEFS)
+         'Высокий заводской пресс — станина, две стойки и тяжёлая верхняя балка с приводом — стоит на площадке перед медным зданием музея со светящимися окнами; рядом фонарь и прохожие, станок выше их в несколько раз.', body, BH_DEFS)
 
     # 5. Пруд в роще
     body = bh_sky(15)
@@ -196,17 +231,46 @@ def zilart_spots():
     save('zilart-pond', 'ЗИЛАРТ: пруд в парке',
          'Вечерний пруд среди холмов парка: в воде отражается сумеречное небо, на берегу берёзы, вдали дома с тёплыми окнами, по дорожке идут взрослый с ребёнком.', body, BH_DEFS)
 
-    # 6. Золотая арка
+    # 6. Золотая арка — проход сквозь дом с набережной во двор (высота около 22 м); золотая облицовка
+    #    изогнута в двух направлениях: проём раскрывается наружу. Не отдельно стоящая арка.
     body = bh_sky(16)
-    body += bh_tower(40, 300, 170, 360, 31) + bh_tower(230, 360, 140, 300, 32) + bh_tower(830, 320, 150, 340, 33) + bh_tower(1000, 280, 180, 380, 34)
-    body += '<path d="M0 650H1200V900H0Z" fill="url(#gnd)"/>'
-    body += '<path d="M380 760V430C380 250 600 220 600 380C600 220 820 250 820 430V760" fill="none" stroke="url(#gold)" stroke-width="54"/>'
-    body += '<path d="M380 760V430C380 250 600 220 600 380" fill="none" stroke="#FFF1C9" stroke-width="6" opacity=".5"/>'
-    body += '<ellipse cx="600" cy="780" rx="300" ry="26" fill="#FFC27A" opacity=".18"/>'
-    body += bh_lamp(300, 790, 160) + bh_lamp(900, 790, 160)
-    body += '<g opacity=".9">' + bh_person(560, 830) + bh_person(596, 834, child=True) + bh_person(1060, 800, .85) + '</g>' + bh_finish()
+    body += bh_tower(0, 420, 90, 260, 31) + bh_tower(1110, 400, 90, 280, 34)
+    body += '<path d="M90 110H1110V790H90Z" fill="#5E2E24"/>'
+    body += '<g stroke="#4D251D" stroke-width="2">' + ''.join(f'<path d="M90 {y}H1110"/>' for y in range(128, 790, 22)) + '</g>'
+    wins = []
+    r = random.Random(61)
+    for row in range(8):
+        for col in range(12):
+            wx, wy = 122 + col * 82, 140 + row * 80
+            if 330 < wx + 20 < 870 and wy > 180:
+                continue
+            lit = r.random() < .5
+            wins.append(f'<rect x="{wx}" y="{wy}" width="40" height="52" fill="{r.choice(["#FFC53D", "#FFD56E", "#FFB347"]) if lit else "#2B2440"}" opacity=".9"/>')
+    body += ''.join(wins)
+    body += '<clipPath id="arch-o"><path d="M350 790V470C350 300 462 200 600 200C738 200 850 300 850 470V790Z"/></clipPath>'
+    body += '<path d="M350 790V470C350 300 462 200 600 200C738 200 850 300 850 470V790Z" fill="url(#gold)"/>'
+    body += '<g clip-path="url(#arch-o)">'
+    body += '<path d="M470 790V520C470 420 540 350 640 350C730 350 790 420 790 520V790Z" fill="url(#sky)"/>'
+    body += '<path d="M470 790V520C470 420 540 350 640 350C730 350 790 420 790 520V790Z" fill="url(#zar)"/>'
+    body += '<rect x="520" y="560" width="70" height="230" fill="#3A4677"/>' + bh_windows(520, 566, 70, 210, 2, 5, 71) + '<rect x="660" y="600" width="90" height="190" fill="#333F70"/>' + bh_windows(660, 606, 90, 170, 3, 4, 72)
+    body += '<g fill="none" stroke="#8E6420" stroke-width="2.5" opacity=".65">'
+    for k in (.25, .5, .75):
+        x1, x2 = 350 + 120 * k, 850 - 60 * k
+        top = 200 + 150 * k
+        cy = 470 + 50 * k
+        body += f'<path d="M{x1:.0f} 790V{cy:.0f}C{x1:.0f} {cy - (cy - top) * .63:.0f} {x1 + (x2 - x1) * .22:.0f} {top:.0f} {(x1 + x2) / 2 + 20 * k:.0f} {top:.0f}C{x2 - (x2 - x1) * .22:.0f} {top:.0f} {x2:.0f} {cy - (cy - top) * .63:.0f} {x2:.0f} {cy:.0f}V790"/>'
+    for (ax, ay), (bx, by) in [((350, 640), (470, 660)), ((350, 500), (470, 540)), ((382, 360), (492, 440)), ((470, 252), (552, 372)), ((600, 200), (640, 350)), ((730, 252), (722, 372)), ((818, 360), (774, 440)), ((850, 500), (790, 540)), ((850, 640), (790, 660))]:
+        body += f'<path d="M{ax} {ay}L{bx} {by}"/>'
+    body += '</g>'
+    body += '<path d="M350 790V470C350 300 462 200 600 200" fill="none" stroke="#FFF1C9" stroke-width="7" opacity=".55"/>'
+    body += '<path d="M850 470V790H790V520C790 470 776 430 752 400C810 400 850 430 850 470Z" fill="#5A3A0E" opacity=".35"/>'
+    body += '</g>'
+    body += '<path d="M0 790H1200V900H0Z" fill="url(#gnd)"/>'
+    body += '<path d="M470 790H790L850 900H350Z" fill="#FFC27A" opacity=".14"/>'
+    body += bh_lamp(230, 840, 150) + bh_lamp(980, 840, 150)
+    body += '<g opacity=".9">' + bh_person(600, 820, .8) + bh_person(628, 823, .8, child=True) + bh_person(1050, 850, .9) + '</g>' + bh_finish()
     save('zilart-arch', 'ЗИЛАРТ: золотая арка',
-         'Вечерний двор нового квартала: посередине стоит высокая золотая арка с двойным изгибом, вокруг дома с тёплыми окнами и фонари, под аркой взрослый с ребёнком.', body, BH_DEFS)
+         'Кирпичный дом в синий час: сквозь него с набережной во двор ведёт высокая арка в несколько этажей, изнутри облицованная золотом и изогнутая сразу в двух направлениях; под аркой взрослый с ребёнком.', body, BH_DEFS)
 
 
 # ---------------------------------------------------------------- синька-чертёж (№4)

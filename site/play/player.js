@@ -987,6 +987,20 @@
     if (n.length !== 8) return 'В коде 8 знаков: четыре, дефис, ещё четыре. Сейчас введено ' + n.length + '.';
     return 'Код «' + esc(showCode(raw)) + '» не подошёл. Проверьте буквы и цифры или напишите нам — поможем.';
   }
+  // Причина отказа для цели Метрики code_fail (T-69, docs/analytics.md) — те же ветки, что в codeError; сам код в Метрику не уходит
+  function codeReason(raw, why) {
+    var n = normCode(raw);
+    if (why === 'nocrypto') return 'nocrypto';
+    if (why === 'saved') return 'saved_invalid';
+    if (!n) return 'empty';
+    if (/[01OIL]/.test(n) && n.length <= 8) return 'bad_chars';
+    if (n.length !== 8) return 'length';
+    return 'wrong';
+  }
+  function codeFail(raw, source, why) {
+    track('code_fail', { quest: QID, source: source, reason: codeReason(raw, why) });
+    return codeError(raw, why);
+  }
   function codeView(value, error) {
     var where = document.getElementById('where');
     where.textContent = CASE_NO ? caseName() : '';
@@ -1015,14 +1029,16 @@
       codeBusy = false;
       if (!q) {
         if (source === 'saved') store.del(CODE_KEY);
-        return codeView(source === 'saved' ? '' : showCode(raw), codeError(raw, source === 'saved' ? 'saved' : ''));
+        return codeView(source === 'saved' ? '' : showCode(raw), codeFail(raw, source, source === 'saved' ? 'saved' : ''));
       }
+      // сохранённый код открывает дело при каждом заходе — это не новый ввод, цель не шлём
+      if (source !== 'saved') track('code_ok', { quest: QID, source: source });
       store.set(CODE_KEY, normCode(raw));
       if (menuBtn) menuBtn.hidden = false;
       begin(q);
     }, function (e) {
       codeBusy = false;
-      codeView(showCode(raw), codeError(raw, e && e.message === 'nocrypto' ? 'nocrypto' : ''));
+      codeView(showCode(raw), codeFail(raw, source, e && e.message === 'nocrypto' ? 'nocrypto' : ''));
     });
   }
   document.addEventListener('submit', function (e) {
@@ -1030,7 +1046,7 @@
     if (f.dataset.form !== 'code') return;
     e.preventDefault();
     var v = f.elements.code.value;
-    if (!normCode(v)) return codeView('', codeError(v));
+    if (!normCode(v)) return codeView('', codeFail(v, 'typed', ''));
     tryCode(v, 'typed');
   });
 

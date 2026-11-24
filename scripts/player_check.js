@@ -13,6 +13,8 @@
  *   - код доступа (docs/codes.md): дело шифруется на лету тестовыми кодами (scripts/codes.py selftest-bundle, в репозиторий
  *     не попадают); экран кода проходит аудит, неверный и отозванный код — понятная ошибка, верный (мастер, выпущенный,
  *     из ссылки #code=) открывает дело, код запоминается и переживает перезагрузку;
+ *   - цели Метрики экрана кода (T-69): code_fail с причиной (wrong, bad_chars, length…) на каждую ошибку, code_ok (typed/link)
+ *     после верного кода; сам код в параметры целей не попадает;
  *   - на 390 главная кнопка шага видна без прокрутки и не закрыта навигацией (T-60).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
@@ -150,6 +152,14 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       page.on('pageerror', e => err(tag, 'JS: ' + e.message));
       page.on('dialog', d => d.accept());
       await page.addInitScript(t => { try { localStorage.setItem('dvorami:theme', t); } catch (e) {} }, theme);
+      // цели Метрики (T-69): перехватываем window.dvoramiTrack, даже если analytics.js его переопределит
+      await page.addInitScript(() => {
+        window.__goals = []; let real = null;
+        const wrap = (g, p) => { window.__goals.push([g, Object.assign({}, p)]); if (real) try { real(g, p); } catch (e) {} };
+        Object.defineProperty(window, 'dvoramiTrack', { configurable: true, get: () => wrap, set: f => { real = f; } });
+      });
+      const goals = () => page.evaluate(() => window.__goals);
+      const lastGoal = async name => (await goals()).filter(([g]) => g === name).pop();
       const state = () => page.evaluate(() => window.__dvorami.state());
       const click = sel => page.click(sel);
       const check = async where => {
@@ -169,23 +179,32 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       if (SEALED && !viaLink) {
         await page.waitForSelector('form[data-form="code"]');
         await check('код доступа');
-        const tryCode = async (code, expect) => {
+        const tryCode = async (code, expect, reason) => {
+          const before = (await goals()).length;
           await page.fill('#code', code); await click('#code-go');
           await page.waitForFunction(() => !document.querySelector('#code-go[aria-busy]'));
           const msg = await page.$eval('#code-err', e => e.textContent).catch(() => '');
           if (!msg.includes(expect)) err(tag, `код «${code}»: ожидали ошибку «${expect}», получили «${msg}»`);
+          const g = (await goals()).slice(before).filter(([n]) => n === 'code_fail');
+          if (g.length !== 1 || g[0][1].reason !== reason || g[0][1].source !== 'typed') err(tag, `код «${code}»: ожидали одну цель code_fail (reason=${reason}, source=typed), получили ${JSON.stringify(g)}`);
         };
-        await tryCode('ABCD-EFGH', 'не подошёл');
+        await tryCode('ABCD-EFGH', 'не подошёл', 'wrong');
         await check('код доступа · ошибка');
-        await tryCode(BUNDLE.revoked, 'не подошёл');
-        await tryCode('AB0D-EF1H', 'нет букв O, I, L');
-        await tryCode('ABC', 'В коде 8 знаков');
+        await tryCode(BUNDLE.revoked, 'не подошёл', 'wrong');
+        await tryCode('AB0D-EF1H', 'нет букв O, I, L', 'bad_chars');
+        await tryCode('ABC', 'В коде 8 знаков', 'length');
         // мастер-код набирают как удобно: строчными, без дефисов; выпущенный — как в письме
         await page.fill('#code', theme === 'dark' ? BUNDLE.master.toLowerCase().replace(/-/g, ' ') : BUNDLE.code);
         await click('#code-go');
       }
       await page.waitForSelector('[data-act="start"]');
       if (viaLink && /code=/.test(page.url())) err(tag, 'код остался в адресе страницы после входа по ссылке');
+      if (SEALED) {
+        const ok = await lastGoal('code_ok');
+        if (!ok || ok[1].source !== (viaLink ? 'link' : 'typed') || ok[1].quest !== QID) err(tag, `после верного кода нет цели code_ok (source=${viaLink ? 'link' : 'typed'}): ${JSON.stringify(ok)}`);
+        const codes = [BUNDLE.code, BUNDLE.master, BUNDLE.revoked].map(c => c.replace(/-/g, '').toUpperCase());
+        if ((await goals()).some(([, p]) => codes.some(c => JSON.stringify(p).toUpperCase().replace(/-/g, '').includes(c)))) err(tag, 'код доступа ушёл в параметры цели Метрики');
+      }
       if (SEALED && !(await page.evaluate(k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, 'dvorami:code:' + QID))) err(tag, 'код не запомнился на устройстве');
       const shot = async name => { if (args.shots && theme === 'dark') { fs.mkdirSync(args.shots, { recursive: true }); await page.waitForTimeout(150); await page.screenshot({ path: path.join(args.shots, `${name}-${vp.width}.png`) }); } };
 

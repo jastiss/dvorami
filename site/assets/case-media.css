@@ -1,0 +1,7 @@
+/* Настоящие фото и репродукции на страницах дел (Арт-директор, 24.11). Отдельный файл, чтобы не пересечься
+   с правками case.css; при случае слить в case.css рядом с .c-spot и .c-world-card. */
+.c-spot .c-credit, .c-world-card .credit { font-size: 14px; line-height: 1.4; opacity: .8; }
+.c-spot .c-credit { margin-top: 6px; }
+/* репродукции не кадрируем: у каждой своя пропорция */
+.c-world-art { display: block; width: 100%; height: auto; border-radius: var(--card-radius); margin-bottom: 16px; }
+.t-avangard .c-world-art { border: 2px solid currentColor; }

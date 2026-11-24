@@ -204,7 +204,6 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
   .timeline::after { content: ""; position: absolute; right: 26px; top: 23px; width: 0; height: 0; border-left: 16px solid var(--control); border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
   .timeline li { padding-left: 0; padding-top: 72px; }
   .tl-dot { top: 6px; }
-  .timeline li:nth-child(even) { padding-top: 100px; }
   .timeline li:nth-child(even) .tl-dot { transform: rotate(4deg); }
   .tl-end h3 { color: var(--accent); }
 }
@@ -740,6 +739,7 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 .qc-where { font-size: 15px; font-weight: 600; }
 .qc-title { font-size: 26px; line-height: 1.12; }
 .qc-meta { font-size: 15px; }
+.qc-meta .nw { white-space: nowrap; } /* части цифр карточки не рвутся: «2,5–3 часа» целиком (build_cases.py, meta_html) */
 .qc-foot { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; padding-top: 14px; }
 .qc-price { font-size: 15px; } .qc-price b { font-size: 26px; display: block; line-height: 1.1; }
 .qc-badge { display: inline-block; font: 700 22px/1 var(--font-hand); border: 2px solid currentColor; border-radius: 6px; padding: 2px 8px; transform: rotate(-4deg); }
@@ -802,6 +802,8 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 .qcard--suggest .qc-title { font: 800 26px/1.1 var(--font-display); }
 .qcard--suggest p { color: var(--text-2); }
 .qcard--suggest .btn { margin-top: auto; align-self: flex-start; text-align: center; }
+/* Кнопки карточек одного ряда — на одной линии внизу (владелец 24.11): «Предложить район» той же высоты, что «Подробнее о деле»; site_check сверяет ±2 px */
+.qgrid .qcard--suggest .btn { min-height: 48px; padding: 12px 22px; font: 600 17px/1.2 var(--font-text); display: inline-flex; align-items: center; justify-content: center; }
 
 /* Карта + легенда */
 .map-row { display: grid; gap: 28px; margin-top: 56px; }
@@ -870,7 +872,7 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
   .js .qgrid {
     grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 86%; gap: 16px;
     overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scroll-padding-left: var(--pad);
-    margin-left: calc(-1 * var(--pad)); margin-right: calc(-1 * var(--pad)); padding: 14px var(--pad) 22px;
+    margin-left: calc(-1 * var(--pad)); margin-right: calc(-1 * var(--pad)); padding: 14px var(--pad) 14px;
   }
   .js .qgrid > li { scroll-snap-align: start; min-height: 0; }
   .js .qgrid > .qcard--suggest { margin-right: var(--pad); }
@@ -1185,6 +1187,7 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
   .qgrid > .qcard--suggest { grid-column: auto !important; }
   .qgrid > .qcard:not(.qcard--suggest) { padding: 0 22px 22px; }
   .qgrid .qcard .qc-cover { margin-left: -22px !important; margin-right: -22px !important; }
+  .qgrid > .qcard.qcard--suggest, #qgrid > .qcard.qcard--suggest { padding-bottom: 22px; } /* нижнее поле = у карточек дел: кнопки ряда на одной линии */
 }
 /* Телефон: лента с подсмотром следующей карточки и счётчиком */
 .qlane-hint { display: none; }
@@ -1353,11 +1356,14 @@ img.is-broken { visibility: hidden; }
   .qgrid .qcard .qc-foot { position: static; }
   .qgrid .qcard .qc-badge { position: absolute; top: 12px; left: 12px; z-index: 2; background: color-mix(in srgb, currentColor 16%, var(--bg)); }
   .qgrid .qcard .qc-foot:not(:has(.qc-price)) { display: none; }
-  .qgrid > .qcard:not(.qcard--suggest) { padding-bottom: 20px; }
+  .qgrid > .qcard:not(.qcard--suggest), .qgrid > .qcard.qcard--suggest, #qgrid > .qcard.qcard--suggest { padding-bottom: 20px; } /* и у «Предложите»: кнопки ленты на одной линии */
   /* тизер — не длиннее 4 строк: высоту ленты задаёт самая длинная карточка; полный текст — на странице дела */
   .qgrid .qcard:not(.qcard--suggest) p:not(.qc-meta) { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   .qgrid .qcard:not(.qcard--suggest) p { font-size: 16px; line-height: 1.45; }
-  .qgrid .qcard .qc-foot { padding-top: 0; }
+  /* цена не прилипает к штриховой линии (владелец 24.11); site_check: отступ от линии ≥ 12 px */
+  .qgrid .qcard .qc-foot { padding-top: 12px; }
+  /* строки статуса нет — кнопку к низу карточки прижимает она сама: кнопки ленты на одной высоте */
+  .qgrid .qcard .qc-foot:not(:has(.qc-price)) ~ .qc-btn { margin-top: auto; }
 }
 
 /* Карта: все точки одного размера, статус — цветом и подписью в легенде */
@@ -1367,25 +1373,11 @@ img.is-broken { visibility: hidden; }
 .city-map .map-link { cursor: pointer; }
 .city-map .map-link:hover circle.dot { stroke-width: 4.5; }
 .city-map .map-link:hover .name { text-decoration: underline; }
-/* Зоны касания точек (T-61): невидимый круг; на телефоне ≥ 44 px, тесный центр — врезкой .map-inset под схемой.
-   Проверяет site_check: касание в 12 px от центра точки попадает в её ссылку */
+/* Зоны касания точек (T-61): невидимый круг; на телефоне r=30 (≥ 44 px), обрезан по «ячейке» точки (clipPath в разметке) —
+   касание уходит к ближайшей точке, тесный центр без отдельной врезки (владелец 24.11: врезка лишняя).
+   Проверяет site_check: касание рядом с точкой (12 px или до середины до соседней) попадает в её ссылку */
 .city-map .map-hit { r: 10px; fill: transparent; pointer-events: all; }
-.city-map .map-zoom, .city-map .map-inset { display: none; }
-.map-inset .map-hit { r: 11px; }
-.map-inset .map-pin circle.dot { r: 3.6px; stroke-width: .9; }
-.map-inset .map-pin .name { font-size: 7.1px; stroke-width: 1.8px; }
-.map-inset .map-kremlin text { font-size: 5.7px; stroke-width: 1.8px; }
-.map-inset .map-label { font-size: 7.8px; }
-.map-inset .map-river { stroke-width: 2.8; }
-.city-map .map-inset .map-link:hover circle.dot { stroke-width: 1.6; }
-@media (max-width: 699px) {
-  .city-map .map-hit { r: 30px; }
-  .city-map .map-inset .map-hit { r: 11px; }
-  .city-map .map-link--c, .city-map .map-link--c .map-hit { pointer-events: none; }
-  .city-map .map-zoom { display: inline; }
-  .map-zoom circle { fill: transparent; pointer-events: all; stroke: var(--text-3); stroke-width: 1.5; stroke-dasharray: 3 5; }
-  .city-map .map-inset { display: block; width: 100%; height: auto; margin-top: 12px; border-top: 1px solid var(--line); }
-}
+@media (max-width: 699px) { .city-map .map-hit { r: 30px; } }
 /* Схема — отдельной секцией после «Как это выглядит» (H-2, 23.11) */
 .map-sec .map-row { margin-top: 0; }
 .lg--live { font-size: 0; }

@@ -129,6 +129,7 @@ def head(c):
 <link rel="stylesheet" href="../../assets/fonts.css">
 <link rel="stylesheet" href="../../assets/style.css">
 <link rel="stylesheet" href="../../assets/case.css">
+<link rel="stylesheet" href="../../assets/case-media.css">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
 {json.dumps(ld, ensure_ascii=False, indent=1)}
@@ -145,8 +146,37 @@ def sec_head(key, h2, hid, lead=None):
     return s + '</div>'
 
 
+def media_size(path):
+    """Ширина и высота картинки для атрибутов img; без Pillow — пусто (страница соберётся и так)."""
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            return f' width="{im.width}" height="{im.height}"'
+    except Exception:
+        return ''
+
+
+def world_html(html):
+    """Карточки «вокруг дела»: data-art="<дело>/<файл>.jpg" превращается в картинку, только если файл лежит
+    в site/assets/art/. Подпись с владельцем и правами — в p.credit самой карточки (team/std/images.md)."""
+    def sub(m):
+        rel, alt = m.group(1), m.group(2)
+        path = os.path.join(SITE, 'assets', 'art', rel)
+        if not os.path.exists(path):
+            return '<article class="c-world-card">'
+        return (f'<article class="c-world-card has-art"><img class="c-world-art" src="../../assets/art/{rel}" alt="{esc(alt)}"'
+                f'{media_size(path)} loading="lazy" decoding="async">')
+    return re.sub(r'<article class="c-world-card" data-art="([^"]+)" data-alt="([^"]*)">', sub, html)
+
+
 def spot_html(sp):
-    if sp.get('svg'):
+    ph = sp.get('photo')
+    if ph and os.path.exists(os.path.join(SITE, 'assets', 'photo', ph['file'])):
+        # Настоящее фото места (site/assets/photo/<дело>/<слот>.jpg, 1200×900) с подписью автора и лицензии;
+        # пока файла нет — рисунок. Список и права: docs/photos.md, quests/<id>/media/LICENSES.md.
+        pic = (f'<img src="../../assets/photo/{ph["file"]}" alt="{esc(ph["alt"])}" width="1200" height="900" loading="lazy" decoding="async">'
+               f'<figcaption class="c-credit">{ph["credit"]}</figcaption>')
+    elif sp.get('svg'):
         pic = frag(sp['svg'])
     else:
         pic = f'<img src="../../assets/ill/spots/{sp["img"]}.svg" alt="{esc(sp["alt"])}" width="1200" height="900" loading="lazy" decoding="async">'
@@ -270,7 +300,7 @@ def body(c):
 <section id="world" class="c-sec on-paper" aria-labelledby="h-world">
   <div class="wrap">
     {sec_head('world', c['world']['h2'], 'h-world', c['world'].get('lead'))}
-    {c['world']['html']}
+    {world_html(c['world']['html'])}
   </div>
 </section>
 
@@ -345,6 +375,15 @@ CARD_STATUS = {'soon': '<span class="qc-badge qc-badge--soon">Скоро в&nbsp
 CATALOGS = [('index.html', '', 'home'), (os.path.join('moscow', 'index.html'), '../', 'moscow')]
 
 
+def meta_html(meta):
+    """Цифры карточки: строка переносится только между частями, точка-разделитель — в конце строки
+    (владелец 24.11: «2,5–» и «3 часа» на разных строках, строка с «·» в начале)."""
+    parts = meta.split(' · ')
+    if len(parts) > 2 and len(parts[-1]) <= 3:  # возраст «0+» не остаётся один на строке
+        parts[-2:] = [parts[-2] + ' · ' + parts[-1]]
+    return ' '.join(f'<span class="nw">{p}{" ·" if i < len(parts) - 1 else ""}</span>' for i, p in enumerate(parts))
+
+
 def card_html(c, root, place, first):
     """Карточка дела в каталоге — из поля card дела (H-5: один источник; site_check сверяет её со страницей дела)."""
     k = c['card']
@@ -358,7 +397,7 @@ def card_html(c, root, place, first):
             f'        <{h} class="qc-title"><span class="qc-no">Дело №{c["no"]}</span> {c["short"]}</{h}>\n'
             f'        <span class="qc-where">{k["where"]}</span>\n'
             f'        <p>{k["teaser"]}</p>\n'
-            f'        <p class="qc-meta">{k["meta"]}</p>\n'
+            f'        <p class="qc-meta">{meta_html(k["meta"])}</p>\n'
             f'        <div class="qc-foot">{CARD_STATUS[c["status"]]}</div>\n'
             f'        <a class="qc-btn" href="{href}" data-track="quest_card" data-track-quest="{c["slug"]}" data-track-place="{place}">Подробнее о&nbsp;деле</a>\n'
             f'      </li>\n')

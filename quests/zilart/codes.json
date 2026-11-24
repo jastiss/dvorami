@@ -4,6 +4,47 @@
   "salt": "n65N1FJGIxCZS/TMTPOfig==",
   "iter": 200000
  },
- "issuer": null,
- "codes": []
+ "issuer": "+5lxa4hmQldb1dZJT1tHH4r6Ittze48rCmwDlkc6Vyw=",
+ "codes": [
+  {
+   "n": 1,
+   "id": "c481e3bf3292e41a31cf7498762a26ff",
+   "label": "тестеры 24.11",
+   "created": "2026-11-24",
+   "revoked": null,
+   "seal": "ErOf3x1vqvJrVInSHjpQ220t0qVMZAhJb5SpGWW64BLsbF6pVE9NEC2pghihGOHsJ/7jd5t0oJjNwo48KSOJ95ge1L2cXf0Ha9E8BbMIWM8EefKM+WMLtInl0/Q="
+  },
+  {
+   "n": 2,
+   "id": "3cf8467c9a978a5477f65db27561944d",
+   "label": "тестеры 24.11",
+   "created": "2026-11-24",
+   "revoked": null,
+   "seal": "IvIYlkXzhp9pGE8i44LJNdoorxAkeQQTNLA08Mx57iIZh0Abd0LWSQHVHn9DixIrfFWqwp03SQbW+ywjiIqfKmoyu34MdGngTQt8gt3+HINgCp37u8M8ezUe1f4="
+  },
+  {
+   "n": 3,
+   "id": "d898e92fbc047d77a25484c49bb8c3f2",
+   "label": "тестеры 24.11",
+   "created": "2026-11-24",
+   "revoked": null,
+   "seal": "AX487QFyiAUgLR2PKDzAiI+7QXckxZQAKnVuE201ZWd3USXNkdknuYx+msou09a6FroONU2Zv0qsrrTmqwb1Dc4rd9+xKvd+MXUPLBHvZYJI8CaphiIQyKquoXU="
+  },
+  {
+   "n": 4,
+   "id": "7e1831ca2cbb54df299c61863f1457c4",
+   "label": "тестеры 24.11",
+   "created": "2026-11-24",
+   "revoked": null,
+   "seal": "+mYbSa+04yURSvdQAgQh77NlP7kDPN1cY8mc6leuzVcab7OYph6D+reyVR0asktsXunWne+4+qAkXvXAUm+71ocQVE8ODZZ0CTm5AhubVqqazsA/Pkb645jGWPc="
+  },
+  {
+   "n": 5,
+   "id": "97ae3a3aaaeff069b35fa14e32c0917c",
+   "label": "тестеры 24.11",
+   "created": "2026-11-24",
+   "revoked": null,
+   "seal": "woVqajerdhCoL1r3r51AblueM1qW+Cv2l3/HVs1xvntG7a+f2kza0JGlS2KFGz8EOFA1tCiWylfIC0AfAS1pIxXTY6nq4vUyyKy3fTHznWih89gnwe78kHkny6M="
+  }
+ ]
 }

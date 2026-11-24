@@ -12,6 +12,7 @@
  *   - типографика: элементы одной роли (заголовки секций, рукописные надзаголовки, кнопки карточек дел) — одного размера;
  *     в схемах-картах (.city-map svg) подписи одной роли одного размера и не наезжают друг на друга и на точки;
  *     осознанное исключение — атрибут data-size-exception="почему" на элементе и комментарий в CSS;
+ *   - карточки дел: кнопки одного ряда на одной высоте (±2 px), цена ≥ 12 px от разделителя, тизер не обрезан на телефоне;
  *   - карточка дела в каталоге (главная, /moscow/) = страница дела: номер, название, статус, цифры, метро; карточки двух каталогов одинаковые;
  *   - ошибки в консоли и ошибки JS; предупреждения о неиспользованном preload шрифтов.
  * Выход: 0 — всё чисто, 1 — список ошибок.
@@ -157,6 +158,38 @@ function inPage(MAIN_CTA) {
   sameSize('рукописные надзаголовки секций', all('main > section :is([class$="-head"], .guide-intro, .faq-side, .map-legend) > :is(.hand, .c-kicker)'));
   sameSize('кнопки карточек дел', all('.qgrid a.qc-btn, .qgrid a.btn'));
 
+  // 3a'. Карточки дел (владелец 24.11): кнопки карточек одного ряда — на одной линии внизу (±2 px по верху и низу);
+  //      цена/статус не прилипают к разделителю над ними (≥ 12 px); тизер не обрезан (≤ 4 строк на телефоне)
+  document.querySelectorAll('.qgrid').forEach(grid => {
+    const rows = {};
+    Array.from(grid.children).filter(visible).forEach(li => {
+      const btn = li.querySelector(':scope > a.qc-btn, :scope > a.btn');
+      if (!btn || !visible(btn)) return;
+      const top = Math.round(li.getBoundingClientRect().top / 4); // ряд — карточки с одним верхом (±4 px)
+      (rows[top] = rows[top] || []).push([li, btn.getBoundingClientRect()]);
+    });
+    Object.values(rows).forEach(row => {
+      if (row.length < 2) return;
+      for (const edge of ['top', 'bottom']) {
+        const v = row.map(([, r]) => r[edge]);
+        if (Math.max(...v) - Math.min(...v) > 2) out.problems.push(`карточки дел: кнопки одного ряда на разной высоте (${edge} ${Math.round(Math.min(...v))}…${Math.round(Math.max(...v))} px): ` + row.map(([li]) => li.dataset.case ? '№' + li.dataset.case : 'предложить').join(', '));
+      }
+    });
+  });
+  document.querySelectorAll('.qgrid .qc-foot').forEach(foot => {
+    if (!visible(foot)) return;
+    const cs = getComputedStyle(foot);
+    if (!(parseFloat(cs.borderTopWidth) > 0) || cs.borderTopStyle === 'none') return;
+    const line = foot.getBoundingClientRect().top + parseFloat(cs.borderTopWidth);
+    Array.from(foot.children).filter(el => visible(el) && getComputedStyle(el).position !== 'absolute').forEach(el => {
+      const gap = el.getBoundingClientRect().top - line;
+      if (gap < 12) out.problems.push(`карточка дела №${foot.closest('.qcard').dataset.case}: «${(el.innerText || '').trim().slice(0, 20)}» в ${Math.round(gap)} px от линии (нужно ≥ 12)`);
+    });
+  });
+  if (vw <= 420) document.querySelectorAll('.qgrid .qcard[data-case] p:not(.qc-meta)').forEach(p => {
+    if (visible(p) && p.scrollHeight > p.clientHeight + 2) out.problems.push(`карточка дела №${p.closest('.qcard').dataset.case}: тизер длиннее 4 строк и обрезан — сократить поле card.teaser`);
+  });
+
   // 3b. Схемы-карты: подписи одной роли одного размера; подписи не пересекаются между собой и с точками
   document.querySelectorAll('.city-map svg').forEach(svg => {
     if (!visible(svg)) return;
@@ -243,7 +276,8 @@ function lockedFor(id) {
   return lockedCache[id];
 }
 
-// Касания по точкам карты: 8 направлений в 12 px от центра каждой видимой точки-ссылки
+// Касания по точкам карты: 8 направлений вокруг каждой видимой точки-ссылки — в 12 px от центра,
+// а у тесных точек (центр Москвы) — чуть ближе середины до соседней: касание уходит к ближайшей точке
 async function mapTaps() {
   const out = [];
   const links = [...document.querySelectorAll('.city-map a.map-link')].filter(a => {
@@ -256,13 +290,15 @@ async function mapTaps() {
     window.scrollTo({ top: scrollY + r0.top - innerHeight / 2, behavior: 'instant' });
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     const b = d.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+    const near = Math.min(...links.filter(o => o !== a).map(o => { const q = o.querySelector('circle.dot').getBoundingClientRect(); return Math.hypot(q.left + q.width / 2 - cx, q.top + q.height / 2 - cy); }));
+    const R = Math.min(12, near / 2 - 2);
     const miss = [];
     for (let k = 0; k < 8; k++) {
-      const x = cx + 12 * Math.cos(k * Math.PI / 4), y = cy + 12 * Math.sin(k * Math.PI / 4);
+      const x = cx + R * Math.cos(k * Math.PI / 4), y = cy + R * Math.sin(k * Math.PI / 4);
       const hit = document.elementFromPoint(x, y);
       if (!hit || hit.closest('a') !== a) miss.push(Math.round(k * 45) + '°' + (hit && hit.closest('a') ? ' → ' + (hit.closest('a').querySelector('title') || {}).textContent : ''));
     }
-    if (miss.length) out.push(`карта: касание в 12 px от точки «${(a.querySelector('title') || a).textContent.trim()}» мимо ссылки (${miss.join(', ')})`);
+    if (miss.length) out.push(`карта: касание в ${Math.round(R)} px от точки «${(a.querySelector('title') || a).textContent.trim()}» мимо ссылки (${miss.join(', ')})`);
   }
   window.scrollTo({ top: 0, behavior: 'instant' });
   return out;
@@ -319,7 +355,7 @@ async function mapTaps() {
       await page.waitForTimeout(600);
       const r = await page.evaluate(inPage, MAIN_CTA);
       r.problems.forEach(p => err(rel, vp.width, p));
-      // T-61: на телефоне касание в 12 px от центра точки карты попадает в её ссылку (зона ≥ 44 px; тесный центр — врезкой)
+      // T-61: на телефоне касание рядом с точкой карты попадает в её ссылку (зона ≥ 44 px; в тесном центре — до середины до соседней)
       if (vp.width === 390) (await page.evaluate(mapTaps)).forEach(p => err(rel, vp.width, p));
       // T-62: на главной лента каталога не длиннее нужного — «Как это выглядит» начинается выше 1688 px (второй экран телефона)
       if (vp.width === 390 && rel === '') {
