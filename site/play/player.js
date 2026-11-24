@@ -984,6 +984,7 @@
     if (why === 'saved') return 'Код, сохранённый на этом телефоне, больше не открывает дело. Введите код ещё раз или напишите нам.';
     if (!n) return 'Введите код: 8 знаков, например 7K4M-Q2PX.';
     if (/[01OIL]/.test(n) && n.length <= 8) return 'В кодах нет букв O, I, L и цифр 0, 1. Проверьте эти знаки: скорее всего, там другая буква или цифра.';
+    if (n.length === 12) return 'Мастер-код не подошёл. Проверьте, что он совпадает с секретом QUEST_MASTER_CODE на GitHub: значение секрета посмотреть нельзя, но его можно задать заново.';
     if (n.length !== 8) return 'В коде 8 знаков: четыре, дефис, ещё четыре. Сейчас введено ' + n.length + '.';
     return 'Код «' + esc(showCode(raw)) + '» не подошёл. Проверьте буквы и цифры или напишите нам — поможем.';
   }
@@ -994,6 +995,7 @@
     if (why === 'saved') return 'saved_invalid';
     if (!n) return 'empty';
     if (/[01OIL]/.test(n) && n.length <= 8) return 'bad_chars';
+    if (n.length === 12) return 'wrong_master';
     if (n.length !== 8) return 'length';
     return 'wrong';
   }

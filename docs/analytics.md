@@ -58,7 +58,7 @@
 
 ## События плеера (уже в коде)
 
-`code_ok` (`source`: `typed` — ввели руками, `link` — пришли по ссылке `#code=`; повторный вход сохранённым кодом не считается), `code_fail` (`source`: `typed`, `link`, `saved`; `reason`: `wrong` — код не подошёл или отозван, `bad_chars` — есть O, I, L, 0, 1, `length` — не 8 знаков, `empty` — пусто, `saved_invalid` — сохранённый код больше не открывает дело, `nocrypto` — браузер не умеет проверять код) — экран кода, T-69; сам код в Метрику не уходит (проверяет `player_check.js`),  `hint_open` (`point, step, level`), `answer_reveal`, `step_skip`, `quest_pause`, `quest_resume`, `quest_finish` (`minutes`), `map_open`, `review_click`, `issue_send` (`point, category`). У всех — `quest`, `field` (1 — полевой тест; его исключаем из отчётов).
+`code_ok` (`source`: `typed` — ввели руками, `link` — пришли по ссылке `#code=`; повторный вход сохранённым кодом не считается), `code_fail` (`source`: `typed`, `link`, `saved`; `reason`: `wrong` — код не подошёл или отозван, `bad_chars` — есть O, I, L, 0, 1, `length` — не 8 знаков, `wrong_master` — 12 знаков, но мастер-код не подошёл, `empty` — пусто, `saved_invalid` — сохранённый код больше не открывает дело, `nocrypto` — браузер не умеет проверять код) — экран кода, T-69; сам код в Метрику не уходит (проверяет `player_check.js`),  `hint_open` (`point, step, level`), `answer_reveal`, `step_skip`, `quest_pause`, `quest_resume`, `quest_finish` (`minutes`), `map_open`, `review_click`, `issue_send` (`point, category`). У всех — `quest`, `field` (1 — полевой тест; его исключаем из отчётов).
 
 ## Цели в Метрике и воронка
 
