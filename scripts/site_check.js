@@ -229,6 +229,45 @@ async function ctaAlwaysThere(page) {
   return miss;
 }
 
+// Зашифрованное дело для плеера — как в pages.yml, но с тестовыми кодами (не в репозитории)
+const lockedCache = {};
+function lockedFor(id) {
+  if (id in lockedCache) return lockedCache[id];
+  lockedCache[id] = null;
+  if (!fs.existsSync(path.resolve(__dirname, '..', 'quests', id, 'quest.json'))) return null;
+  try {
+    const out = require('child_process').execFileSync('python3', [path.join(__dirname, 'codes.py'), 'selftest-bundle', '--quest', id,
+      '--out', fs.mkdtempSync(path.join(require('os').tmpdir(), 'dvorami-site-'))], { encoding: 'utf8' });
+    lockedCache[id] = JSON.parse(out.trim().split('\n').pop()).locked;
+  } catch (e) { /* нет python/cryptography — плеер покажет «Не загрузилось», это и будет ошибкой проверки */ }
+  return lockedCache[id];
+}
+
+// Касания по точкам карты: 8 направлений в 12 px от центра каждой видимой точки-ссылки
+async function mapTaps() {
+  const out = [];
+  const links = [...document.querySelectorAll('.city-map a.map-link')].filter(a => {
+    const d = a.querySelector('circle.dot'); const r = d && d.getBoundingClientRect();
+    return r && r.width > 0 && getComputedStyle(a).pointerEvents !== 'none' && !a.closest('[hidden]') && getComputedStyle(a.closest('svg')).display !== 'none';
+  });
+  for (const a of links) {
+    const d = a.querySelector('circle.dot');
+    const r0 = d.getBoundingClientRect(); // у страницы плавная прокрутка — прыгаем сразу
+    window.scrollTo({ top: scrollY + r0.top - innerHeight / 2, behavior: 'instant' });
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const b = d.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+    const miss = [];
+    for (let k = 0; k < 8; k++) {
+      const x = cx + 12 * Math.cos(k * Math.PI / 4), y = cy + 12 * Math.sin(k * Math.PI / 4);
+      const hit = document.elementFromPoint(x, y);
+      if (!hit || hit.closest('a') !== a) miss.push(Math.round(k * 45) + '°' + (hit && hit.closest('a') ? ' → ' + (hit.closest('a').querySelector('title') || {}).textContent : ''));
+    }
+    if (miss.length) out.push(`карта: касание в 12 px от точки «${(a.querySelector('title') || a).textContent.trim()}» мимо ссылки (${miss.join(', ')})`);
+  }
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  return out;
+}
+
 (async () => {
   const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], { cwd: ROOT, stdio: 'ignore' });
   const stop = () => { try { server.kill(); } catch (e) {} };
@@ -261,10 +300,10 @@ async function ctaAlwaysThere(page) {
       const blocked = new Set();
       await page.route('**/*', route => {
         const u = route.request().url();
-        const qm = u.match(/\/play\/([^/]+)\/quest\.json/);
-        if (qm && u.startsWith(BASE)) { // на стенде quest.json кладёт сборка Pages из quests/<id>/quest.json
-          const f = path.resolve(__dirname, '..', 'quests', qm[1], 'quest.json');
-          if (fs.existsSync(f)) return route.fulfill({ path: f, contentType: 'application/json' });
+        const qm = u.match(/\/play\/([^/]+)\/quest\.locked\.json/);
+        if (qm && u.startsWith(BASE)) { // на стенде зашифрованное дело собирает pages.yml (scripts/codes.py seal); здесь — с тестовыми кодами
+          const f = lockedFor(qm[1]);
+          if (f) return route.fulfill({ path: f, contentType: 'application/json' });
         }
         if (u.startsWith(BASE)) return route.continue();
         blocked.add(u); return route.abort();
@@ -280,6 +319,13 @@ async function ctaAlwaysThere(page) {
       await page.waitForTimeout(600);
       const r = await page.evaluate(inPage, MAIN_CTA);
       r.problems.forEach(p => err(rel, vp.width, p));
+      // T-61: на телефоне касание в 12 px от центра точки карты попадает в её ссылку (зона ≥ 44 px; тесный центр — врезкой)
+      if (vp.width === 390) (await page.evaluate(mapTaps)).forEach(p => err(rel, vp.width, p));
+      // T-62: на главной лента каталога не длиннее нужного — «Как это выглядит» начинается выше 1688 px (второй экран телефона)
+      if (vp.width === 390 && rel === '') {
+        const y = await page.evaluate(() => { const s = document.querySelector('.screens-sec'); return s ? Math.round(s.getBoundingClientRect().top + scrollY) : 0; });
+        if (y >= 1688) err(rel, vp.width, `блок «Как это выглядит» начинается на ${y} px (нужно выше 1688): лента каталога выросла`);
+      }
       r.anchorsMissing.forEach(a => err(rel, vp.width, `ссылка на несуществующий якорь #${a}`));
       for (const l of r.links) {
         if (!l.startsWith(BASE)) continue;

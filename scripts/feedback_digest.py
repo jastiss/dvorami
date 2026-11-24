@@ -48,7 +48,9 @@ def digest(recs, days):
     if reviews:
         avg = sum(r["rating"] for r in reviews) / len(reviews)
         fives = sum(1 for r in reviews if r["rating"] == 5)
-        lines.append(f"- Всего: {len(reviews)} · средняя {avg:.2f} · пятёрок {fives * 100 // len(reviews)}%")
+        conf = sum(1 for r in reviews if r.get("confirmed"))
+        lines.append(f"- Всего: {len(reviews)} · средняя {avg:.2f} · пятёрок {fives * 100 // len(reviews)}%"
+                     f" · с подтверждённым финалом {conf}")
         for r in reviews:
             if r.get("unclear"):
                 lines.append(f"- Мешало ({r['rating']}★, {r.get('quest') or '—'}): {r['unclear']}")

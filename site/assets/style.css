@@ -1189,7 +1189,7 @@ a.av-btn:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--ed
 /* Телефон: лента с подсмотром следующей карточки и счётчиком */
 .qlane-hint { display: none; }
 @media (max-width: 699px) {
-  .js .qgrid { grid-auto-columns: 82%; }
+  .js .qgrid { grid-auto-columns: 86%; } /* T-62: шире карточка — короче текст по высоте, подсмотр следующей остаётся */
   .js .qlane-hint { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; transform: none; font-size: 16px; color: var(--text-3); }
   .js .qlane-hint .hand { font-size: 22px; color: var(--text-3); }
   .qlane-count { font: 600 15px var(--font-text); color: var(--text-2); }
@@ -1344,12 +1344,20 @@ img.is-broken { visibility: hidden; }
 .qgrid .qcard .qc-where { margin-top: -6px; }
 /* Телефон: карточка целиком (с кнопкой) помещается в экран 393×852 */
 @media (max-width: 699px) {
-  .quests-sec { padding-top: 40px; }
-  .quests-head { margin-bottom: 20px; }
-  .qgrid .qcard .qc-cover { aspect-ratio: 16 / 9; }
-  .qgrid .qcard { gap: 10px; }
+  /* T-62 (H-9): лента ниже — «Как это выглядит» начинается на втором экране телефона (выше 1688 px на 390; проверяет site_check) */
+  .quests-sec { padding-top: 32px; padding-bottom: 20px; }
+  .quests-head { margin-bottom: 16px; }
+  .qgrid .qcard .qc-cover { aspect-ratio: 5 / 2; margin-bottom: 4px; }
+  .qgrid .qcard { gap: 8px; }
+  /* статус — плашкой на обложке; строка под тизером остаётся только для цены */
+  .qgrid .qcard .qc-foot { position: static; }
+  .qgrid .qcard .qc-badge { position: absolute; top: 12px; left: 12px; z-index: 2; background: color-mix(in srgb, currentColor 16%, var(--bg)); }
+  .qgrid .qcard .qc-foot:not(:has(.qc-price)) { display: none; }
+  .qgrid > .qcard:not(.qcard--suggest) { padding-bottom: 20px; }
+  /* тизер — не длиннее 4 строк: высоту ленты задаёт самая длинная карточка; полный текст — на странице дела */
+  .qgrid .qcard:not(.qcard--suggest) p:not(.qc-meta) { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   .qgrid .qcard:not(.qcard--suggest) p { font-size: 16px; line-height: 1.45; }
-  .qgrid .qcard .qc-foot { padding-top: 12px; }
+  .qgrid .qcard .qc-foot { padding-top: 0; }
 }
 
 /* Карта: все точки одного размера, статус — цветом и подписью в легенде */
@@ -1359,6 +1367,25 @@ img.is-broken { visibility: hidden; }
 .city-map .map-link { cursor: pointer; }
 .city-map .map-link:hover circle.dot { stroke-width: 4.5; }
 .city-map .map-link:hover .name { text-decoration: underline; }
+/* Зоны касания точек (T-61): невидимый круг; на телефоне ≥ 44 px, тесный центр — врезкой .map-inset под схемой.
+   Проверяет site_check: касание в 12 px от центра точки попадает в её ссылку */
+.city-map .map-hit { r: 10px; fill: transparent; pointer-events: all; }
+.city-map .map-zoom, .city-map .map-inset { display: none; }
+.map-inset .map-hit { r: 11px; }
+.map-inset .map-pin circle.dot { r: 3.6px; stroke-width: .9; }
+.map-inset .map-pin .name { font-size: 7.1px; stroke-width: 1.8px; }
+.map-inset .map-kremlin text { font-size: 5.7px; stroke-width: 1.8px; }
+.map-inset .map-label { font-size: 7.8px; }
+.map-inset .map-river { stroke-width: 2.8; }
+.city-map .map-inset .map-link:hover circle.dot { stroke-width: 1.6; }
+@media (max-width: 699px) {
+  .city-map .map-hit { r: 30px; }
+  .city-map .map-inset .map-hit { r: 11px; }
+  .city-map .map-link--c, .city-map .map-link--c .map-hit { pointer-events: none; }
+  .city-map .map-zoom { display: inline; }
+  .map-zoom circle { fill: transparent; pointer-events: all; stroke: var(--text-3); stroke-width: 1.5; stroke-dasharray: 3 5; }
+  .city-map .map-inset { display: block; width: 100%; height: auto; margin-top: 12px; border-top: 1px solid var(--line); }
+}
 /* Схема — отдельной секцией после «Как это выглядит» (H-2, 23.11) */
 .map-sec .map-row { margin-top: 0; }
 .lg--live { font-size: 0; }

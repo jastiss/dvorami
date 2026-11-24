@@ -18,10 +18,16 @@
 <link rel="stylesheet" href="theme.css">
 <script>
   try { if (localStorage.getItem('dvorami:theme') === 'sun') document.documentElement.dataset.theme = 'sun'; } catch (e) {}
+  // Код доступа из ссылки …/#code=XXXX-XXXX забираем до аналитики и убираем из адреса (docs/codes.md)
+  try {
+    var m = location.hash.match(/(?:^#|&)code=([^&]+)/);
+    if (m) { window.__dvoramiCode = decodeURIComponent(m[1]); history.replaceState(null, '', location.pathname + location.search); }
+  } catch (e) {}
 </script>
 </head>
-<!-- Данные дела для каркаса: data-quest — папка с quest.json, data-case-no — номер дела в шапке -->
-<body data-quest="zilart" data-case-no="1">
+<!-- Данные дела для каркаса: data-quest — папка с делом (quest.locked.json собирает pages.yml), data-case-no — номер дела в шапке,
+     data-case-url — страница дела (ссылка «Нет кода?» на экране кода) -->
+<body data-quest="zilart" data-case-no="1" data-case-url="../../moscow/zilart-sinyaya-ptica/">
 <main class="pl-main" id="app" tabindex="-1">
   <p class="pl-loading">Загружаем дело…</p>
   <noscript><p class="pl-loading">Для прохождения квеста включите JavaScript.</p></noscript>

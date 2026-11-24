@@ -194,6 +194,29 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-input:focus { outline: none; border-color: var(--text); }
 .pl-wrong { margin-top: 12px; color: var(--text); font-size: 16px; padding-left: 12px; border-left: 4px solid var(--accent-text); }
 
+/* Экран кода доступа (docs/codes.md): одна карточка — подпись, поле, главная кнопка */
+.pl-code { display: grid; gap: 10px; }
+.pl-code-label { font: 600 17px/1.3 var(--font-text); color: var(--text); }
+.pl-code .pl-wrong { margin-top: 2px; }
+.pl-code .pl-actions { margin-top: 6px; }
+.pl-code-input { font: 600 22px/1.2 var(--font-doc); letter-spacing: .12em; text-transform: uppercase; }
+.pl-code-input::placeholder { letter-spacing: .12em; }
+.pl-code-input[aria-invalid="true"] { border-color: var(--accent-text); }
+
+/* Главная кнопка шага прилипает над навигацией (T-60): на телефоне видна без прокрутки на любом шаге.
+   Фон — цвет поверхности под кнопкой, сверху мягкий переход, чтобы текст уходил под кнопку без резкой границы */
+@media (max-width: 1023px) {
+  .pl-stick { position: sticky; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); z-index: 4; padding: 16px 0 12px; margin-top: 0;
+    background: linear-gradient(to bottom, transparent, var(--stick-bg, var(--bg)) 14px); }
+  .pl-task .pl-stick, .pl-card .pl-stick { --stick-bg: var(--surface); }
+  .pl-form.pl-stick { margin-top: 0; }
+  .pl-float { position: fixed; z-index: 6; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    padding: 16px 16px 12px; background: linear-gradient(to bottom, transparent, var(--bg) 14px); }
+  .pl-float .pl-btn { max-width: calc(var(--col) - 32px); margin: 0 auto; }
+  .pl-float.is-up .pl-ico { transform: rotate(180deg); }
+}
+@media (min-width: 1024px) { .pl-float { display: none !important; } }
+
 /* ---------- 6. Подсказки: одна крупная кнопка-ступень вместо трёх мелких плиток ---------- */
 .pl-hints { margin-top: 14px; display: grid; gap: 8px; }
 .pl-hint { padding: 12px 14px; background: var(--surface-2); border-radius: min(var(--radius), 12px); font-size: 17px; }

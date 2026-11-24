@@ -1,0 +1,9 @@
+{
+ "quest": "zilart",
+ "kdf": {
+  "salt": "n65N1FJGIxCZS/TMTPOfig==",
+  "iter": 200000
+ },
+ "issuer": null,
+ "codes": []
+}

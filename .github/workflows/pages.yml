@@ -9,6 +9,8 @@ on:
     paths:
       - "site/**"
       - "quests/**/quest.json"
+      - "quests/**/codes.json"
+      - "scripts/codes.py"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -33,19 +35,30 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: actions/configure-pages@v5
-      # Плеер квеста (site/play/<id>/) читает quest.json из своей папки.
-      # Источник истины — quests/<id>/quest.json, в site/ его не храним (см. .gitignore).
-      - name: Данные квестов для плеера
+      # Плеер квеста (site/play/<id>/) читает зашифрованное дело quest.locked.json из своей папки (docs/codes.md).
+      # Источник истины — quests/<id>/quest.json; в site/ открытый quest.json не попадает никогда.
+      # Ключ содержимого — новый случайный при каждой сборке; открыть его можно мастер-кодом (секрет QUEST_MASTER_CODE)
+      # и выпущенными кодами из quests/<id>/codes.json. Нет секрета — сборка не падает: экран кода есть, коды не подходят.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Пакет для шифрования (cryptography)
+        run: python -m pip install --quiet cryptography
+      - name: Дела для плеера — зашифрованы кодом доступа
+        env:
+          QUEST_MASTER_CODE: ${{ secrets.QUEST_MASTER_CODE }}
         run: |
           for d in site/play/*/; do
             id=$(basename "$d")
+            rm -f "$d/quest.json"
             if [ -f "quests/$id/quest.json" ]; then
-              cp "quests/$id/quest.json" "$d/quest.json"
-              echo "quest.json → site/play/$id/"
+              python scripts/codes.py seal --quest "$id" --out "$d/quest.locked.json"
             else
               echo "::warning::нет quests/$id/quest.json — плеер $id не загрузится"
             fi
           done
+      - name: Проверка — открытого текста дел в сайте нет
+        run: python scripts/codes.py leakcheck site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

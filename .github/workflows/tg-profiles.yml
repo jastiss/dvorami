@@ -1,0 +1,17 @@
+name: Telegram — профили бота и канала
+# Ручной запуск. Тексты — docs/marketing/channel/profiles.json (bot_description ≤ 512,
+# bot_short_description ≤ 120, channel_description ≤ 255). Скрипт — scripts/tg_set_profiles.py.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  set:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          PLAYER_BOT_TOKEN: ${{ secrets.PLAYER_BOT_TOKEN }}
+          CHANNEL_CHAT_ID: ${{ secrets.CHANNEL_CHAT_ID }}
+        run: python3 scripts/tg_set_profiles.py

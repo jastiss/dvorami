@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /* Автотест плеера «Дворами»: node scripts/player_check.js [--quest=zilart] [--page=путь/к/странице/] [--shots=папка]
+ *   [--data=quest.json] — открытое дело без кода (макеты тем); без --data дело шифруется на лету, как в pages.yml.
  *
  * Проходит дело целиком в настоящем плеере (site/play/<id>/) по данным quests/<id>/quest.json — от обложки до финала —
  * на 390, 1024 и 1440 px, в тёмной и светлой теме. Внешние запросы блокируются. Проверяет каркас экрана
@@ -8,11 +9,17 @@
  *   - навигация — ровно три раздела «Точка · Улики · Карта», области касания ≥ 44 px;
  *   - текст ≥ 13 px (подписи подсказок ≥ 15 px), контраст текста ≥ 4,5:1 (крупного ≥ 3:1), рамок полей и кнопок ≥ 3:1;
  *   - у кнопок и подсказок нет opacity < 1; в интерфейсе нет эмодзи;
- *   - верный ответ принимается, неверный — нет, подсказки открываются по одной, улики копятся, прогресс переживает перезагрузку.
+ *   - верный ответ принимается, неверный — нет, подсказки открываются по одной, улики копятся, прогресс переживает перезагрузку;
+ *   - код доступа (docs/codes.md): дело шифруется на лету тестовыми кодами (scripts/codes.py selftest-bundle, в репозиторий
+ *     не попадают); экран кода проходит аудит, неверный и отозванный код — понятная ошибка, верный (мастер, выпущенный,
+ *     из ссылки #code=) открывает дело, код запоминается и переживает перезагрузку;
+ *   - на 390 главная кнопка шага видна без прокрутки и не закрыта навигацией (T-60).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
 'use strict';
 const { chromium } = require('playwright');
+const { execFileSync } = require('child_process');
+const os = require('os');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -23,6 +30,10 @@ const QID = args.quest || 'zilart';
 const PAGE = args.page || `site/play/${QID}/`;          // путь от корня репозитория
 const QUEST = args.data || path.join(REPO, 'quests', QID, 'quest.json');
 const Q = JSON.parse(fs.readFileSync(QUEST, 'utf8'));
+// Без --data — как на стенде: дело зашифровано, коды — тестовые, только на время прогона
+const SEALED = !args.data;
+const BUNDLE = SEALED ? JSON.parse(execFileSync('python3', [path.join(REPO, 'scripts', 'codes.py'), 'selftest-bundle', '--quest', QID,
+  '--out', fs.mkdtempSync(path.join(os.tmpdir(), 'dvorami-codes-'))], { encoding: 'utf8' }).trim().split('\n').pop()) : null;
 const PORT = 9000 + Math.floor(Math.random() * 900);
 const BASE = `http://127.0.0.1:${PORT}`;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg' };
@@ -94,6 +105,26 @@ function audit() {
   return out;
 }
 
+// T-60: главная кнопка шага видна целиком между шапкой и навигацией и не закрыта ничем
+function stickAudit() {
+  if (document.querySelector('dialog[open]')) return [];
+  // своя кнопка задания прилипает над навигацией; если само задание ниже экрана — вместо неё «К заданию»
+  const fl = document.getElementById('float');
+  const box = fl && !fl.hidden ? fl : document.querySelector('.pl-stick');
+  const btn = box && box.querySelector('.pl-btn:not(.pl-btn--ghost)');
+  if (!btn) return [];
+  const r = btn.getBoundingClientRect();
+  const nav = document.getElementById('tabs');
+  const bottom = nav && !nav.hidden ? nav.getBoundingClientRect().top : innerHeight;
+  const top = document.querySelector('.pl-top').getBoundingClientRect().bottom;
+  const name = `«${btn.textContent.trim()}»`;
+  if (r.top < top - 1 || r.bottom > bottom + 1) return [`главная кнопка ${name} не видна без прокрутки (${Math.round(r.top)}–${Math.round(r.bottom)}, видно ${Math.round(top)}–${Math.round(bottom)})`];
+  const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  if (!hit || hit.closest('.pl-btn') !== btn) return [`главная кнопка ${name} закрыта другим элементом`];
+  return [];
+}
+const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if (scrollY === y) { if (++n > 3) return r(); } else { y = scrollY; n = 0; } requestAnimationFrame(f); }; f(); });
+
 (async () => {
   await new Promise(r => server.listen(PORT, '127.0.0.1', r));
   const browser = await chromium.launch();
@@ -107,18 +138,55 @@ function audit() {
       const page = await ctx.newPage();
       await page.route('**/*', route => {
         const u = route.request().url();
-        if (/\/quest\.json(\?|$)/.test(u) && u.startsWith(BASE)) return route.fulfill({ path: QUEST, contentType: 'application/json' });
+        if (/\/quest\.locked\.json(\?|$)/.test(u) && u.startsWith(BASE)) return SEALED ? route.fulfill({ path: BUNDLE.locked, contentType: 'application/json' }) : route.fulfill({ status: 404 });
+        if (/\/quest\.json(\?|$)/.test(u) && u.startsWith(BASE)) return SEALED ? route.fulfill({ status: 404 }) : route.fulfill({ path: QUEST, contentType: 'application/json' });
         return u.startsWith(BASE) ? route.continue() : route.abort();
       });
-      page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) err(tag, 'консоль: ' + m.text().slice(0, 200)); });
+      page.on('console', m => {
+        if (m.type() !== 'error' || /ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) return;
+        if (!SEALED && /quest\.locked\.json/.test((m.location() || {}).url || '')) return; // открытое дело: зашифрованного нет — так и задумано
+        err(tag, 'консоль: ' + m.text().slice(0, 200));
+      });
       page.on('pageerror', e => err(tag, 'JS: ' + e.message));
       page.on('dialog', d => d.accept());
       await page.addInitScript(t => { try { localStorage.setItem('dvorami:theme', t); } catch (e) {} }, theme);
-      await page.goto(`${BASE}/${PAGE}`, { waitUntil: 'load' });
-      await page.waitForSelector('[data-act="start"]');
       const state = () => page.evaluate(() => window.__dvorami.state());
-      const check = async where => { screens++; (await page.evaluate(audit)).forEach(m => err(`${tag} · ${where}`, m)); };
       const click = sel => page.click(sel);
+      const check = async where => {
+        screens++; (await page.evaluate(audit)).forEach(m => err(`${tag} · ${where}`, m));
+        if (vp.width < 1024) {
+          await page.evaluate(settle); (await page.evaluate(stickAudit)).forEach(m => err(`${tag} · ${where}`, m));
+          if (await page.isVisible('#float')) { // «К заданию» ведёт к заданию, и там главная кнопка уже на экране
+            await page.click('#float button'); await page.waitForTimeout(50); await page.evaluate(settle);
+            if (await page.isVisible('#float')) err(`${tag} · ${where}`, '«К заданию» не привела к главной кнопке');
+            else (await page.evaluate(stickAudit)).forEach(m => err(`${tag} · ${where} · после «К заданию»`, m));
+          }
+        }
+      };
+      // ссылка с кодом (как после оплаты) — в одном прогоне; в остальных — экран кода и ввод руками
+      const viaLink = SEALED && vp.width === 390 && theme === 'sun';
+      await page.goto(`${BASE}/${PAGE}` + (viaLink ? `#code=${BUNDLE.code}` : ''), { waitUntil: 'load' });
+      if (SEALED && !viaLink) {
+        await page.waitForSelector('form[data-form="code"]');
+        await check('код доступа');
+        const tryCode = async (code, expect) => {
+          await page.fill('#code', code); await click('#code-go');
+          await page.waitForFunction(() => !document.querySelector('#code-go[aria-busy]'));
+          const msg = await page.$eval('#code-err', e => e.textContent).catch(() => '');
+          if (!msg.includes(expect)) err(tag, `код «${code}»: ожидали ошибку «${expect}», получили «${msg}»`);
+        };
+        await tryCode('ABCD-EFGH', 'не подошёл');
+        await check('код доступа · ошибка');
+        await tryCode(BUNDLE.revoked, 'не подошёл');
+        await tryCode('AB0D-EF1H', 'нет букв O, I, L');
+        await tryCode('ABC', 'В коде 8 знаков');
+        // мастер-код набирают как удобно: строчными, без дефисов; выпущенный — как в письме
+        await page.fill('#code', theme === 'dark' ? BUNDLE.master.toLowerCase().replace(/-/g, ' ') : BUNDLE.code);
+        await click('#code-go');
+      }
+      await page.waitForSelector('[data-act="start"]');
+      if (viaLink && /code=/.test(page.url())) err(tag, 'код остался в адресе страницы после входа по ссылке');
+      if (SEALED && !(await page.evaluate(k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, 'dvorami:code:' + QID))) err(tag, 'код не запомнился на устройстве');
       const shot = async name => { if (args.shots && theme === 'dark') { fs.mkdirSync(args.shots, { recursive: true }); await page.waitForTimeout(150); await page.screenshot({ path: path.join(args.shots, `${name}-${vp.width}.png`) }); } };
 
       await check('обложка');

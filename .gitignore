@@ -4,3 +4,7 @@ __pycache__/
 .telegram/run-requested
 # Плеер: копия quests/<id>/quest.json кладётся при сборке Pages
 site/play/*/quest.json
+# Плеер: зашифрованное дело собирает pages.yml (scripts/codes.py seal); коды доступа — никогда в репозиторий
+site/play/*/quest.locked.json
+.codes/
+*.codes.txt

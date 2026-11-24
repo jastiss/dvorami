@@ -1,5 +1,7 @@
 /* Дворами — веб-плеер квеста.
-   Читает quest.json из папки страницы (формат как у scripts/quest_bot.py) и повторяет логику бота:
+   Дело зашифровано (docs/codes.md): читает quest.locked.json из папки страницы и открывает его кодом доступа —
+   экран кода, код из ссылки #code=XXXX-XXXX или сохранённый на телефоне. Нет quest.locked.json — читает открытый
+   quest.json (локальная разработка, макеты). Данные дела — формат scripts/quest_bot.py; плеер повторяет логику бота:
    вступление → точки по порядку (дорога → «Мы на месте» → сцена → шаги) → улика → финал.
    Экран — единый каркас для всех дел (platform/design/player-frame.md): страница дела даёт только
    <body data-quest data-case-no>, <main id="app"> и theme.css; шапку, навигацию и шторку строит этот файл.
@@ -32,7 +34,8 @@
     pause: '<path d="M8.5 5v14M15.5 5v14"/>',
     restart: '<path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"/><path d="M4.5 4v5h5"/>',
     hint: '<path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3Z"/>',
-    out: '<path d="M8 16 16 8M9 8h7v7"/>'
+    out: '<path d="M8 16 16 8M9 8h7v7"/>',
+    down: '<path d="M12 5v14M6 13l6 6 6-6"/>'
   };
   function ico(name) { return '<svg class="pl-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + ICONS[name] + '</svg>'; }
   (function shell() {
@@ -48,6 +51,8 @@
       '<button type="button" data-act="view" data-view="point">' + ico('point') + '<span>Точка</span></button>' +
       '<button type="button" data-act="view" data-view="board">' + ico('board') + '<span>Улики</span><b class="pl-badge" id="badge"></b></button>' +
       '<button type="button" data-act="view" data-view="map">' + ico('map') + '<span>Карта</span></button></nav>' +
+      // Задание ниже экрана (длинная сцена) — над навигацией кнопка «К заданию» (T-60); у самого задания главная кнопка прилипает сама
+      '<div class="pl-float" id="float" hidden><button class="pl-btn" type="button" data-act="totask">' + ico('down') + '<span>К заданию</span></button></div>' +
       '<dialog class="pl-sheet" id="sheet" aria-labelledby="sheet-title"><div class="pl-sheet-head"><h2 id="sheet-title"></h2>' +
       '<button type="button" class="pl-x" data-act="close" aria-label="Закрыть">' + ico('close') + '</button></div>' +
       '<div class="pl-sheet-body" id="sheet-body"></div></dialog>' +
@@ -352,13 +357,13 @@
       '<div class="pl-prose">' + prose(t.text) + '</div>';
     if (st.type === 'board') h += '<div style="margin-top:16px">' + boardLetters(false) + '</div>';
     if (st.type === 'info' || st.type === 'board') {
-      return h + '<div class="pl-actions"><button class="pl-btn" type="button" data-act="next">Дальше</button></div></section>';
+      return h + '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="next">Дальше</button></div></section>';
     }
     var hints = st.hints || [];
     var steps = hintSteps(st);
     var revealed = st.type !== 'free' && hints.length && S.hint >= hints.length;
     if (!revealed) {
-      h += '<form class="pl-form" data-form="answer" autocomplete="off">' +
+      h += '<form class="pl-form pl-stick" data-form="answer" autocomplete="off">' +
         '<label class="visually-hidden" for="ans">Ваш ответ</label>' +
         '<input class="pl-input" id="ans" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + (st.type === 'free' ? 'Ваш ответ' : 'Ответ в одно-два слова') + '" value="' + esc(S.last) + '">' +
         '<button class="pl-btn" type="submit">Ответить</button></form>';
@@ -375,7 +380,7 @@
           '<span class="pl-pips" aria-hidden="true">' + pips + '</span></button>';
       }
       h += '</div>';
-      if (revealed) h += '<div class="pl-actions"><button class="pl-btn" type="button" data-act="reveal">Дальше</button></div>';
+      if (revealed) h += '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="reveal">Дальше</button></div>';
     }
     if (!revealed && (st.optional || st.type === 'free' || !hints.length)) h += '<button type="button" class="pl-skip" data-act="skip">Пропустить</button>';
     return h + '</section>';
@@ -468,13 +473,13 @@
     } else if (S.phase === 'idle') {
       h = head((Q.district ? Q.district + ' · ' : '') + caseName(), Q.title, Q.summary || '', 0) +
         (S.field ? '<section class="pl-field"><span class="pl-label">Режим полевого теста</span><p class="pl-small">На каждой точке — список «что проверить». Время, ошибки, подсказки и заметки сохраняются сами. В конце, а при желании и раньше (меню → «Отправить отчёт»), отправьте отчёт одним сообщением в Telegram.</p></section>' : '') +
-        '<div class="pl-actions"><button class="pl-btn" type="button" data-act="start">Открыть дело</button></div>' +
+        '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="start">Открыть дело</button></div>' +
         '<p class="pl-small">Прогресс сохраняется на этом телефоне: можно закрыть страницу и вернуться.</p>';
     } else if (S.phase === 'intro') {
       h = '<h1 class="visually-hidden" id="top">Вступление</h1>' + Q.intro.map(function (m, i) {
         return '<section class="pl-card' + (i === Q.intro.length - 1 ? ' pl-card--paper' : '') + '"><div class="pl-prose">' + prose(m) + '</div></section>';
       }).join('') +
-        '<div class="pl-actions"><button class="pl-btn" type="button" data-act="go">К точке 1</button></div>';
+        '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="go">К точке 1</button></div>';
     } else if (S.phase === 'walk') {
       var p = pt();
       h = pointHead(p, 'дорога') +
@@ -482,7 +487,7 @@
         '<div class="pl-prose">' + prose(p.walk) + '</div>' +
         '<a class="pl-btn pl-btn--ghost pl-btn--sm pl-maplink" href="' + esc(mapLink(p)) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + p.n + '">' + ico('out') + 'Открыть в Яндекс Картах</a></section>' +
         checkBlock(p, false) +
-        '<div class="pl-actions"><button class="pl-btn" type="button" data-act="here">Мы на месте</button></div>' + issueBtn();
+        '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="here">Мы на месте</button></div>' + issueBtn();
     } else if (S.phase === 'step') {
       var p2 = pt();
       h = pointHead(p2, 'на месте') + '<section class="pl-scene"><div class="pl-prose">' + prose(p2.scene) + '</div></section>';
@@ -496,7 +501,7 @@
       h = pointHead(p3, 'пройдена');
       if (p3.clue) h += '<div id="active" style="scroll-margin-top:96px"><span class="pl-label">Улика № ' + S.board.length + ' — на вашей доске</span>' + clueCard(p3.clue, true) + '</div>';
       if (p3.outro) h += '<section class="pl-scene"' + (p3.clue ? '' : ' id="active"') + '><div class="pl-prose">' + prose(p3.outro) + '</div></section>';
-      h += '<div class="pl-actions"><button class="pl-btn" type="button" data-act="nextpoint">' + (last ? 'К финалу' : 'К точке ' + (S.p + 2)) + '</button></div>' + issueBtn();
+      h += '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="nextpoint">' + (last ? 'К финалу' : 'К точке ' + (S.p + 2)) + '</button></div>' + issueBtn();
     } else if (S.phase === 'done') {
       h = head('Финал', 'Дело закрыто', '', 1) +
         (Q.finale || []).map(function (m) { return '<section class="pl-card"><div class="pl-prose">' + prose(m) + '</div></section>'; }).join('') +
@@ -504,7 +509,7 @@
         (S.field ? '<section class="pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
           '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="note">Заметка</button><button class="pl-btn" type="button" data-act="report">Отправить отчёт</button></div></section>' : '') +
         '<section class="pl-card"><span class="pl-label">Как вам дело?</span><p class="pl-small">Минута в Telegram: оценка и пара слов. Честный отзыв помогает нам больше всего — особенно если где-то было непонятно.</p>' +
-          '<div class="pl-actions"><a class="pl-btn" href="' + esc(botLink('review-' + QID)) + '" target="_blank" rel="noopener" data-track="review_click" data-track-quest="' + esc(QID) + '">Оценить квест</a></div></section>' +
+          '<div class="pl-actions"><a class="pl-btn" href="' + esc(botLink('done_' + QID)) + '" target="_blank" rel="noopener" data-track="review_click" data-track-quest="' + esc(QID) + '">Оценить квест</a></div></section>' +
         '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>' + issueBtn();
     }
     return h;
@@ -546,8 +551,32 @@
     app.classList.toggle('pl-fresh', key !== lastKey && view === 'point');
     lastKey = key;
     app.innerHTML = view === 'board' ? boardView() : view === 'map' ? mapView() : pointView();
+    floatSoon();
   }
+  // Кнопка «К заданию»: только на телефоне и только пока главная кнопка задания вне экрана
+  var floatEl = document.getElementById('float'), floatRaf = 0;
+  function updateFloat() {
+    floatRaf = 0;
+    var btn = view === 'point' && !S.paused ? app.querySelector('.pl-stick .pl-btn') : null;
+    var show = false, up = false;
+    if (btn && window.innerWidth < 1024) {
+      var r = btn.getBoundingClientRect();
+      var nav = document.getElementById('tabs');
+      var bottom = nav && !nav.hidden ? nav.getBoundingClientRect().top : window.innerHeight;
+      var top = document.querySelector('.pl-top').getBoundingClientRect().bottom;
+      show = r.top > bottom - 8 || r.bottom < top + 8;
+      up = r.bottom < top + 8;
+    }
+    floatEl.hidden = !show;
+    floatEl.classList.toggle('is-up', up);
+  }
+  function floatSoon() { if (!floatRaf) floatRaf = requestAnimationFrame(updateFloat); }
+  window.addEventListener('scroll', function () { if (S) floatSoon(); }, { passive: true });
+  window.addEventListener('resize', function () { if (S) floatSoon(); });
 
+  function smooth() {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'; } catch (e) { return 'auto'; }
+  }
   function commit(focus) {
     view = 'point';
     save();
@@ -556,7 +585,7 @@
       window.scrollTo(0, 0);
     } else if (focus === 'active') {
       var el = document.getElementById('active');
-      if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (el) el.scrollIntoView({ block: 'start', behavior: smooth() });
     } else if (focus === 'input') {
       var inp = document.getElementById('ans');
       if (inp) { inp.focus(); inp.select(); }
@@ -799,6 +828,13 @@
     reveal: reveal,
     skip: skip,
     nextpoint: nextPoint,
+    totask: function () {
+      var t = document.getElementById('active');
+      if (!t) return;
+      t.scrollIntoView({ block: 'start', behavior: smooth() });
+      var inp = document.getElementById('ans');
+      if (inp) { try { inp.focus({ preventScroll: true }); } catch (e) { /* без фокуса */ } }
+    },
     view: function (el) {
       var v = el.dataset.view;
       if (v === view && v !== 'point') return;
@@ -808,7 +844,7 @@
       // повторное нажатие «Точка» — вернуться к текущему заданию
       var t = document.getElementById('active') || document.getElementById('top');
       if (!t) return;
-      t.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      t.scrollIntoView({ block: 'start', behavior: smooth() });
       t.classList.remove('pulse'); void t.offsetWidth; t.classList.add('pulse');
     },
     note: function () { openSheet('note'); },
@@ -892,19 +928,142 @@
   sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
   sheet.addEventListener('close', function () { sheetKind = null; });
 
+  // ---------- код доступа (docs/codes.md): так же, как scripts/codes.py ----------
+  var CODE_KEY = 'dvorami:code:' + QID;
+  var CODE_RE = /^[2-9A-HJKMNP-Z]{8}$/;
+  var HOMO = { 'А': 'A', 'В': 'B', 'Е': 'E', 'К': 'K', 'М': 'M', 'Н': 'H', 'О': 'O', 'Р': 'P', 'С': 'C', 'Т': 'T', 'Х': 'X', 'У': 'Y' };
+  function normCode(s) {
+    s = String(s || '');
+    try { s = s.normalize('NFKC'); } catch (e) { /* старый браузер */ }
+    return s.toUpperCase().replace(/[АВЕКМНОРСТХУ]/g, function (c) { return HOMO[c]; }).replace(/[^\p{L}\p{N}]/gu, '');
+  }
+  function showCode(s) { var n = normCode(s); return CODE_RE.test(n) ? n.slice(0, 4) + '-' + n.slice(4) : String(s || '').trim(); }
+  function bytes(b64) { var bin = atob(b64), out = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+  function join(a, b) { var out = new Uint8Array(a.length + b.length); out.set(a, 0); out.set(b, a.length); return out; }
+  function hex(buf) { return Array.prototype.map.call(new Uint8Array(buf), function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
+  // Код → PBKDF2-SHA256 → идентификатор и ключ-обёртка → ключ содержимого → дело. Неверный код — null
+  function unlock(L, code) {
+    var sub = window.crypto && window.crypto.subtle;
+    if (!sub || !window.TextEncoder) return Promise.reject(new Error('nocrypto'));
+    var n = normCode(code);
+    if (!n) return Promise.resolve(null);
+    var enc = new TextEncoder(), dk;
+    return sub.importKey('raw', enc.encode(n), 'PBKDF2', false, ['deriveBits']).then(function (base) {
+      return sub.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: bytes(L.kdf.salt), iterations: L.kdf.iter }, base, 256);
+    }).then(function (bits) {
+      dk = new Uint8Array(bits);
+      return sub.digest('SHA-256', join(enc.encode('dvorami:id:'), dk));
+    }).then(function (idh) {
+      var w = L.keys[hex(idh).slice(0, 32)];
+      if (!w) return null;
+      w = bytes(w);
+      return sub.digest('SHA-256', join(enc.encode('dvorami:wrap:'), dk)).then(function (wk) {
+        return sub.importKey('raw', wk, 'AES-GCM', false, ['decrypt']);
+      }).then(function (wkey) {
+        return sub.decrypt({ name: 'AES-GCM', iv: w.slice(0, 12), additionalData: enc.encode('dvorami:key:' + L.quest) }, wkey, w.slice(12));
+      }).then(function (k) {
+        return sub.importKey('raw', k, 'AES-GCM', false, ['decrypt']);
+      }).then(function (key) {
+        return sub.decrypt({ name: 'AES-GCM', iv: bytes(L.iv), additionalData: enc.encode('dvorami:quest:' + L.quest) }, key, bytes(L.data));
+      }).then(function (plainBuf) { return JSON.parse(new TextDecoder().decode(plainBuf)); });
+    });
+  }
+  // Код из ссылки …/#code=XXXX-XXXX (или ?code=): страница дела забирает его в <head> и убирает из адреса
+  function linkCode() {
+    if (window.__dvoramiCode) { var c = window.__dvoramiCode; window.__dvoramiCode = ''; return c; }
+    var m = (location.hash + '&' + location.search.replace(/^\?/, '&')).match(/(?:^#|&)code=([^&#]+)/);
+    if (!m) return '';
+    try { history.replaceState(null, '', location.pathname + location.search.replace(/([?&])code=[^&#]*&?/, '$1').replace(/[?&]$/, '')); } catch (e) { /* адрес не меняем */ }
+    try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+  }
+  var LOCKED = null, codeBusy = false;
+  var menuBtn = document.querySelector('.pl-menu-btn');
+  function codeError(raw, why) {
+    var n = normCode(raw);
+    if (why === 'nocrypto') return 'Этот браузер не умеет проверять код. Откройте ссылку в свежем Safari, Chrome или Яндекс Браузере.';
+    if (why === 'saved') return 'Код, сохранённый на этом телефоне, больше не открывает дело. Введите код ещё раз или напишите нам.';
+    if (!n) return 'Введите код: 8 знаков, например 7K4M-Q2PX.';
+    if (/[01OIL]/.test(n) && n.length <= 8) return 'В кодах нет букв O, I, L и цифр 0, 1. Проверьте эти знаки: скорее всего, там другая буква или цифра.';
+    if (n.length !== 8) return 'В коде 8 знаков: четыре, дефис, ещё четыре. Сейчас введено ' + n.length + '.';
+    return 'Код «' + esc(showCode(raw)) + '» не подошёл. Проверьте буквы и цифры или напишите нам — поможем.';
+  }
+  function codeView(value, error) {
+    var where = document.getElementById('where');
+    where.textContent = CASE_NO ? caseName() : '';
+    if (menuBtn) menuBtn.hidden = true;
+    var buy = document.body.dataset.caseUrl;
+    var L = LOCKED || {};
+    app.innerHTML = head(((L.district ? L.district + ' · ' : '') + caseName()), L.title || 'Дело', '', 0) +
+      '<form class="pl-card pl-code" data-form="code" autocomplete="on" novalidate>' +
+      '<label class="pl-code-label" for="code">Код доступа</label>' +
+      '<p class="pl-small" id="code-help">Он в письме после покупки или у того, кто вас пригласил. Регистр и дефис не важны.</p>' +
+      '<input class="pl-input pl-code-input" id="code" name="code" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="go" maxlength="40" placeholder="XXXX-XXXX" aria-describedby="code-help' + (error ? ' code-err' : '') + '"' + (error ? ' aria-invalid="true"' : '') + ' value="' + esc(value || '') + '">' +
+      (error ? '<p class="pl-wrong" id="code-err" role="alert">' + error + '</p>' : '') +
+      '<div class="pl-actions"><button class="pl-btn" type="submit" id="code-go">Открыть дело</button></div>' +
+      '<p class="pl-small">Код запомнится на этом телефоне — второй раз вводить не придётся.</p></form>' +
+      '<p class="pl-small">' + (buy ? 'Нет кода? <a href="' + esc(buy) + '">Как получить дело</a>. ' : '') +
+      'Код не подходит — <a href="' + esc(BOT ? 'https://t.me/' + BOT : CHANNEL) + '" target="_blank" rel="noopener">напишите нам в Telegram</a>.</p>';
+    var inp = document.getElementById('code');
+    if (inp && error) { inp.focus(); inp.select(); }
+  }
+  function tryCode(raw, source) {
+    if (codeBusy) return;
+    codeBusy = true;
+    var btn = document.getElementById('code-go');
+    if (btn) { btn.textContent = 'Проверяем…'; btn.setAttribute('aria-busy', 'true'); }
+    unlock(LOCKED, raw).then(function (q) {
+      codeBusy = false;
+      if (!q) {
+        if (source === 'saved') store.del(CODE_KEY);
+        return codeView(source === 'saved' ? '' : showCode(raw), codeError(raw, source === 'saved' ? 'saved' : ''));
+      }
+      store.set(CODE_KEY, normCode(raw));
+      if (menuBtn) menuBtn.hidden = false;
+      begin(q);
+    }, function (e) {
+      codeBusy = false;
+      codeView(showCode(raw), codeError(raw, e && e.message === 'nocrypto' ? 'nocrypto' : ''));
+    });
+  }
+  document.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (f.dataset.form !== 'code') return;
+    e.preventDefault();
+    var v = f.elements.code.value;
+    if (!normCode(v)) return codeView('', codeError(v));
+    tryCode(v, 'typed');
+  });
+
   // ---------- запуск ----------
-  function boot() {
-    fetch('quest.json', { cache: 'no-cache' }).then(function (r) {
+  function begin(q) {
+    Q = q;
+    S = load();
+    if (S.phase !== 'idle') { log('reload'); save(); }
+    themeColor();
+    render();
+    var el = document.getElementById('active');
+    if (el && S.phase === 'step') el.scrollIntoView({ block: 'start' });
+  }
+  function getJSON(url) {
+    return fetch(url, { cache: 'no-cache' }).then(function (r) {
+      if (r.status === 404) return null;
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
-    }).then(function (q) {
-      Q = q;
-      S = load();
-      if (S.phase !== 'idle') { log('reload'); save(); }
+    });
+  }
+  function boot() {
+    var fromLink = linkCode();
+    getJSON('quest.locked.json').then(function (L) {
+      if (!L) {
+        // открытое дело — только локальная разработка и макеты; на стенд quest.json не попадает (pages.yml)
+        return getJSON('quest.json').then(function (q) { if (!q) throw new Error('нет файла дела'); begin(q); });
+      }
+      LOCKED = L;
       themeColor();
-      render();
-      var el = document.getElementById('active');
-      if (el && S.phase === 'step') el.scrollIntoView({ block: 'start' });
+      var saved = store.get(CODE_KEY);
+      if (fromLink) { codeView(showCode(fromLink)); return tryCode(fromLink, 'link'); }
+      if (saved) { codeView(''); return tryCode(saved, 'saved'); }
+      codeView('');
     }).catch(function (err) {
       app.innerHTML = '<section class="pl-card" id="top"><span class="pl-label">Не загрузилось</span><p>Нет связи или файл квеста недоступен (' + esc(err.message) + '). Проверьте интернет и попробуйте ещё раз.</p>' +
         '<div class="pl-actions"><button class="pl-btn" type="button" onclick="location.reload()">Обновить</button></div></section>';

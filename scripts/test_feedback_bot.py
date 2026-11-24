@@ -103,11 +103,107 @@ class FeedbackBotTest(unittest.TestCase):
     def test_menu_on_plain_start(self):
         self.tg.text("/start")
         self.step()
-        self.assertIn("Чем помочь", self.tg.sent()[-1]["text"])
-        self.assertEqual(self.tg.last_buttons(), ["url:https://jastiss.github.io/dvorami/moscow/", "m|review|0", "m|suggest|0", "m|question|0"])
+        self.assertIn("Здравствуйте", self.tg.sent()[-1]["text"])
+        self.assertEqual(self.tg.last_buttons(), ["m|cases|0", "m|how|0", "m|review|0", "m|suggest|0", "m|help|0"])
         self.tg.press("m|suggest|0")
         self.step()
-        self.assertIn("Какой район", self.tg.sent()[-1]["text"])
+        self.assertIn("Какое место", self.tg.sent()[-1]["text"])
+
+    def test_every_menu_button_answers(self):
+        for key, expect in (("cases", "Дела в Москве"), ("how", "Как это работает"), ("help", "Помощь"),
+                            ("menu", "Здравствуйте"), ("question", "Напишите вопрос")):
+            self.tg.press(f"m|{key}|0")
+            self.step()
+            self.assertIn(expect, self.tg.sent()[-1]["text"], key)
+        answered = [p["callback_query_id"] for t, m, p in self.tg.calls if m == "answerCallbackQuery"]
+        self.assertEqual(len(answered), 5)   # каждое нажатие подтверждено — кнопки не «висят»
+
+    def test_callback_answered_even_on_garbage(self):
+        self.tg.press("мусор")
+        self.step()
+        self.assertEqual([m for t, m, p in self.tg.calls].count("answerCallbackQuery"), 1)
+
+    def test_stale_button_without_dialog_shows_menu(self):
+        self.tg.press("r|5|42")   # кнопка из диалога, которого уже нет (например, состояние потерялось)
+        self.step()
+        [ans] = [p for t, m, p in self.tg.calls if m == "answerCallbackQuery"]
+        self.assertIn("прошлого разговора", ans["text"])
+        self.assertIn("Здравствуйте", self.tg.sent()[-1]["text"])
+
+    def test_deep_links_open_screens(self):
+        for arg, expect in (("cases", "Дела в Москве"), ("how", "Как это работает"), ("help", "Помощь"),
+                            ("question", "Напишите вопрос"), ("suggest", "Какое место"), ("непонятно", "Здравствуйте")):
+            self.tg.text(f"/start {arg}")
+            self.step()
+            self.assertIn(expect, self.tg.sent()[-1]["text"], arg)
+
+    def test_links_go_to_target_site_not_stand(self):
+        self.assertEqual(fb.SITE, "https://dvorami.ru/")
+        self.tg.text("/start cases")
+        self.step()
+        urls = [b[4:] for b in self.tg.last_buttons() if b.startswith("url:")]
+        self.assertEqual(len(urls), len(fb.CASES) + 1)
+        self.assertTrue(all(u.startswith("https://dvorami.ru/moscow/") for u in urls), urls)
+        src = pathlib.Path(fb.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("github.io", src)
+        for c in fb.CASES:   # каждая ссылка — на существующую страницу дела
+            self.assertTrue((fb.ROOT / "site" / "moscow" / c["slug"] / "index.html").exists(), c["slug"])
+
+    def test_commands_registered_with_owner_test(self):
+        fb.Bot(PLAYER, OWNER, OWNER_CHAT).setup()
+        calls = [p for t, m, p in self.tg.calls if m == "setMyCommands"]
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn("test", [c["command"] for c in calls[0]["commands"]])
+        self.assertIn("test", [c["command"] for c in calls[1]["commands"]])
+        self.assertEqual(calls[1]["scope"], {"type": "chat", "chat_id": OWNER_CHAT})
+
+    # ---------- финал и отзыв ----------
+
+    def test_done_deeplink_confirmed_review(self):
+        self.tg.text("/start done_zilart")
+        self.step()
+        ask = self.tg.sent()[-1]["text"]
+        self.assertIn("поздравляем", ask)
+        self.assertIn("Синей птице", ask)
+        self.assertNotIn("r|", " ".join(b for b in self.tg.last_buttons() if b.startswith("np|")))
+        self.assertFalse(any(b.startswith("np|") for b in self.tg.last_buttons()))
+        self.press_button("r|5|")
+        self.step()
+        self.press_button("skip|liked|")
+        self.step()
+        self.press_button("skip|unclear|")
+        self.step()
+        self.press_button("q|0|")
+        self.step()
+        [rec] = self.records()
+        self.assertEqual((rec["quest"], rec["rating"], rec["confirmed"]), ("zilart", 5, True))
+
+    def test_unconfirmed_review_is_neutral(self):
+        for arg in ("review", "review-zilart"):
+            self.tg.text(f"/start {arg}")
+            self.step()
+            ask = self.tg.sent()[-1]["text"].lower()
+            self.assertNotIn("спасибо, что прошли", ask)
+            self.assertNotIn("поздравляем", ask)
+            self.assertNotIn("закрыто", ask)
+            self.assertTrue(any(b.startswith("np|") for b in self.tg.last_buttons()))
+        self.assertFalse(any("спасибо, что прошли" in v.lower() for v in fb.T.values()))
+
+    def test_not_played_turns_into_message_to_team(self):
+        self.tg.text("/start review")
+        self.step()
+        self.press_button("np|")
+        self.step()
+        self.assertIn("передадим команде", self.tg.sent()[-1]["text"])
+        self.tg.text("Ещё не ходили, а с собакой можно?")
+        self.step()
+        self.press_button("skip|contact|")
+        self.step()
+        [rec] = self.records()
+        self.assertEqual(rec["kind"], "question")
+        self.assertNotIn("rating", rec)
+        [note] = self.tg.owner_msgs()
+        self.assertIn("собакой", note["text"])
 
     # ---------- отзыв ----------
 
@@ -134,6 +230,7 @@ class FeedbackBotTest(unittest.TestCase):
         [rec] = self.records()
         self.assertEqual(rec["kind"], "review")
         self.assertEqual(rec["quest"], "zilart")
+        self.assertFalse(rec["confirmed"])
         self.assertEqual(rec["rating"], 2)
         self.assertEqual(rec["liked"], "Дворы и загадки")
         self.assertTrue(rec["quote"])
@@ -298,6 +395,143 @@ class FeedbackBotTest(unittest.TestCase):
             self.step()
         [rec] = self.records()
         self.assertEqual((rec["category"], rec["point"], rec["complete"]), ("place", 2, False))
+
+    # ---------- напоминание перед прогулкой ----------
+
+    def test_reminder_scheduled_sealed_and_delivered(self):
+        self.tg.text("/start remind_zilart")
+        self.step()
+        self.assertIn("Когда напомнить", self.tg.sent()[-1]["text"])
+        self.assertNotIn("w|1m|", " ".join(self.tg.last_buttons()))   # минутка — только владельцу
+        self.press_button("w|2h|")
+        self.step()
+        self.assertIn("напомню", self.tg.sent()[-1]["text"])
+        raw = (self.root / ".telegram" / "feedback-state.json").read_text()
+        self.assertNotIn(str(USER), raw)   # chat id в публичном файле — только зашифрованным
+        [r] = json.loads(raw)["reminders"]
+        with mock.patch.object(fb, "now", return_value=r["at"] + 1):
+            self.step()
+        msg = self.tg.sent()[-1]
+        self.assertIn("Напоминаем", msg["text"])
+        self.assertIn("заряженный телефон", msg["text"])
+        self.assertEqual(json.loads((self.root / ".telegram" / "feedback-state.json").read_text())["reminders"], [])
+
+    def test_cancel_drops_reminder(self):
+        self.tg.text("/start remind_zilart")
+        self.step()
+        self.press_button("w|tom|")
+        self.step()
+        self.tg.text("/cancel")
+        self.step()
+        self.assertEqual(json.loads((self.root / ".telegram" / "feedback-state.json").read_text())["reminders"], [])
+
+    def test_seal_roundtrip_and_tamper(self):
+        b = fb.Bot(PLAYER)
+        s = b.seal(USER)
+        self.assertEqual(b.unseal(s), USER)
+        self.assertIsNone(fb.Bot("OTHER:TOKEN").unseal(s))
+
+    # ---------- /test для владельца ----------
+
+    def owner_text(self, text):
+        self.tg.text(text, user=int(OWNER_CHAT))
+
+    def test_test_menu_only_for_owner(self):
+        self.tg.text("/test")
+        self.step()
+        self.assertNotIn("Тест бота", self.tg.sent()[-1]["text"])
+        self.owner_text("/test")
+        self.step()
+        last = self.tg.sent(chat=OWNER_CHAT)[-1]
+        self.assertIn("Тест бота", last["text"])
+        self.assertEqual(len(last["reply_markup"]["inline_keyboard"]), len(fb.TEST_ITEMS))
+        # чужое нажатие тестовой кнопки ничего не запускает
+        n = len(self.tg.sent())
+        self.tg.press("t|done|0")
+        self.step()
+        self.assertEqual(len(self.tg.sent()), n)
+
+    def test_every_test_item_runs_and_writes_nothing(self):
+        for key, _ in fb.TEST_ITEMS:
+            self.tg.press(f"t|{key}|0", user=int(OWNER_CHAT))
+            self.step()
+        texts = [p["text"] for p in self.tg.sent(chat=OWNER_CHAT)]
+        self.assertEqual(len(texts), len(fb.TEST_ITEMS))
+        self.assertIn("поздравляем", texts[2])
+        self.assertIn("ZIL-TEST", texts[8])
+        # пройти финал с низкой оценкой: уведомление с пометкой ТЕСТ, в feedback/ — ничего
+        self.tg.press("t|done|0", user=int(OWNER_CHAT))
+        self.step()
+        sid = self.last_owner_buttons()[0].split("|")[2]
+        for data in (f"r|1|{sid}", f"skip|liked|{sid}", f"skip|unclear|{sid}", f"q|0|{sid}"):
+            self.tg.press(data, user=int(OWNER_CHAT))
+            self.step()
+        self.assertEqual(self.records(), [])
+        self.assertTrue(any("ТЕСТ" in m["text"] and "1/5" in m["text"] for m in self.tg.owner_msgs()))
+
+    def test_owner_reminder_in_one_minute(self):
+        self.tg.press("t|remind|0", user=int(OWNER_CHAT))
+        self.step()
+        self.tg.press(next(b for b in self.last_owner_buttons() if b.startswith("w|1m|")), user=int(OWNER_CHAT))
+        self.step()
+        with mock.patch.object(fb, "now", return_value=fb.time.time() + 61):
+            self.step()
+        self.assertIn("Напоминаем", self.tg.sent(chat=OWNER_CHAT)[-1]["text"])
+
+    def last_owner_buttons(self):
+        for p in reversed(self.tg.sent(chat=OWNER_CHAT)):
+            if "reply_markup" in p:
+                return [b.get("callback_data") or "" for row in p["reply_markup"]["inline_keyboard"] for b in row]
+        return []
+
+    # ---------- длинный опрос ----------
+
+    def test_long_poll_retries_network_errors_and_stops_on_conflict(self):
+        replies = iter([{"ok": False, "description": "URLError"},
+                        {"ok": True, "result": []},
+                        {"ok": False, "error_code": 409, "description": "Conflict"}])
+        calls = []
+
+        def fake(token, method, params, timeout=None):
+            calls.append(method)
+            return next(replies) if method == "getUpdates" else {"ok": True}
+        with mock.patch.object(fb.tg, "call", fake), mock.patch.object(fb.time, "sleep"):
+            fb.Bot(PLAYER).run(poll_seconds=3600)
+        self.assertEqual(calls.count("getUpdates"), 3)
+        self.assertTrue((self.root / ".telegram" / "feedback-offset").exists())
+
+    def test_periodic_commit_only_when_dirty(self):
+        clock = [1000.0]
+        with mock.patch.object(fb, "now", lambda: clock[0]), mock.patch.object(fb.subprocess, "run") as run, \
+                mock.patch.object(fb.time, "sleep"):
+            run.return_value.returncode = 0
+            def fake(token, method, params, timeout=None):
+                clock[0] += 600
+                if method == "getUpdates" and clock[0] < 2300:
+                    return {"ok": True, "result": [{"update_id": 1, "message": {
+                        "message_id": 1, "from": {"id": USER}, "chat": {"id": USER, "type": "private"},
+                        "text": "/start"}}]}
+                return {"ok": True, "result": []}
+            with mock.patch.object(fb.tg, "call", fake):
+                fb.Bot(PLAYER).run(poll_seconds=7200, commit_seconds=1800)
+        # апдейты были только в первые полчаса: один коммит, дальше состояние не менялось — коммитов нет
+        self.assertEqual(run.call_count, 1)
+
+    # ---------- профили ----------
+
+    def test_profiles_limits_and_calls(self):
+        import tg_set_profiles as tp
+        f = self.root / "profiles.json"
+        f.write_text(json.dumps({"bot_description": "Д" * 512, "bot_short_description": "Коротко",
+                                 "channel_description": "Канал"}), encoding="utf-8")
+        data, errors = tp.load(f)
+        self.assertEqual(errors, [])
+        tp.apply(data, PLAYER, "@dvorami_quest")
+        methods = {m: p for t, m, p in self.tg.calls}
+        self.assertEqual(set(methods), {"setMyDescription", "setMyShortDescription", "setChatDescription"})
+        self.assertEqual(methods["setChatDescription"]["chat_id"], "@dvorami_quest")
+        f.write_text(json.dumps({"bot_short_description": "x" * 121}), encoding="utf-8")
+        self.assertTrue(tp.load(f)[1])
 
     # ---------- служебное ----------
 
