@@ -228,20 +228,45 @@ def plain(s):
 def leak_needles(q):
     """Отрывки, которых не должно быть в опубликованных файлах: сцены, задания, подсказки, улики, финал; ответы (≥ 5 букв)."""
     texts, answers = [], set()
+
+    # формат 5 (docs/quest-format.md): реплики, карточки, письмо, варианты, вопросы на ходу — тексты в любых вложенных полях
+    def deep(x):
+        if isinstance(x, str):
+            texts.append(x)
+        elif isinstance(x, list):
+            for e in x:
+                deep(e)
+        elif isinstance(x, dict):
+            for k, v in x.items():
+                if k in ("text", "ok", "hints", "says", "scene", "outro", "lines", "back", "reply", "missing", "caption", "kids", "answer", "title", "label"):
+                    deep(v)
+                elif k in ("answers", "all", "replies", "options", "items", "near", "cards", "states", "walk_ask", "steps"):
+                    if k in ("answers",):
+                        for a in (v if isinstance(v, list) else [v]):
+                            if isinstance(a, str):
+                                a = plain(a).lstrip("~").lower()
+                                if len(a) >= 5:
+                                    answers.add(a)
+                    else:
+                        deep(v)
+
     for pt in q.get("points", []):
         for f in ("scene", "outro"):
-            texts.append(pt.get(f))
+            deep(pt.get(f))
         for st in pt.get("steps", []):
-            texts += [st.get("text"), st.get("ok")] + list(st.get("hints") or [])
-            for a in st.get("answers") or []:
-                a = plain(a).lstrip("~").lower()
-                if len(a) >= 5:
-                    answers.add(a)
+            deep(st)
+        deep(pt.get("walk_ask"))
+        deep(pt.get("cards"))
+        deep(pt.get("kids"))
         c = pt.get("clue") or {}
         texts.append(c.get("says"))
-    texts += list(q.get("finale") or [])
+    deep(q.get("finale"))
+    deep(q.get("cards"))
+    deep((q.get("letter") or {}).get("states"))
     snippets = set()
     for t in texts:
+        if not isinstance(t, str):
+            continue
         t = plain(t)
         for part in re.split(r"(?<=[.!?…»])\s+", t):
             part = part.strip()

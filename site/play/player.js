@@ -35,7 +35,8 @@
     restart: '<path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"/><path d="M4.5 4v5h5"/>',
     hint: '<path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3Z"/>',
     out: '<path d="M8 16 16 8M9 8h7v7"/>',
-    down: '<path d="M12 5v14M6 13l6 6 6-6"/>'
+    down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+    sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>'
   };
   function ico(name) { return '<svg class="pl-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + ICONS[name] + '</svg>'; }
   (function shell() {
@@ -67,6 +68,70 @@
   var Q = null;   // квест
   var S = null;   // состояние игрока
   var sheetKind = null;
+
+  // ---------- формат 5 (docs/quest-format.md): ветки, реплики, доска карточек, письмо-улика ----------
+  // Ветки А/Б: элемент любого списка с полем "if" остаётся, только если флаг совпал. Флаги — Q.flags (по умолчанию «A»),
+  // для проверки на месте их можно переключить ссылкой ?flags=st4:B,st10:B (дело уже открыто кодом — тайны в этом нет).
+  var FLAGS = {};
+  function readFlags(q) {
+    var f = {}, d = q.flags || {};
+    for (var k in d) if (Object.prototype.hasOwnProperty.call(d, k)) f[k] = String(d[k]);
+    var m = location.search.match(/[?&]flags=([^&#]+)/);
+    if (m) {
+      var raw = m[1];
+      try { raw = decodeURIComponent(raw); } catch (e) { /* как есть */ }
+      raw.split(',').forEach(function (p) { var kv = p.split(/[:=]/); if (kv[0] && kv[1]) f[kv[0].trim()] = kv[1].trim(); });
+    }
+    return f;
+  }
+  function flag(k) { return FLAGS[k] || 'A'; }
+  function passes(cond) {
+    if (!cond) return true;
+    if (typeof cond === 'string') {
+      var m = cond.match(/^\s*([\w-]+)\s*(!?=)\s*(.+?)\s*$/);
+      if (!m) return true;
+      var hit = m[3].split('|').map(function (s) { return s.trim(); }).indexOf(flag(m[1])) !== -1;
+      return m[2] === '=' ? hit : !hit;
+    }
+    for (var k in cond) if ([].concat(cond[k]).map(String).indexOf(flag(k)) === -1) return false;
+    return true;
+  }
+  function prune(x) {
+    if (Array.isArray(x)) return x.filter(function (e) { return !(e && typeof e === 'object' && !Array.isArray(e) && !passes(e['if'])); }).map(prune);
+    if (x && typeof x === 'object') { var o = {}; for (var k in x) if (Object.prototype.hasOwnProperty.call(x, k)) o[k] = prune(x[k]); return o; }
+    return x;
+  }
+  // Вопросы на ходу (по желанию) — на экране дороги; один объект или список
+  function walkAsks(p) { return p && p.walk_ask ? [].concat(p.walk_ask) : []; }
+  // Карточки доски: все определения по id — из Q.cards (с начала дела), точек, шагов и вопросов на ходу
+  // Индекс строится по делу до отбора веток: карточку можно определить в одной ветке, а сослаться на неё по id — из другой
+  var CARDS = {};
+  function indexCards(src) {
+    CARDS = {};
+    var add = function (list, n) { (list || []).forEach(function (c) { if (c && typeof c === 'object' && c.id && !CARDS[c.id]) CARDS[c.id] = Object.assign({ n: n }, c); }); };
+    add(src.cards, 0);
+    (src.points || []).forEach(function (p) {
+      add(p.cards, p.n);
+      (p.steps || []).forEach(function (s) { add(s.cards, p.n); });
+      walkAsks(p).forEach(function (w) { add(w.cards, p.n); });
+    });
+  }
+  function usesCards() { return !!Q.letter || Object.keys(CARDS).length > 0; }
+  function letterState(id) {
+    var L = Q.letter, list = (L && L.states) || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+  function speaker(who) {
+    var sp = (Q.speakers || {})[who] || {};
+    return { name: sp.name || who, style: sp.style || 'hero' };
+  }
+  function prepare(q) {
+    FLAGS = readFlags(q);
+    var p = prune(q);
+    p.flags = FLAGS;
+    return p;
+  }
 
   // Игровой бот — то же имя, что BOT в site/assets/site.js (без @). Пусто — ссылки ведут в канал.
   var BOT = 'dvorami_bot';
@@ -189,7 +254,16 @@
   // ---------- состояние ----------
   function fresh() {
     return { v: 1, quest: QID, version: Q.version, phase: 'idle', p: 0, k: 0, hint: 0, res: [], board: [],
-      events: [], t_start: null, t_end: null, sort: false, wrong: null, last: '', paused: false, field: FIELD };
+      events: [], t_start: null, t_end: null, sort: false, wrong: null, last: '', paused: false, field: FIELD,
+      // формат 5: карточки доски [{id, n}], вычеркнутые {id: true}, состояние письма, увиденные «стрелки», вопросы на ходу
+      cards: [], struck: {}, letter: null, arrows: {}, wa: [], reply: '', sel: [] };
+  }
+  function fill(s) {
+    s.res = s.res || []; s.board = s.board || []; s.events = s.events || [];
+    s.cards = s.cards || []; s.struck = s.struck || {}; s.arrows = s.arrows || {}; s.wa = s.wa || []; s.sel = s.sel || [];
+    if (s.letter === undefined) s.letter = null;
+    if (s.reply === undefined) s.reply = '';
+    return s;
   }
   function load() {
     var raw = store.get(KEY);
@@ -201,7 +275,7 @@
           s.p = Math.max(0, Math.min(s.p | 0, n - 1));
           s.k = Math.max(0, Math.min(s.k | 0, Q.points[s.p].steps.length));
           if (s.phase === 'step' && s.k >= Q.points[s.p].steps.length) s.phase = 'point_done';
-          s.res = s.res || []; s.board = s.board || []; s.events = s.events || [];
+          fill(s);
           if (FIELD) s.field = true;
           return s;
         }
@@ -231,29 +305,57 @@
     S = fresh();
     S.phase = 'intro';
     S.t_start = Date.now();
+    addCards(Q.cards, 0);
+    if (Q.letter && Q.letter.start) S.letter = Q.letter.start;
     log('start');
     commit('top');
   }
+  function clearSlot(o) { o.hint = 0; o.wrong = null; o.last = ''; o.reply = ''; o.sel = []; }
   function showWalk() {
-    S.phase = 'walk'; S.k = 0; S.hint = 0; S.res = []; S.wrong = null; S.last = '';
+    S.phase = 'walk'; S.k = 0; S.res = []; S.wa = []; clearSlot(S);
     log('walk');
     commit('top');
   }
   function arrive() {
-    S.phase = 'step'; S.k = 0; S.hint = 0; S.res = []; S.wrong = null; S.last = '';
+    S.phase = 'step'; S.k = 0; S.res = []; clearSlot(S);
     log('arrive');
+    enterStep();
     commit('top');
   }
   function step() { return pt().steps[S.k]; }
+  // Вход в шаг: письмо-улика переходит в состояние шага (линии на просвет, кружки, оборот)
+  function enterStep() {
+    var st = step();
+    if (st && st.letter) S.letter = st.letter;
+  }
+  // Последствия шага, вопроса на ходу или точки: карточки на доску, вычёркивания
+  function addCards(list, n) {
+    (list || []).forEach(function (c) {
+      var id = typeof c === 'string' ? c : c && c.id;
+      if (!id || !CARDS[id]) return;
+      if (S.cards.some(function (x) { return x.id === id; })) return;
+      S.cards.push({ id: id, n: n });
+    });
+  }
+  function effects(def, n) {
+    if (!def) return;
+    addCards(def.cards, n);
+    (def.add || []).forEach(function (id) { addCards([id], n); });
+    [].concat(def.strike || []).forEach(function (id) { S.struck[id] = true; });
+    [].concat(def.unstrike || []).forEach(function (id) { delete S.struck[id]; });
+  }
   function resolve(r) {
     S.res[S.k] = r;
-    S.k += 1; S.hint = 0; S.wrong = null; S.last = '';
-    if (S.k >= pt().steps.length) finishPoint();
+    effects(step(), pt().n);
+    S.k += 1; clearSlot(S);
+    if (S.k >= pt().steps.length) finishPoint(); else enterStep();
     commit('active');
   }
   function finishPoint() {
     var p = pt();
     if (p.clue) S.board.push(Object.assign({ n: p.n }, p.clue));
+    effects(p, p.n);
+    if (p.letter) S.letter = p.letter;
     if (p.steps.some(function (s) { return s.type === 'board'; })) S.sort = true;
     log('done');
     S.phase = 'point_done';
@@ -266,40 +368,133 @@
   function finishQuest() {
     S.phase = 'done';
     S.t_end = Date.now();
+    effects({ cards: Q.finale_cards }, 0);
+    if (Q.letter && Q.letter.end) S.letter = Q.letter.end;
     log('finish');
     commit('top');
   }
-  function answer(text) {
-    var st = step();
-    text = String(text || '').trim();
-    if (!text) return;
-    if (st.type === 'free') {
-      log('free', { step: S.k + 1, text: text });
-      return resolve({ st: 'free', text: text });
-    }
-    if (matches(text, st.answers)) {
-      log('correct', { step: S.k + 1, text: text, hints: S.hint });
-      return resolve({ st: 'ok', text: text });
-    }
-    log('wrong', { step: S.k + 1, text: text });
-    S.wrong = text; S.last = text;
-    commit('input');
+
+  // Контекст задания: шаг точки («step») или вопрос на ходу («w:0», «w:1»…) — у каждого своё состояние (подсказки, ошибка, выбор)
+  function ctxOf(el) { var c = el && el.closest('[data-ctx]'); return c ? c.dataset.ctx : 'step'; }
+  function ctxIndex(ctx) { return parseInt(String(ctx).split(':')[1], 10) || 0; }
+  function ctxDef(ctx) { return ctx === 'step' ? step() : walkAsks(pt())[ctxIndex(ctx)]; }
+  function ctxSlot(ctx) {
+    if (ctx === 'step') return S;
+    var i = ctxIndex(ctx);
+    if (!S.wa[i]) { S.wa[i] = {}; clearSlot(S.wa[i]); }
+    return S.wa[i];
   }
-  function hint(level) {
-    var hints = step().hints || [];
-    if (!hints.length || level !== S.hint || level >= hints.length) return;
-    S.hint = level + 1;
-    var isAnswer = S.hint >= hints.length;
-    log(isAnswer ? 'reveal' : 'hint', { step: S.k + 1, level: S.hint });
+  function ctxLabel(ctx) { return ctx === 'step' ? S.k + 1 : 'w' + (ctxIndex(ctx) + 1); }
+  function ctxDone(ctx, r) {
+    if (ctx === 'step') return resolve(r);
+    var w = ctxSlot(ctx);
+    w.res = r; w.wrong = null; w.reply = '';
+    effects(ctxDef(ctx), pt().n);
+    commit('walk:' + ctxIndex(ctx));
+  }
+  // Проверка текстового ответа: ответы (answers) → ответ из частей (all) → «почти» (replies) → «половина верна» (all.missing)
+  function checkText(st, text) {
+    if (st.answers && matches(text, st.answers)) return { ok: true };
+    var hits = (st.all || []).map(function (g) { return matches(text, Array.isArray(g) ? g : g.answers); });
+    if (hits.length && hits.every(Boolean)) return { ok: true };
+    var reps = st.replies || [];
+    for (var i = 0; i < reps.length; i++) if (matches(text, reps[i].answers)) return { ok: false, reply: reps[i].text };
+    if (hits.some(Boolean)) {
+      for (var j = 0; j < hits.length; j++) if (!hits[j]) return { ok: false, reply: (st.all[j] && st.all[j].missing) || 'Половина ответа верна. Чего не хватает?' };
+    }
+    return { ok: false };
+  }
+  // Верный вариант: answer, а если задан answer_flag и флаг совпадает с id варианта — по флагу (портрет «по натуре»)
+  function rightOptions(st) {
+    var f = st.answer_flag && FLAGS[st.answer_flag];
+    if (f && (st.options || []).some(function (x) { return String(x.id) === f; })) return [f];
+    return [].concat(st.answer || st.answers || []).map(String);
+  }
+  function answer(text, ctx) {
+    ctx = ctx || 'step';
+    var st = ctxDef(ctx), o = ctxSlot(ctx), lbl = ctxLabel(ctx);
+    text = String(text || '').trim();
+    if (!text || !st) return;
+    if (st.type === 'free') {
+      log('free', { step: lbl, text: text });
+      return ctxDone(ctx, { st: 'free', text: text });
+    }
+    var r = checkText(st, text);
+    if (r.ok) {
+      log('correct', { step: lbl, text: text, hints: o.hint });
+      return ctxDone(ctx, { st: 'ok', text: text });
+    }
+    log('wrong', { step: lbl, text: text });
+    o.wrong = text; o.last = text; o.reply = r.reply || '';
+    commit(ctx === 'step' ? 'input' : 'input:' + ctx);
+  }
+  // Выбор варианта (choice): option.reply — ответ на неверный выбор
+  function choose(id, ctx) {
+    var st = ctxDef(ctx), o = ctxSlot(ctx), lbl = ctxLabel(ctx);
+    var opt = (st.options || []).filter(function (x) { return x.id === id; })[0];
+    if (!opt) return;
+    if (rightOptions(st).indexOf(String(id)) !== -1) {
+      log('correct', { step: lbl, text: opt.label || id, hints: o.hint });
+      return ctxDone(ctx, { st: 'ok', text: opt.label || id });
+    }
+    log('wrong', { step: lbl, text: opt.label || id });
+    o.wrong = opt.label || id; o.reply = opt.reply || '';
     commit('active');
   }
-  function reveal() {
-    var hints = step().hints || [];
-    resolve({ st: 'revealed', text: hints[hints.length - 1] || '' });
+  // Выбор нескольких (pick — карточки доски; strike — вычеркнуть лишнее на снимке)
+  function toggleSel(id, ctx) {
+    var o = ctxSlot(ctx), st = ctxDef(ctx);
+    var i = o.sel.indexOf(id);
+    if (i !== -1) o.sel.splice(i, 1);
+    else {
+      if (st.type === 'pick' && o.sel.length >= (st.pick || 2)) o.sel.shift();
+      o.sel.push(id);
+    }
+    o.wrong = null; o.reply = '';
+    save(); render(); refocus('[data-sel="' + id + '"]');
   }
-  function skip() {
-    log('skip', { step: S.k + 1 });
-    resolve({ st: 'skipped' });
+  function sameSet(a, b) { if (a.length !== b.length) return false; for (var i = 0; i < a.length; i++) if (b.indexOf(a[i]) === -1) return false; return true; }
+  function checkSel(ctx) {
+    var st = ctxDef(ctx), o = ctxSlot(ctx), lbl = ctxLabel(ctx), sel = o.sel.slice();
+    var label = st.type === 'pick'
+      ? sel.map(function (id) { return CARDS[id] ? plain(CARDS[id].title) : id; }).join(' + ')
+      : sel.map(function (id) { var it = (st.items || []).filter(function (x) { return x.id === id; })[0]; return it ? plain(it.label) : id; }).join(', ');
+    var ok = false, reply = '';
+    if (st.type === 'pick') {
+      var sets = (st.answers || []).map(function (a) { return [].concat(a); });
+      ok = sets.some(function (s) { return sameSet(s, sel); });
+      (st.near || []).forEach(function (n) { if (!ok && !reply && sameSet([].concat(n.set), sel)) reply = n.text; });
+      if (!ok && !reply && sel.length < (st.pick || 2)) reply = 'Выберите ' + (st.pick || 2) + ' карточки.';
+    } else {
+      var items = st.items || [];
+      var miss = items.filter(function (it) { return !it.keep && sel.indexOf(it.id) === -1; });
+      var extra = items.filter(function (it) { return it.keep && sel.indexOf(it.id) !== -1; });
+      ok = !miss.length && !extra.length;
+      if (!ok) reply = extra.length ? (extra[0].reply || 'Кое-кого вы вычеркнули зря.') : (miss[0].reply || 'Кто-то ещё ушёл с поста.');
+    }
+    if (ok) { log('correct', { step: lbl, text: label, hints: o.hint }); return ctxDone(ctx, { st: 'ok', text: label }); }
+    log('wrong', { step: lbl, text: label || '—' });
+    o.wrong = label || '—'; o.reply = reply;
+    commit('active');
+  }
+  function hint(level, ctx) {
+    ctx = ctx || 'step';
+    var o = ctxSlot(ctx), hints = ctxDef(ctx).hints || [];
+    if (!hints.length || level !== o.hint || level >= hints.length) return;
+    o.hint = level + 1;
+    var isAnswer = o.hint >= hints.length;
+    log(isAnswer ? 'reveal' : 'hint', { step: ctxLabel(ctx), level: o.hint });
+    commit(ctx === 'step' ? 'active' : 'walk:' + ctxIndex(ctx));
+  }
+  function reveal(ctx) {
+    ctx = ctx || 'step';
+    var hints = ctxDef(ctx).hints || [];
+    ctxDone(ctx, { st: 'revealed', text: hints[hints.length - 1] || '' });
+  }
+  function skip(ctx) {
+    ctx = ctx || 'step';
+    log('skip', { step: ctxLabel(ctx) });
+    ctxDone(ctx, { st: 'skipped' });
   }
 
   // ---------- отрисовка: единый каркас (platform/design/player-frame.md) ----------
@@ -327,16 +522,163 @@
       '<figcaption><span class="pl-art-who">' + esc(plain(c.who)) + '</span><p class="pl-art-says">«' + inline(c.says) + '»</p></figcaption></figure>';
   }
   function tagHtml(t) { return t.tag ? '<span class="pl-tag pl-tag--' + t.cls + '">' + esc(t.tag) + '</span>' : ''; }
-  function doneStep(st, r, i) {
+  // Тег шага: явное поле tag ({"tag": "По желанию"}) или эмодзи в начале текста (формат 3)
+  function tagOf(st) {
     var t = stepTag(st.text);
-    var stamp = '';
-    if (r && r.st === 'ok') stamp = '<span class="pl-stamp">Верно · ' + esc(r.text) + '</span>';
-    else if (r && r.st === 'revealed') stamp = '<span class="pl-stamp pl-stamp--ans">Ответ · ' + esc(plain(r.text)) + '</span>';
-    else if (r && r.st === 'free') stamp = '<span class="pl-stamp">' + esc(r.text) + '</span>';
-    else if (r && r.st === 'skipped') stamp = '<span class="pl-stamp pl-stamp--ans">Пропущено</span>';
-    var ok = (r && r.st !== 'skipped' && st.ok) ? '<p class="pl-ok">' + inline(st.ok) + '</p>' : '';
+    if (st.tag) { t.tag = st.tag; t.cls = st.tag_style || (/^по желанию/i.test(st.tag) ? 'opt' : 'think'); }
+    if (st.optional && !t.cls) t.cls = 'opt';
+    return t;
+  }
+
+  // ---------- формат 5: реплики, картинки, письмо, звук, «стрелки» ----------
+  // Текст сцены — строка (формат 3) или список реплик: {who, text} · {arrow, text} · {img|layers, alt, caption} · {doc: "letter"} · {audio}
+  function linesHtml(src) {
+    if (src == null || src === '') return '';
+    if (!Array.isArray(src)) return '<div class="pl-prose">' + prose(src) + '</div>';
+    var prev = null;
+    return src.map(function (l) {
+      // подряд у одного говорящего имя подписано один раз (для чтения с экрана — у каждой реплики)
+      var who = l && typeof l === 'object' && !l.arrow && l.text != null ? (l.who || 'zilya') : null;
+      var out = lineHtml(l, who && who === prev);
+      if (!(l && typeof l === 'object' && l.arrow)) prev = who;
+      return out;
+    }).join('');
+  }
+  function lineHtml(l, cont) {
+    if (typeof l === 'string') return '<div class="pl-prose">' + prose(l) + '</div>';
+    if (!l || typeof l !== 'object') return '';
+    if (l.arrow) return arrowHtml(l.arrow, l.text);
+    if (l.doc === 'letter') return letterHtml(l.state || S.letter, { reveal: l.reveal });
+    if (l.doc === 'card') return CARDS[l.id] ? cardHtml(l.id, { full: true }) : '';
+    if (l.img !== undefined || l.layers) return figureHtml(l);
+    if (l.audio && !l.text) return audioBtn(l.audio);
+    var sp = speaker(l.who || 'zilya');
+    var paper = sp.style === 'note' || sp.style === 'letter' || sp.style === 'card';
+    var body = (sp.style === 'letter' || l.mono) ? '<div class="pl-prose pl-hand">' + prose(l.text) + '</div>' : '<div class="pl-prose">' + prose(l.text) + '</div>';
+    var quiet = sp.style === 'titr' || (cont && !l.note);
+    return '<div class="pl-line pl-line--' + esc(sp.style) + (paper ? ' pl-line--paper' : '') + (cont ? ' pl-line--cont' : '') + '" data-who="' + esc(l.who || '') + '">' +
+      (quiet ? '<span class="visually-hidden">' + esc(sp.name) + ': </span>' : '<span class="pl-who">' + esc(sp.name) + (l.note ? ' <small>' + esc(plain(l.note)) + '</small>' : '') + '</span>') +
+      body + (l.audio ? audioBtn(l.audio) : '') + '</div>';
+  }
+  // Картинка или заглушка: место под картинку держится всегда (aspect-ratio), нет файла — подпись вместо картинки
+  function mediaSrc(src) { return /^(https?:)?\/\//.test(src) ? '' : String(src); }
+  function figureHtml(l) {
+    var srcs = [].concat(l.layers || l.img || []).filter(Boolean).map(mediaSrc).filter(Boolean);
+    var alt = plain(l.alt || l.caption || 'Картинка');
+    var ratio = l.ratio || '3 / 2';
+    var ph = '<span class="pl-ph" aria-hidden="true"><b>Картинка готовится</b><span>' + esc(alt) + '</span></span>';
+    var imgs = srcs.map(function (s, i) {
+      return '<img src="' + esc(s) + '" alt="' + (i ? '' : esc(alt)) + '" loading="lazy" decoding="async"' + (i ? ' hidden' : '') + ' data-layer="' + i + '">';
+    }).join('');
+    var box = srcs.length > 1
+      ? '<button type="button" class="pl-frame pl-frame--layers" data-act="layer" data-i="0" data-n="' + srcs.length + '" style="aspect-ratio:' + esc(ratio) + '" aria-label="' + esc(alt) + '. Слой 1 из ' + srcs.length + ', нажмите — следующий">' + ph + imgs +
+        '<span class="pl-dots" aria-hidden="true">' + srcs.map(function (s, i) { return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</span></button>'
+      : '<div class="pl-frame" style="aspect-ratio:' + esc(ratio) + '"' + (srcs.length ? '' : ' role="img" aria-label="' + esc(alt) + ' (картинка готовится)"') + '>' + ph + imgs + '</div>';
+    return '<figure class="pl-fig" data-arrow-at="image">' + box + (l.caption ? '<figcaption>' + inline(l.caption) + '</figcaption>' : '') + '</figure>';
+  }
+  // Звук: путь к файлу — кнопка «Слушать»; true — место под озвучку («Озвучка скоро»)
+  function audioBtn(src) {
+    if (src === true) return '<button type="button" class="pl-audio" data-act="audio" data-arrow-at="sound" aria-disabled="true">' + ico('sound') + '<span>Озвучка скоро</span></button>';
+    var s = mediaSrc(src);
+    if (!s) return '';
+    return '<button type="button" class="pl-audio" data-act="audio" data-src="' + esc(s) + '" data-arrow-at="sound" aria-pressed="false">' + ico('sound') + '<span>Слушать</span></button>';
+  }
+  // «Стрелка» — подсказка интерфейса у нужного элемента; показывается один раз (S.arrows), на том экране, где появилась
+  var ARROW_NAMES = { sound: 'Звук', image: 'Картинка', board: 'Доска улик', hint: 'Подсказки', plus: 'По желанию', letter: 'Письмо' };
+  function arrowHtml(target, text) {
+    return '<aside class="pl-arrow" data-arrow="' + esc(target) + '"><b>' + esc(ARROW_NAMES[target] || 'Подсказка') + '</b><span>' + inline(text) + '</span></aside>';
+  }
+  function placeArrows(key) {
+    var changed = false;
+    [].forEach.call(app.querySelectorAll('.pl-arrow'), function (a) {
+      var t = a.dataset.arrow, seen = S.arrows[t];
+      if (seen && seen !== key) { a.remove(); return; }
+      if (!seen) { S.arrows[t] = key; changed = true; }
+      var tg = app.querySelector('[data-arrow-at="' + t + '"]');
+      if (tg && !a.closest('.pl-past')) { tg.insertAdjacentElement('afterend', a); a.classList.add('is-at'); }
+      if (t === 'board') { var nb = document.querySelector('.pl-nav [data-view="board"]'); if (nb) { nb.classList.remove('pl-callme'); void nb.offsetWidth; nb.classList.add('pl-callme'); } }
+    });
+    if (changed) save();
+  }
+  // Письмо-улика: строки с пятном (▓ в тексте), линии на просвет, кончик (присох / с кружками), штамп, оборот
+  function letterHtml(id, opt) {
+    var L = Q.letter, s = letterState(id);
+    if (!L || !s) return '';
+    opt = opt || {};
+    var word = s.reveal || opt.reveal || '';
+    var lines = String(s.text || L.text || '').split('\n').map(function (ln) {
+      var parts = inline(ln).split('▓');
+      return '<span class="pl-letter-ln">' + parts.join(word
+        ? '<span class="pl-stain is-light"><span class="visually-hidden">проступило слово: </span>' + esc(word) + '</span>'
+        : '<span class="pl-stain" role="img" aria-label="пятно: слово не читается"></span>') + '</span>';
+    }).join('');
+    // кончик: присох (штриховка) или отошёл — две линии до края и кружки по обе стороны, каждый обведён дважды
+    var rings = '<svg viewBox="0 0 64 26" aria-hidden="true" focusable="false"><g fill="none" stroke="var(--ink-hand)" stroke-width="1.6">' +
+      '<circle cx="18" cy="13" r="7"/><circle cx="18" cy="13" r="9.5"/><circle cx="46" cy="13" r="7"/><circle cx="46" cy="13" r="9.5"/></g></svg>';
+    var tip = s.tip === 'circles'
+      ? '<span class="pl-tip pl-tip--circles" role="img" aria-label="кончик полоски: две линии до края и кружки по обе стороны, каждый обведён дважды">' + rings + rings + '</span>'
+      : s.tip === 'stuck' ? '<span class="pl-tip pl-tip--stuck" role="img" aria-label="кончик присох к трубочке"></span>' : '';
+    var desc = [];
+    if (s.ruled) desc.push('под буквами — двойная линия по линейке');
+    var h = '<figure class="pl-letter' + (s.ruled ? ' is-ruled' : '') + (s.stamp ? ' has-stamp' : '') + '" data-arrow-at="letter">' +
+      '<div class="pl-letter-strip"><div class="pl-letter-text">' + lines + '</div>' + tip +
+      (s.stamp ? '<span class="pl-letter-stamp">' + esc(s.stamp) + '</span>' : '') + '</div>' +
+      (desc.length ? '<span class="visually-hidden">' + esc(desc.join('; ')) + '</span>' : '') +
+      (s.back ? '<div class="pl-letter-back"><span class="pl-label">Оборот</span><div class="pl-hand">' + prose(s.back) + '</div></div>' : '') +
+      (s.caption ? '<figcaption>' + inline(s.caption) + '</figcaption>' : '') + '</figure>';
+    if (s.img) h = figureHtml({ img: s.img, alt: s.alt || 'Письмо' }) + h;
+    return h;
+  }
+  // Карточка доски улик
+  function cardHtml(id, opt) {
+    var c = CARDS[id];
+    if (!c) return '';
+    opt = opt || {};
+    var struck = !!S.struck[id];
+    var src = c.n ? 'Остановка ' + c.n : 'С начала дела';
+    var open = (c.kind === 'photo' || c.img !== undefined) && !opt.full;
+    var h = '<article class="pl-cardx' + (struck ? ' is-struck' : '') + (opt.isNew ? ' is-new' : '') + (c.kind ? ' pl-cardx--' + esc(c.kind) : '') + '" data-card="' + esc(id) + '">' +
+      '<span class="pl-cardx-src">' + esc(c.source || src) + '</span>' +
+      '<h3 class="pl-cardx-title">' + (struck ? '<span class="visually-hidden">Вычеркнуто: </span>' : '') + inline(c.title) + '</h3>' +
+      (c.text ? '<div class="pl-cardx-text">' + prose(c.text) + '</div>' : '') +
+      (opt.full && (c.img !== undefined || c.kind === 'photo') ? figureHtml({ img: c.img || null, alt: c.alt || plain(c.title), caption: c.caption, ratio: c.ratio }) : '') +
+      (struck ? '<span class="pl-stamp pl-stamp--ans pl-cardx-x" aria-hidden="true">' + esc(c.struck_label || 'Вычеркнуто') + '</span>' : '') +
+      (open ? '<button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="card" data-id="' + esc(id) + '">Открыть</button>' : '') +
+      '</article>';
+    return h;
+  }
+  // Задание для детей: не влияет на прогресс
+  function kidsHtml(k) {
+    if (!k) return '';
+    var list = [].concat(k).map(function (x) { return typeof x === 'string' ? { text: x } : x; });
+    return '<details class="pl-kids"><summary>Задание для детей</summary>' + list.map(function (x) {
+      return '<div class="pl-kids-item"><div class="pl-prose">' + prose(x.text) + '</div>' +
+        (x.answer ? '<details class="pl-kids-ans"><summary>Ответ</summary><p>' + inline(x.answer) + '</p></details>' : '') + '</div>';
+    }).join('') + '</details>';
+  }
+  function resultStamp(r) {
+    if (r && r.st === 'ok') return '<span class="pl-stamp">Верно · ' + esc(plain(r.text)) + '</span>';
+    if (r && r.st === 'revealed') return '<span class="pl-stamp pl-stamp--ans">Ответ · ' + esc(plain(r.text)) + '</span>';
+    if (r && r.st === 'free') return '<span class="pl-stamp">' + esc(r.text) + '</span>';
+    if (r && r.st === 'skipped') return '<span class="pl-stamp pl-stamp--ans">Пропущено</span>';
+    return '';
+  }
+  function okHtml(st, r) {
+    if (!r || !st.ok) return '';
+    if (r.st === 'skipped' && !st.ok_on_skip) return '';
+    return Array.isArray(st.ok) ? '<div class="pl-ok">' + linesHtml(st.ok) + '</div>' : '<p class="pl-ok">' + inline(st.ok) + '</p>';
+  }
+  function doneStep(st, r, i) {
+    var t = tagOf(st);
+    var body = linesHtml(st.lines) + (t.text ? '<div class="pl-prose">' + prose(t.text) + '</div>' : '');
+    // реплики пройденного шага свёрнуты: экран точки не растёт на пять экранов вверх
+    if (st.lines && st.lines.length > 1) {
+      var who = [];
+      st.lines.forEach(function (l) { if (l && l.who) { var n = speaker(l.who).name; if (who.indexOf(n) === -1 && speaker(l.who).style !== 'titr') who.push(n); } });
+      body = '<details class="pl-past-more"><summary>' + esc(st.title || (who.length ? who.join(', ') : 'Сцена')) + '</summary>' + body + '</details>';
+    }
     return '<section class="pl-past" data-step="' + i + '">' + (t.tag ? '<div>' + tagHtml(t) + '</div>' : '') +
-      '<div class="pl-prose">' + prose(t.text) + '</div>' + stamp + ok + '</section>';
+      body + resultStamp(r) + okHtml(st, r) + '</section>';
   }
   // Лестница подсказок: у загадки последняя ступень — ответ; у свободного вопроса ответа нет
   function hintSteps(st) {
@@ -349,41 +691,87 @@
     }
     return out;
   }
-  function activeStep(st) {
-    var t = stepTag(st.text);
-    var total = pt().steps.length;
-    var h = '<section class="pl-card pl-task' + (t.cls === 'opt' ? ' pl-task--opt' : '') + '" id="active" data-step="' + S.k + '">' +
-      '<div class="pl-task-top">' + tagHtml(t) + '<span class="pl-stepno">Шаг ' + (S.k + 1) + ' из ' + total + '</span></div>' +
-      '<div class="pl-prose">' + prose(t.text) + '</div>';
-    if (st.type === 'board') h += '<div style="margin-top:16px">' + boardLetters(false) + '</div>';
-    if (st.type === 'info' || st.type === 'board') {
-      return h + '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="next">Дальше</button></div></section>';
-    }
+  // Поле ответа, варианты, выбор карточек, подсказки и «Пропустить» — общие для шага точки и вопроса на ходу
+  function taskInput(st, o, ctx, main) {
+    var h = '';
     var hints = st.hints || [];
     var steps = hintSteps(st);
-    var revealed = st.type !== 'free' && hints.length && S.hint >= hints.length;
+    var revealed = st.type !== 'free' && hints.length && o.hint >= hints.length;
+    var stick = main ? ' pl-stick' : '';
+    var aid = ctx === 'step' ? 'ans' : 'ans-' + ctx.replace(':', '');
     if (!revealed) {
-      h += '<form class="pl-form pl-stick" data-form="answer" autocomplete="off">' +
-        '<label class="visually-hidden" for="ans">Ваш ответ</label>' +
-        '<input class="pl-input" id="ans" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + (st.type === 'free' ? 'Ваш ответ' : 'Ответ в одно-два слова') + '" value="' + esc(S.last) + '">' +
-        '<button class="pl-btn" type="submit">Ответить</button></form>';
-      if (S.wrong) h += '<p class="pl-wrong" role="status">«' + esc(S.wrong) + '» — не подходит. Попробуйте ещё раз' + (hints.length ? ' или откройте подсказку.' : '.') + '</p>';
+      if (st.type === 'choice') {
+        h += '<div class="pl-opts' + ((st.options || []).some(function (x) { return x.img !== undefined; }) ? ' pl-opts--img' : '') + '" role="group" aria-label="Варианты ответа">' +
+          (st.options || []).map(function (x) {
+            return '<button type="button" class="pl-opt" data-act="choose" data-id="' + esc(x.id) + '">' +
+              (x.img !== undefined ? figureHtml({ img: x.img, alt: x.alt || x.label || x.id, ratio: x.ratio || '1 / 1' }) : '') +
+              '<span class="pl-opt-label"><b>' + esc(x.id) + '</b>' + (x.label ? inline(x.label) : '') + '</span></button>';
+          }).join('') + '</div>';
+      } else if (st.type === 'pick' || st.type === 'strike') {
+        var list = st.type === 'pick'
+          ? S.cards.map(function (c) { return { id: c.id, label: CARDS[c.id] ? CARDS[c.id].title : c.id, sub: CARDS[c.id] && CARDS[c.id].n ? 'Остановка ' + CARDS[c.id].n : '', struck: !!S.struck[c.id] }; })
+          : (st.items || []).map(function (x) { return { id: x.id, label: x.label, sub: x.sub || '' }; });
+        var need = st.type === 'pick' ? (st.pick || 2) : 0;
+        if (st.type === 'strike' && st.img !== undefined) h += figureHtml({ img: st.img, alt: st.alt || 'Снимок', ratio: st.ratio });
+        h += '<div class="pl-sel' + (st.type === 'strike' ? ' pl-sel--strike' : '') + '" role="group" aria-label="' + (st.type === 'pick' ? 'Карточки доски: выберите ' + need : 'Вычеркните лишнее') + '">' +
+          list.map(function (x) {
+            var on = o.sel.indexOf(x.id) !== -1;
+            return '<button type="button" class="pl-selb' + (x.struck ? ' is-struck' : '') + '" data-act="sel" data-sel="' + esc(x.id) + '" aria-pressed="' + on + '">' +
+              '<span><b>' + inline(x.label) + '</b>' + (x.sub ? '<small>' + esc(x.sub) + (x.struck ? ' · вычеркнута' : '') + '</small>' : '') + '</span>' +
+              '<i class="pl-selmark" aria-hidden="true"></i></button>';
+          }).join('') + '</div>' +
+          '<div class="pl-actions' + stick + '"><button class="pl-btn' + (main ? '' : ' pl-btn--ghost') + '" type="button" data-act="check">' +
+          (st.type === 'pick' ? 'Проверить' + (o.sel.length < need ? ' (' + o.sel.length + ' из ' + need + ')' : '') : 'Проверить') + '</button></div>';
+      } else {
+        h += '<form class="pl-form' + stick + '" data-form="answer" autocomplete="off">' +
+          '<label class="visually-hidden" for="' + aid + '">Ваш ответ</label>' +
+          '<input class="pl-input" id="' + aid + '" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + esc(st.placeholder || (st.type === 'free' ? 'Ваш ответ' : 'Ответ в одно-два слова')) + '" value="' + esc(o.last) + '">' +
+          '<button class="pl-btn' + (main ? '' : ' pl-btn--ghost') + '" type="submit">Ответить</button></form>';
+      }
+      if (o.wrong) {
+        h += '<p class="pl-wrong" role="status">' + (o.reply
+          ? (st.type === 'pick' || st.type === 'strike' ? '' : '«' + esc(o.wrong) + '» — ') + inline(o.reply)
+          : '«' + esc(o.wrong) + '» — не подходит. Попробуйте ещё раз' + (hints.length ? ' или откройте подсказку.' : '.')) + '</p>';
+      }
     }
     if (hints.length) {
       h += '<div class="pl-hints">';
-      for (var j = 0; j < Math.min(S.hint, hints.length); j++) h += '<div class="pl-hint"><b>' + steps[j].name + '</b>' + inline(hints[j]) + '</div>';
-      if (S.hint < hints.length) {
+      for (var j = 0; j < Math.min(o.hint, hints.length); j++) h += '<div class="pl-hint"><b>' + steps[j].name + '</b>' + inline(hints[j]) + '</div>';
+      if (o.hint < hints.length) {
         var pips = '';
-        for (var i = 0; i < hints.length; i++) pips += '<i' + (i < S.hint ? ' class="on"' : '') + '></i>';
-        h += '<button type="button" class="pl-hintbtn" data-act="hint" data-level="' + S.hint + '">' + ico('hint') +
-          '<span><b>' + steps[S.hint].btn + '</b>' + (steps[S.hint].note ? '<small>' + steps[S.hint].note + '</small>' : '') + '</span>' +
+        for (var i = 0; i < hints.length; i++) pips += '<i' + (i < o.hint ? ' class="on"' : '') + '></i>';
+        h += '<button type="button" class="pl-hintbtn" data-act="hint" data-level="' + o.hint + '" data-arrow-at="hint">' + ico('hint') +
+          '<span><b>' + steps[o.hint].btn + '</b>' + (steps[o.hint].note ? '<small>' + steps[o.hint].note + '</small>' : '') + '</span>' +
           '<span class="pl-pips" aria-hidden="true">' + pips + '</span></button>';
       }
       h += '</div>';
-      if (revealed) h += '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="reveal">Дальше</button></div>';
+      if (revealed) h += '<div class="pl-actions' + stick + '"><button class="pl-btn' + (main ? '' : ' pl-btn--ghost') + '" type="button" data-act="reveal">' + (main ? 'Дальше' : 'Понятно') + '</button></div>';
     }
     if (!revealed && (st.optional || st.type === 'free' || !hints.length)) h += '<button type="button" class="pl-skip" data-act="skip">Пропустить</button>';
-    return h + '</section>';
+    return h;
+  }
+  function activeStep(st) {
+    var t = tagOf(st);
+    var total = pt().steps.length;
+    var h = '<section class="pl-card pl-task' + (t.cls === 'opt' ? ' pl-task--opt' : '') + '" id="active" data-step="' + S.k + '" data-ctx="step">' +
+      '<div class="pl-task-top">' + tagHtml(t) + '<span class="pl-stepno">Шаг ' + (S.k + 1) + ' из ' + total + '</span></div>' +
+      (st.audio ? audioBtn(st.audio) : '') + linesHtml(st.lines) +
+      (t.text ? '<div class="pl-prose">' + prose(t.text) + '</div>' : '');
+    if (st.type === 'board') h += '<div style="margin-top:16px">' + boardLetters(false) + '</div>';
+    if (st.type === 'info' || st.type === 'board' || st.type === 'say' || !st.type) {
+      return h + '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="next">' + esc(st.button || 'Дальше') + '</button></div></section>';
+    }
+    return h + taskInput(st, S, 'step', true) + '</section>';
+  }
+  // Вопрос на ходу: на экране дороги, по желанию, на прогресс не влияет
+  function walkAskHtml(w, i) {
+    var ctx = 'w:' + i, o = ctxSlot(ctx), t = tagOf(w);
+    if (!t.tag) { t.tag = 'По желанию'; t.cls = 'opt'; }
+    var h = '<section class="pl-card pl-task pl-task--opt" id="walk-' + i + '" data-ctx="' + ctx + '" data-arrow-at="plus">' +
+      '<div class="pl-task-top">' + tagHtml(t) + '</div>' + (w.audio ? audioBtn(w.audio) : '') + linesHtml(w.lines) +
+      (t.text ? '<div class="pl-prose">' + prose(t.text) + '</div>' : '');
+    if (o.res) return h + resultStamp(o.res) + okHtml(Object.assign({ ok_on_skip: true }, w), o.res) + '</section>';
+    return h + taskInput(Object.assign({ optional: true }, w), o, ctx, false) + '</section>';
   }
   function issueBtn() {
     return '<button type="button" class="pl-issue" data-act="issue">Что-то не так? Напишите нам</button>';
@@ -399,7 +787,22 @@
     return h;
   }
   var sortMode = 'found';
+  function cardCount() { return S.cards.length + (S.letter && Q.letter ? 1 : 0); }
+  // Доска улик формата 5: письмо (всегда сверху) и карточки по остановкам; вычеркнутые — штампом, не только цветом
+  function cardsBoardView() {
+    var n = cardCount();
+    var h = head(caseName(), 'Доска улик', n ? 'На доске: ' + n : '', 2);
+    if (S.board.length) h += boardLetters(true);
+    if (!n) return h + '<p class="pl-empty">' + esc(plain(Q.board_empty || 'Доска пока пуста. Всё, что найдёте, будет ложиться сюда.')) + '</p>';
+    if (S.letter && Q.letter) {
+      h += '<section class="pl-card pl-card--letter"><span class="pl-label">' + esc(plain(Q.letter.title || 'Письмо')) + '</span>' + letterHtml(S.letter) +
+        '<button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="letter">Рассмотреть крупно</button></section>';
+    }
+    var list = S.cards.slice().reverse();
+    return h + '<div class="pl-cards">' + list.map(function (c) { return cardHtml(c.id); }).join('') + '</div>';
+  }
   function boardView() {
+    if (usesCards()) return cardsBoardView();
     var b = S.board.slice();
     var byYear = S.sort && sortMode === 'year';
     if (byYear) b.sort(function (a, c) { return a.year - c.year; });
@@ -459,6 +862,13 @@
   }
   function sideHtml() {
     var b = S.board;
+    if (usesCards()) {
+      return '<span class="pl-label">' + esc(caseName()) + (Q.district ? ' · ' + esc(Q.district) : '') + '</span><h2>' + esc(plain(Q.title)) + '</h2>' +
+        '<span class="pl-label" style="margin-top:20px">На доске: ' + cardCount() + '</span>' +
+        (S.cards.length ? '<ul class="pl-side-cards">' + S.cards.slice(-6).reverse().map(function (c) {
+          var d = CARDS[c.id]; return d ? '<li' + (S.struck[c.id] ? ' class="is-struck"' : '') + '>' + (S.struck[c.id] ? '<span class="visually-hidden">Вычеркнуто: </span>' : '') + esc(plain(d.title)) + '</li>' : '';
+        }).join('') + '</ul>' : '<p class="pl-small">Всё, что найдёте, будет ложиться на доску.</p>');
+    }
     return '<span class="pl-label">' + esc(caseName()) + (Q.district ? ' · ' + esc(Q.district) : '') + '</span><h2>' + esc(plain(Q.title)) + '</h2>' +
       '<span class="pl-label" style="margin-top:20px">Улики: ' + b.length + ' из ' + clueTotal() + '</span>' + boardLetters(true) +
       '<p class="pl-small">' + (b.length ? 'Слова свидетелей — в разделе «Улики».' : 'За каждую точку — буква, год и слова свидетеля.') + '</p>';
@@ -476,7 +886,8 @@
         '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="start">Открыть дело</button></div>' +
         '<p class="pl-small">Прогресс сохраняется на этом телефоне: можно закрыть страницу и вернуться.</p>';
     } else if (S.phase === 'intro') {
-      h = '<h1 class="visually-hidden" id="top">Вступление</h1>' + Q.intro.map(function (m, i) {
+      h = '<h1 class="visually-hidden" id="top">Вступление</h1>' + (Q.intro || []).map(function (m, i) {
+        if (Array.isArray(m)) return '<section class="pl-card pl-lines">' + linesHtml(m) + '</section>';
         return '<section class="pl-card' + (i === Q.intro.length - 1 ? ' pl-card--paper' : '') + '"><div class="pl-prose">' + prose(m) + '</div></section>';
       }).join('') +
         '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="go">К точке 1</button></div>';
@@ -484,15 +895,17 @@
       var p = pt();
       h = pointHead(p, 'дорога') +
         '<section class="pl-card">' + (p.walk_m ? '<p class="pl-dist">≈ ' + p.walk_m + ' м <span>пешком</span></p>' : '') +
-        '<div class="pl-prose">' + prose(p.walk) + '</div>' +
+        (p.walk_audio ? audioBtn(p.walk_audio) : '') + linesHtml(p.walk) +
         '<a class="pl-btn pl-btn--ghost pl-btn--sm pl-maplink" href="' + esc(mapLink(p)) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + p.n + '">' + ico('out') + 'Открыть в Яндекс Картах</a></section>' +
+        walkAsks(p).map(walkAskHtml).join('') +
         checkBlock(p, false) +
         '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="here">Мы на месте</button></div>' + issueBtn();
     } else if (S.phase === 'step') {
       var p2 = pt();
-      h = pointHead(p2, 'на месте') + '<section class="pl-scene"><div class="pl-prose">' + prose(p2.scene) + '</div></section>';
+      h = pointHead(p2, 'на месте') + (p2.scene || p2.audio ? '<section class="pl-scene' + (Array.isArray(p2.scene) ? ' pl-lines' : '') + '">' + (p2.audio ? audioBtn(p2.audio) : '') + linesHtml(p2.scene) + '</section>' : '');
       for (var k = 0; k < S.k; k++) h += doneStep(p2.steps[k], S.res[k], k);
       h += activeStep(p2.steps[S.k]);
+      h += kidsHtml(p2.kids);
       h += checkBlock(p2, true);
       h += issueBtn();
     } else if (S.phase === 'point_done') {
@@ -500,11 +913,16 @@
       var last = S.p + 1 >= n;
       h = pointHead(p3, 'пройдена');
       if (p3.clue) h += '<div id="active" style="scroll-margin-top:96px"><span class="pl-label">Улика № ' + S.board.length + ' — на вашей доске</span>' + clueCard(p3.clue, true) + '</div>';
-      if (p3.outro) h += '<section class="pl-scene"' + (p3.clue ? '' : ' id="active"') + '><div class="pl-prose">' + prose(p3.outro) + '</div></section>';
+      var fresh3 = S.cards.filter(function (c) { return c.n === p3.n; });
+      if (fresh3.length) {
+        h += '<div' + (p3.clue ? '' : ' id="active"') + ' style="scroll-margin-top:96px"><span class="pl-label">На доску улик ' + (fresh3.length === 1 ? 'легла карточка' : 'легли карточки') + '</span>' +
+          '<div class="pl-cards">' + fresh3.map(function (c) { return cardHtml(c.id, { isNew: true }); }).join('') + '</div></div>';
+      }
+      if (p3.outro) h += '<section class="pl-scene' + (Array.isArray(p3.outro) ? ' pl-lines' : '') + '"' + (p3.clue || fresh3.length ? '' : ' id="active"') + '>' + linesHtml(p3.outro) + '</section>';
       h += '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="nextpoint">' + (last ? 'К финалу' : 'К точке ' + (S.p + 2)) + '</button></div>' + issueBtn();
     } else if (S.phase === 'done') {
       h = head('Финал', 'Дело закрыто', '', 1) +
-        (Q.finale || []).map(function (m) { return '<section class="pl-card"><div class="pl-prose">' + prose(m) + '</div></section>'; }).join('') +
+        (Q.finale || []).map(function (m) { return '<section class="pl-card' + (Array.isArray(m) ? ' pl-lines' : '') + '">' + linesHtml(m) + '</section>'; }).join('') +
         '<section class="pl-card"><span class="pl-label">Время прохождения</span><p class="pl-dist" style="font-size:28px;margin:0">' + dur((S.t_end || Date.now()) - S.t_start) + '</p></section>' +
         (S.field ? '<section class="pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
           '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="note">Заметка</button><button class="pl-btn" type="button" data-act="report">Отправить отчёт</button></div></section>' : '') +
@@ -542,17 +960,21 @@
       if (b.dataset.view === view) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
     var badge = document.getElementById('badge');
-    badge.textContent = S.board.length ? String(S.board.length) : '';
-    if (S.board.length > lastBadge && lastKey !== null) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
-    lastBadge = S.board.length;
+    var bn = S.board.length + (usesCards() ? cardCount() : 0);
+    badge.textContent = bn ? String(bn) : '';
+    if (bn > lastBadge && lastKey !== null) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
+    lastBadge = bn;
     document.getElementById('side').innerHTML = playing ? sideHtml() : '';
     // «живые» детали играют один раз — когда игрок продвинулся, а не при каждой перерисовке
     var key = [S.phase, S.p, S.k, S.paused].join(':');
     app.classList.toggle('pl-fresh', key !== lastKey && view === 'point');
     lastKey = key;
     app.innerHTML = view === 'board' ? boardView() : view === 'map' ? mapView() : pointView();
+    if (view === 'point') placeArrows(key); else [].forEach.call(app.querySelectorAll('.pl-arrow'), function (a) { a.remove(); });
     floatSoon();
   }
+  // После перерисовки вернуть фокус на ту же кнопку (выбор карточек, варианты) — клавиатура и чтение с экрана не теряют место
+  function refocus(sel) { var el = app.querySelector(sel); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } } }
   // Кнопка «К заданию»: только на телефоне и только пока главная кнопка задания вне экрана
   var floatEl = document.getElementById('float'), floatRaf = 0;
   function updateFloat() {
@@ -589,6 +1011,12 @@
     } else if (focus === 'input') {
       var inp = document.getElementById('ans');
       if (inp) { inp.focus(); inp.select(); }
+    } else if (/^input:w:\d+$/.test(focus || '')) {
+      var wi = document.getElementById('ans-w' + focus.split(':')[2]);
+      if (wi) { wi.focus(); wi.select(); }
+    } else if (/^walk:\d+$/.test(focus || '')) {
+      var wc = document.getElementById('walk-' + focus.split(':')[1]);
+      if (wc) wc.scrollIntoView({ block: 'start', behavior: smooth() });
     }
   }
 
@@ -642,6 +1070,13 @@
         '<div class="pl-row"><button class="pl-btn pl-btn--ghost pl-btn--sm" type="button" data-act="issuecopy">Скопировать снова</button>' +
         '<a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + esc(issueLink()) + '" target="_blank" rel="noopener">Открыть Telegram</a></div>' +
         '<div class="pl-actions"><button class="pl-btn" type="button" data-act="close">Вернуться к квесту</button></div>';
+    } else if (kind === 'letter') {
+      title = plain((Q.letter && Q.letter.title) || 'Письмо');
+      body = letterHtml(S.letter) + (Q.letter && Q.letter.note ? '<p class="pl-small">' + inline(Q.letter.note) + '</p>' : '');
+    } else if (/^card:/.test(kind)) {
+      var cid = kind.slice(5);
+      title = CARDS[cid] ? plain(CARDS[cid].title) : 'Улика';
+      body = cardHtml(cid, { full: true });
     } else if (kind === 'report') {
       title = 'Отчёт';
       body = '<p class="pl-small">Нажмите «Отправить» и выберите Telegram. Если не получается, нажмите «Скопировать» и вставьте текст в чат с ботом.</p>' +
@@ -824,9 +1259,22 @@
     go: showWalk,
     here: arrive,
     next: function () { resolve({ st: 'info' }); },
-    hint: function (el) { hint(parseInt(el.dataset.level, 10)); },
-    reveal: reveal,
-    skip: skip,
+    hint: function (el) { hint(parseInt(el.dataset.level, 10), ctxOf(el)); },
+    reveal: function (el) { reveal(ctxOf(el)); },
+    skip: function (el) { skip(ctxOf(el)); },
+    choose: function (el) { choose(el.dataset.id, ctxOf(el)); },
+    sel: function (el) { toggleSel(el.dataset.sel, ctxOf(el)); },
+    check: function (el) { checkSel(ctxOf(el)); },
+    letter: function () { openSheet('letter'); },
+    card: function (el) { openSheet('card:' + el.dataset.id); },
+    layer: function (el) {
+      var n = +el.dataset.n || 1, i = ((+el.dataset.i || 0) + 1) % n;
+      el.dataset.i = i;
+      [].forEach.call(el.querySelectorAll('img[data-layer]'), function (im) { im.hidden = +im.dataset.layer !== i; });
+      [].forEach.call(el.querySelectorAll('.pl-dots i'), function (d, j) { d.classList.toggle('on', j === i); });
+      el.setAttribute('aria-label', el.getAttribute('aria-label').replace(/Слой \d+ из/, 'Слой ' + (i + 1) + ' из'));
+    },
+    audio: function (el) { playAudio(el); },
     nextpoint: nextPoint,
     totask: function () {
       var t = document.getElementById('active');
@@ -887,7 +1335,7 @@
     if (!Q) return;
     if (f.dataset.form === 'answer') {
       e.preventDefault();
-      answer(f.elements.ans.value);
+      answer(f.elements.ans.value, ctxOf(f));
     } else if (f.dataset.form === 'note') {
       e.preventDefault();
       var text = f.elements.note.value.trim();
@@ -927,6 +1375,32 @@
   });
   sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
   sheet.addEventListener('close', function () { sheetKind = null; });
+
+  // ---------- звук: один плеер на страницу; файла нет — понятный тост, квест не ломается ----------
+  var voice = null, voiceBtn = null;
+  function playAudio(el) {
+    if (el.getAttribute('aria-disabled') === 'true') { toast('Озвучка появится позже — пока читаем глазами'); return; }
+    var src = el.dataset.src;
+    if (!src) return;
+    if (voice && voiceBtn === el && !voice.paused) { voice.pause(); return; }
+    if (voice) { voice.pause(); }
+    voice = new Audio(src); voiceBtn = el;
+    var setOn = function (on) { if (voiceBtn) { voiceBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); var t = voiceBtn.querySelector('span'); if (t) t.textContent = on ? 'Пауза' : 'Слушать'; } };
+    voice.addEventListener('play', function () { setOn(true); });
+    voice.addEventListener('pause', function () { setOn(false); });
+    voice.addEventListener('ended', function () { setOn(false); });
+    voice.addEventListener('error', function () { setOn(false); toast('Озвучка ещё не готова — читаем глазами'); });
+    var pr = voice.play();
+    if (pr && pr.catch) pr.catch(function () { /* ошибку покажет событие error */ });
+  }
+  // Картинка не загрузилась — остаётся заглушка с подписью, раскладка не прыгает
+  document.addEventListener('error', function (e) {
+    var t = e.target;
+    var fr = t && t.tagName === 'IMG' && t.closest('.pl-frame');
+    if (!fr) return;
+    t.classList.add('is-broken');
+    if (fr.tagName !== 'BUTTON' && t.alt) { fr.setAttribute('role', 'img'); fr.setAttribute('aria-label', t.alt + ' (картинка готовится)'); }
+  }, true);
 
   // ---------- код доступа (docs/codes.md): так же, как scripts/codes.py ----------
   var CODE_KEY = 'dvorami:code:' + QID;
@@ -1054,7 +1528,8 @@
 
   // ---------- запуск ----------
   function begin(q) {
-    Q = q;
+    Q = prepare(q);
+    indexCards(q);
     S = load();
     if (S.phase !== 'idle') { log('reload'); save(); }
     themeColor();
@@ -1089,7 +1564,8 @@
   }
 
   // Для проверок: функции сверки ответов и состояние
-  window.__dvorami = { norm: norm, matches: matches, state: function () { return S; }, quest: function () { return Q; }, report: function () { return report(); } };
+  window.__dvorami = { norm: norm, matches: matches, state: function () { return S; }, quest: function () { return Q; }, report: function () { return report(); },
+    flags: function () { return FLAGS; }, cards: function () { return CARDS; } };
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
     navigator.serviceWorker.register('../sw.js').catch(function () { /* без офлайна */ });

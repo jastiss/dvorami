@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /* Автотест плеера «Дворами»: node scripts/player_check.js [--quest=zilart] [--page=путь/к/странице/] [--shots=папка]
  *   [--data=quest.json] — открытое дело без кода (макеты тем); без --data дело шифруется на лету, как в pages.yml.
+ *   [--flags=st4:B,st10:B] — ветки А/Б; [--allow-missing-media] — для теста заглушек картинок.
+ *   Формат 5 целиком: node scripts/player_check.js --data=scripts/fixtures/quest-format5.json --allow-missing-media
  *
  * Проходит дело целиком в настоящем плеере (site/play/<id>/) по данным quests/<id>/quest.json — от обложки до финала —
  * на 390, 1024 и 1440 px, в тёмной и светлой теме. Внешние запросы блокируются. Проверяет каркас экрана
@@ -15,7 +17,10 @@
  *     из ссылки #code=) открывает дело, код запоминается и переживает перезагрузку;
  *   - цели Метрики экрана кода (T-69): code_fail с причиной (wrong, bad_chars, length…) на каждую ошибку, code_ok (typed/link)
  *     после верного кода; сам код в параметры целей не попадает;
- *   - на 390 главная кнопка шага видна без прокрутки и не закрыта навигацией (T-60).
+ *   - на 390 главная кнопка шага видна без прокрутки и не закрыта навигацией (T-60);
+ *   - формат 5 (docs/quest-format.md): реплики, варианты (choice), выбор карточек доски (pick), «вычеркни лишнее» (strike),
+ *     ответ из частей (all) и «почти» (replies), вопросы на ходу (walk_ask), письмо-улика в шторке, задание для детей,
+ *     «стрелки» показываются один раз; ветки А/Б — прогон с ?flags= (--flags=st4:B).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
 'use strict';
@@ -31,7 +36,20 @@ const args = Object.fromEntries(process.argv.slice(2).map(a => a.replace(/^--/, 
 const QID = args.quest || 'zilart';
 const PAGE = args.page || `site/play/${QID}/`;          // путь от корня репозитория
 const QUEST = args.data || path.join(REPO, 'quests', QID, 'quest.json');
-const Q = JSON.parse(fs.readFileSync(QUEST, 'utf8'));
+const RAW = JSON.parse(fs.readFileSync(QUEST, 'utf8'));
+// Ветки А/Б — как в плеере: элемент списка с "if" остаётся, только если флаг совпал (по умолчанию «A»)
+const FLAGS = Object.assign({}, RAW.flags || {});
+if (args.flags) args.flags.split(',').forEach(p => { const [k, v] = p.split(/[:=]/); if (k && v) FLAGS[k] = v; });
+const flag = k => String(FLAGS[k] || 'A');
+const passes = c => {
+  if (!c) return true;
+  if (typeof c === 'string') { const m = c.match(/^\s*([\w-]+)\s*(!?=)\s*(.+?)\s*$/); if (!m) return true; const hit = m[3].split('|').map(x => x.trim()).includes(flag(m[1])); return m[2] === '=' ? hit : !hit; }
+  return Object.entries(c).every(([k, v]) => [].concat(v).map(String).includes(flag(k)));
+};
+const prune = x => Array.isArray(x) ? x.filter(e => !(e && typeof e === 'object' && !Array.isArray(e) && !passes(e.if))).map(prune)
+  : (x && typeof x === 'object') ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, prune(v)])) : x;
+const Q = prune(RAW);
+const QS = args.flags ? '?flags=' + encodeURIComponent(args.flags) : '';
 // Без --data — как на стенде: дело зашифровано, коды — тестовые, только на время прогона
 const SEALED = !args.data;
 const BUNDLE = SEALED ? JSON.parse(execFileSync('python3', [path.join(REPO, 'scripts', 'codes.py'), 'selftest-bundle', '--quest', QID,
@@ -42,6 +60,26 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 
 
 const errors = [];
 const err = (where, msg) => errors.push(`${where}: ${msg}`);
+
+// Формат 5: данные сходятся до прогона — карточки по id определены, ответы pick/choice существуют, состояния письма есть
+(function validate(q) {
+  const defs = new Set(), refs = [], states = new Set(((q.letter || {}).states || []).map(s => s.id));
+  const walk = (x, where) => {
+    if (Array.isArray(x)) return x.forEach((e, i) => walk(e, where));
+    if (!x || typeof x !== 'object') return;
+    for (const c of [].concat(x.cards || [])) { if (typeof c === 'string') refs.push([c, where]); else if (c && c.id) defs.add(c.id); }
+    for (const id of [].concat(x.strike || [], x.add || [])) refs.push([id, where]);
+    if (x.doc === 'card') refs.push([x.id, where]);
+    if (x.doc === 'letter' && x.state && !states.has(x.state)) err('данные', `${where}: нет состояния письма «${x.state}»`);
+    if (q.letter && (x.type || x.steps) && x.letter && typeof x.letter === 'string' && !states.has(x.letter)) err('данные', `${where}: нет состояния письма «${x.letter}»`);
+    if (x.type === 'pick') for (const set of x.answers || []) for (const id of [].concat(set)) refs.push([id, where + ' (pick)']);
+    if (x.type === 'choice') { const ids = (x.options || []).map(o => o.id); for (const a of [].concat(x.answer || x.answers || [])) if (!ids.includes(a)) err('данные', `${where}: верный вариант «${a}» не среди вариантов`); }
+    if (x.type === 'ask' && !(x.answers || []).length && !(x.all || []).length) err('данные', `${where}: у загадки нет answers и all`);
+    for (const [k, v] of Object.entries(x)) if (k !== 'if' && typeof v === 'object') walk(v, x.id && x.n ? `точка ${x.n}` : where);
+  };
+  walk(q, 'дело');
+  for (const [id, where] of refs) if (!defs.has(id)) err('данные', `${where}: карточка «${id}» нигде не определена`);
+})(RAW);
 
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
@@ -130,7 +168,8 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
 (async () => {
   await new Promise(r => server.listen(PORT, '127.0.0.1', r));
   const browser = await chromium.launch();
-  const firstAnswer = st => String(st.answers[0]).replace(/^~/, '');
+  const firstAnswer = st => st.answers && st.answers.length ? String(st.answers[0]).replace(/^~/, '')
+    : (st.all || []).map(g => String((Array.isArray(g) ? g : g.answers)[0]).replace(/^~/, '')).join(' ');
   let screens = 0;
 
   for (const vp of [{ width: 390, height: 844 }, { width: 1024, height: 768 }, { width: 1440, height: 900 }]) {
@@ -147,7 +186,9 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       page.on('console', m => {
         if (m.type() !== 'error' || /ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) return;
         if (!SEALED && /quest\.locked\.json/.test((m.location() || {}).url || '')) return; // открытое дело: зашифрованного нет — так и задумано
-        err(tag, 'консоль: ' + m.text().slice(0, 200));
+        // --allow-missing-media: тест заглушек (scripts/fixtures) — отсутствующие картинки в media/ допустимы; в настоящем деле — ошибка
+        if ('allow-missing-media' in args && /\/media\//.test((m.location() || {}).url || '')) return;
+        err(tag, 'консоль: ' + m.text().slice(0, 200) + (process.env.PC_DEBUG ? ' @ ' + JSON.stringify(m.location()) : ''));
       });
       page.on('pageerror', e => err(tag, 'JS: ' + e.message));
       page.on('dialog', d => d.accept());
@@ -173,9 +214,40 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           }
         }
       };
+      // Ответить на задание формата 5 в контексте sel («#active» — шаг, «#walk-0» — вопрос на ходу); wrong — сначала неверно
+      const solve = async (sel, st, sat, wrong) => {
+        if (st.type === 'choice') {
+          const f = st.answer_flag && FLAGS[st.answer_flag];
+        const right = f && (st.options || []).some(o => o.id === f) ? f : [].concat(st.answer || st.answers)[0];
+          const bad = (st.options || []).find(o => o.id !== right);
+          if (wrong && bad) {
+            await click(`${sel} [data-act="choose"][data-id="${bad.id}"]`);
+            if (!(await page.$(`${sel} .pl-wrong`))) err(tag, `${sat}: нет сообщения о неверном варианте`);
+            await check(sat + ' · неверный вариант');
+          }
+          await click(`${sel} [data-act="choose"][data-id="${right}"]`);
+          return;
+        }
+        if (st.type === 'pick' || st.type === 'strike') {
+          const want = st.type === 'pick' ? [].concat(st.answers[0]) : (st.items || []).filter(i => !i.keep).map(i => i.id);
+          if (wrong) {
+            await click(`${sel} [data-act="check"]`);
+            if (!(await page.$(`${sel} .pl-wrong`))) err(tag, `${sat}: нет сообщения о неверном выборе`);
+          }
+          for (const id of want) await click(`${sel} [data-sel="${id}"]`);
+          await check(sat + ' · выбрано');
+          await click(`${sel} [data-act="check"]`);
+          return;
+        }
+        if (wrong) {
+          await page.fill(`${sel} input[name="ans"]`, 'заведомо неверно'); await click(`${sel} button[type="submit"]`);
+          if (!(await page.$(`${sel} .pl-wrong`))) err(tag, `${sat}: нет сообщения о неверном ответе`);
+        }
+        await page.fill(`${sel} input[name="ans"]`, st.type === 'free' ? '10' : firstAnswer(st)); await click(`${sel} button[type="submit"]`);
+      };
       // ссылка с кодом (как после оплаты) — в одном прогоне; в остальных — экран кода и ввод руками
       const viaLink = SEALED && vp.width === 390 && theme === 'sun';
-      await page.goto(`${BASE}/${PAGE}` + (viaLink ? `#code=${BUNDLE.code}` : ''), { waitUntil: 'load' });
+      await page.goto(`${BASE}/${PAGE}${QS}` + (viaLink ? `#code=${BUNDLE.code}` : ''), { waitUntil: 'load' });
       if (SEALED && !viaLink) {
         await page.waitForSelector('form[data-form="code"]');
         await check('код доступа');
@@ -216,6 +288,17 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         const at = `точка ${p.n}`;
         if ((await state()).phase !== 'walk') { err(tag, `${at}: нет экрана дороги`); break; }
         await check(at + ' · дорога');
+        // вопросы на ходу: чётный — ответить (с неверной попытки), нечётный — пропустить; прогресс точки не меняется
+        for (const [wi, w] of [].concat(p.walk_ask || []).entries()) {
+          const wsel = `#walk-${wi}`, wat = `${at} · на ходу ${wi + 1}`;
+          if (!(await page.$(wsel))) { err(tag, `${wat}: нет вопроса на ходу`); continue; }
+          if (wi % 2 === 0 && (w.answers || w.all || w.options)) await solve(wsel, w, wat, true);
+          else await click(`${wsel} [data-act="skip"]`);
+          const ws = await state();
+          if (!ws.wa[wi] || !ws.wa[wi].res) err(tag, `${wat}: ответ не засчитан`);
+          if (ws.phase !== 'walk') err(tag, `${wat}: вопрос на ходу сдвинул прогресс (${ws.phase})`);
+          await check(wat + ' · после ответа');
+        }
         if (pi === 1) {
           await click('[data-view="map"]'); await check(at + ' · карта');
           await click('[data-view="board"]'); await check(at + ' · улики');
@@ -231,8 +314,19 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           const s0 = await state();
           if (s0.phase !== 'step' || s0.k !== si) { err(tag, `${sat}: ожидали шаг ${si + 1}, состояние ${s0.phase}/${s0.k}`); break; }
           if (si === 0 || st.type !== 'info') await check(sat);
-          if (st.type === 'info' || st.type === 'board') { await click('#active [data-act="next"]'); continue; }
+          if (si === 0 && p.kids) {
+            await page.click('.pl-kids > summary'); await check(sat + ' · детям');
+            if ((await state()).k !== si) err(tag, `${sat}: задание для детей сдвинуло прогресс`);
+            await page.click('.pl-kids > summary');
+          }
+          if (!st.type || st.type === 'info' || st.type === 'board' || st.type === 'say') { await click('#active [data-act="next"]'); continue; }
           if (st.type === 'free') { await page.fill('#ans', '10'); await click('#active button[type="submit"]'); continue; }
+          if (st.type === 'choice' || st.type === 'pick' || st.type === 'strike') {
+            await solve('#active', st, sat, si % 2 === 0);
+            const sx = await state();
+            if (sx.k === si && sx.phase === 'step') err(tag, `${sat}: не принят верный выбор`);
+            continue;
+          }
           // загадка: неверный ответ не проходит
           if (si % 2 === 0) {
             await page.fill('#ans', 'заведомо неверно'); await click('#active button[type="submit"]');
@@ -257,9 +351,14 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         const s1 = await state();
         if (s1.phase !== 'point_done') { err(tag, `${at}: точка не закрылась (${s1.phase}/${s1.k})`); break; }
         await check(at + ' · пройдена');
-        if (pi === 3) {
+        if (pi === 3 || (Q.letter && pi === Q.points.length - 2)) {
           await shot('player-clue');
           await click('[data-view="board"]'); await check(at + ' · улики'); await shot('player-board');
+          if (await page.$('[data-act="letter"]')) {
+            await click('[data-act="letter"]'); await check(at + ' · письмо'); await shot('player-letter-' + pi); await click('[data-act="close"]');
+          }
+          const openCard = await page.$('.pl-cardx [data-act="card"]');
+          if (openCard) { await openCard.click(); await check(at + ' · карточка'); await click('[data-act="close"]'); }
           await click('[data-view="map"]'); await check(at + ' · карта'); await shot('player-map');
           await click('[data-view="point"]');
         }
@@ -271,6 +370,10 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       else {
         await check('финал');
         if (end.board.length !== clues) err(tag, `улик ${end.board.length}, ожидали ${clues}`);
+        // «стрелки»: каждая цель показана, и показана один раз (запомнена за одним экраном)
+        const targets = new Set(JSON.stringify(Q).match(/"arrow":"[^"]+"/g) || []);
+        for (const t of targets) { const k = t.split('"')[3]; if (!end.arrows || !end.arrows[k]) err(tag, `стрелка «${k}» ни разу не показана`); }
+        if (Q.letter && !end.letter) err(tag, 'письмо-улика не попало на доску');
         await click('[data-view="board"]'); await check('финал · улики');
         await click('[data-view="map"]'); await check('финал · карта');
       }
