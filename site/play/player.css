@@ -341,7 +341,7 @@ details.pl-field[open] summary { margin-bottom: 10px; }
 .pl-sheet-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between;
   padding: 8px 4px 8px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
 .pl-sheet-head h2 { font: 600 20px/1.2 var(--font-text); }
-.pl-x { width: 48px; height: 48px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; }
+.pl-x { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; }
 .pl-sheet-body { padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); }
 .pl-sheet-body > * + * { margin-top: 12px; }
 .pl-menu { display: grid; }
@@ -429,7 +429,7 @@ details.pl-field[open] summary { margin-bottom: 10px; }
 .pl-line--titr { border-left: 0; padding-left: 0; }
 .pl-line--titr .pl-prose { font-style: italic; color: var(--text-2); }
 .pl-line--paper { border-left: 0; padding: 14px 16px; background: var(--paper); color: var(--ink); border-radius: min(var(--radius), 8px); }
-.pl-line--paper .pl-who { color: var(--ink-2); }
+.pl-line--paper .pl-who, .pl-line--paper .pl-who small { color: var(--ink-2); }
 .pl-hand { font-family: var(--font-hand); font-style: italic; color: var(--ink-hand); font-size: 18px; }
 .pl-line--paper .pl-hand, .pl-letter .pl-hand { color: var(--ink-hand); }
 .pl-lines > * + * { margin-top: 14px; }
@@ -553,3 +553,5 @@ details.pl-field[open] summary { margin-bottom: 10px; }
 .pl-vers .pl-cardx { border-left: 4px dashed var(--control); }
 .pl-vers + * { margin-top: 16px; }
 .pl-cardx-x { white-space: normal; transform: none; text-transform: none; letter-spacing: 0; font: 600 15px/1.3 var(--font-text); }
+.pl-tip.has-note { width: 88px; position: relative; }
+.pl-tip-note { position: absolute; top: 6px; left: 0; right: 0; display: block; text-align: center; font: 600 13px/1.2 var(--font-doc); letter-spacing: .04em; color: var(--ink-hand); }

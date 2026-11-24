@@ -240,7 +240,12 @@ def leak_needles(q):
             for k, v in x.items():
                 if k in ("text", "ok", "hints", "says", "scene", "outro", "lines", "back", "reply", "missing", "caption", "kids", "answer", "title", "label"):
                     deep(v)
-                elif k in ("answers", "all", "replies", "options", "items", "near", "cards", "states", "walk_ask", "steps"):
+                elif k in ("replies", "near"):
+                    # «почти» — неверные ответы: их текст-реакция — спойлер, сами слова — нет
+                    for r in (v if isinstance(v, list) else [v]):
+                        if isinstance(r, dict):
+                            deep(r.get("text"))
+                elif k in ("answers", "all", "options", "items", "cards", "states", "walk_ask", "steps"):
                     if k in ("answers",):
                         for a in (v if isinstance(v, list) else [v]):
                             if isinstance(a, str):

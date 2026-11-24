@@ -620,9 +620,18 @@
     var eight = '<svg viewBox="0 0 64 26" aria-hidden="true" focusable="false"><g fill="none" stroke="var(--ink-hand)">' +
       '<circle cx="18" cy="13" r="7" stroke-width="1.6"/><circle cx="18" cy="13" r="9.5" stroke-width="1.6"/>' +
       '<circle cx="40" cy="13" r="7" stroke-width="2.8"/><circle cx="52" cy="13" r="7" stroke-width="2.8"/></g></svg>';
-    if (s.tip === 'eight') {
-      var top = s.eight_side === 'bottom' ? rings + eight : eight + rings;
-      tip = '<span class="pl-tip pl-tip--circles" role="img" aria-label="кончик полоски: две линии до края, по обе стороны ряды кружков; один не кружок — два кружка срослись боками, как восьмёрка, и обведены с нажимом">' + top + '</span>';
+    // восьмёрка формата 5.2: по бокам — ряды точек, одна восьмёрка из двух колечек с нажимом, у края — обрывок подписи (tip_note)
+    var dots = '<svg viewBox="0 0 64 26" aria-hidden="true" focusable="false"><g fill="var(--ink-hand)"><circle cx="10" cy="13" r="2.6"/><circle cx="25" cy="13" r="2.6"/><circle cx="40" cy="13" r="2.6"/><circle cx="55" cy="13" r="2.6"/></g></svg>';
+    var eight2 = '<svg viewBox="0 0 64 26" aria-hidden="true" focusable="false"><g fill="var(--ink-hand)"><circle cx="10" cy="13" r="2.6"/></g>' +
+      '<g fill="none" stroke="var(--ink-hand)" stroke-width="2.8"><circle cx="32" cy="13" r="6.5"/><circle cx="44" cy="13" r="6.5"/></g></svg>';
+    if (s.tip === 'eight' || s.tip === 'eight-dots') {
+      var dotted = s.tip === 'eight-dots';
+      var a1 = dotted ? eight2 : eight, a2 = dotted ? dots : rings;
+      var top = s.eight_side === 'bottom' ? a2 + a1 : a1 + a2;
+      var note = s.tip_note ? '<span class="pl-tip-note">' + esc(s.tip_note) + '</span>' : '';
+      tip = '<span class="pl-tip pl-tip--circles' + (note ? ' has-note' : '') + '" role="img" aria-label="кончик полоски: две линии до края, по обе стороны ряды ' + (dotted ? 'точек' : 'кружков') +
+        '; в одном месте — два ' + (dotted ? 'колечка' : 'кружка') + ' срослись боками, как восьмёрка, и обведены с нажимом' + (s.tip_note ? '; у края обрывок подписи: ' + esc(s.tip_note) : '') + '">' +
+        (note && s.eight_side !== 'bottom' ? note : '') + top + (note && s.eight_side === 'bottom' ? note : '') + '</span>';
     }
     else tip = s.tip === 'circles'
       ? '<span class="pl-tip pl-tip--circles" role="img" aria-label="кончик полоски: две линии до края и кружки по обе стороны, каждый обведён дважды">' + rings + rings + '</span>'
