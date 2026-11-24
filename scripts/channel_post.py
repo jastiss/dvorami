@@ -102,7 +102,8 @@ def spoiler_terms():
                 continue
             for w in v:
                 terms.add(w.lower())
-    for qf in glob.glob(str(ROOT / "quests" / "*" / "quest.json")):
+    # слова-ответы — из действующего дела и из копии формата 3 (quest-v3.1.json): спойлером остаются оба набора
+    for qf in glob.glob(str(ROOT / "quests" / "*" / "quest.json")) + glob.glob(str(ROOT / "quests" / "*" / "quest-v*.json")):
         try:
             q = json.loads(pathlib.Path(qf).read_text(encoding="utf-8"))
         except Exception:

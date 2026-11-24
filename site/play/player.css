@@ -548,3 +548,8 @@ details.pl-field[open] summary { margin-bottom: 10px; }
 }
 @keyframes pl-call { 50% { box-shadow: inset 0 0 0 2px var(--accent-text); } }
 @media (min-width: 560px) { .pl-opts:not(.pl-opts--img) { grid-template-columns: 1fr 1fr; } }
+
+/* Доска версий: над письмом и уликами; версии — пунктирной полосой, зачёркнутые — со штампом-причиной */
+.pl-vers .pl-cardx { border-left: 4px dashed var(--control); }
+.pl-vers + * { margin-top: 16px; }
+.pl-cardx-x { white-space: normal; transform: none; text-transform: none; letter-spacing: 0; font: 600 15px/1.3 var(--font-text); }

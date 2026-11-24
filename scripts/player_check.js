@@ -310,7 +310,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         }
         await click('[data-act="here"]');
         for (const [si, st] of p.steps.entries()) {
-          const sat = `${at} шаг ${si + 1}`;
+          const sat = `${at} шаг ${si + 1}`; if (process.env.PC_DEBUG) console.log(tag, sat, st.type);
           const s0 = await state();
           if (s0.phase !== 'step' || s0.k !== si) { err(tag, `${sat}: ожидали шаг ${si + 1}, состояние ${s0.phase}/${s0.k}`); break; }
           if (si === 0 || st.type !== 'info') await check(sat);

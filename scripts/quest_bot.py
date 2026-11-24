@@ -34,7 +34,11 @@ import fire_team  # noqa: E402
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 MSK = ZoneInfo("Europe/Moscow")
 QUEST_ID = os.environ.get("QUEST", "zilart")
-QUEST_FILE = ROOT / "quests" / QUEST_ID / "quest.json"
+# Бот понимает формат 3: читает копию quest-v3.1.json (плеер — quest.json формата 5, docs/quest-format.md).
+# Адаптер бота под формат 5 — отдельная задача; нет копии — прежний quest.json.
+QUEST_FILE = ROOT / "quests" / QUEST_ID / "quest-v3.1.json"
+if not QUEST_FILE.exists():
+    QUEST_FILE = ROOT / "quests" / QUEST_ID / "quest.json"
 STATE_FILE = ROOT / ".telegram" / f"quest-{QUEST_ID}-state.json"
 OFFSET_FILE = ROOT / ".telegram" / "offset"
 DURATION = int(os.environ.get("DURATION_MIN", "300")) * 60

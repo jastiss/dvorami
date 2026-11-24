@@ -25,9 +25,13 @@ def quote(text):
 
 def main():
     qid = sys.argv[1] if len(sys.argv) > 1 else "zilart"
-    q = json.loads((ROOT / "quests" / qid / "quest.json").read_text(encoding="utf-8"))
+    # рендер понимает формат 3: копия quest-v3.1.json (quest.json — формат 5, docs/quest-format.md)
+    src = ROOT / "quests" / qid / "quest-v3.1.json"
+    if not src.exists():
+        src = ROOT / "quests" / qid / "quest.json"
+    q = json.loads(src.read_text(encoding="utf-8"))
     out = [f"# {q['title']}", "",
-           f"_Собрано из `quests/{qid}/quest.json`, версия {q.get('version')}. Не редактировать вручную — правки вносятся в quest.json._",
+           f"_Собрано из `{src.relative_to(ROOT)}`, версия {q.get('version')}. Не редактировать вручную — правки вносятся в quest.json._",
            "", q.get("summary", ""), "", "## Вступление", ""]
     for m in q["intro"]:
         out += [quote(m), ""]

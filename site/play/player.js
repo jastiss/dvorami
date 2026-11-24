@@ -584,7 +584,7 @@
     return '<button type="button" class="pl-audio" data-act="audio" data-src="' + esc(s) + '" data-arrow-at="sound" aria-pressed="false">' + ico('sound') + '<span>Слушать</span></button>';
   }
   // «Стрелка» — подсказка интерфейса у нужного элемента; показывается один раз (S.arrows), на том экране, где появилась
-  var ARROW_NAMES = { sound: 'Звук', image: 'Картинка', board: 'Доска улик', hint: 'Подсказки', plus: 'По желанию', letter: 'Письмо' };
+  var ARROW_NAMES = { sound: 'Звук', image: 'Картинка', board: 'Доска улик', hint: 'Подсказки', plus: 'По желанию', letter: 'Письмо', plan: 'План' };
   function arrowHtml(target, text) {
     return '<aside class="pl-arrow" data-arrow="' + esc(target) + '"><b>' + esc(ARROW_NAMES[target] || 'Подсказка') + '</b><span>' + inline(text) + '</span></aside>';
   }
@@ -613,9 +613,18 @@
         : '<span class="pl-stain" role="img" aria-label="пятно: слово не читается"></span>') + '</span>';
     }).join('');
     // кончик: присох (штриховка) или отошёл — две линии до края и кружки по обе стороны, каждый обведён дважды
+    var tip = '';
     var rings = '<svg viewBox="0 0 64 26" aria-hidden="true" focusable="false"><g fill="none" stroke="var(--ink-hand)" stroke-width="1.6">' +
       '<circle cx="18" cy="13" r="7"/><circle cx="18" cy="13" r="9.5"/><circle cx="46" cy="13" r="7"/><circle cx="46" cy="13" r="9.5"/></g></svg>';
-    var tip = s.tip === 'circles'
+    // восьмёрка: два кружка срослись боками, обведены с нажимом (между рядами обычных кружков)
+    var eight = '<svg viewBox="0 0 64 26" aria-hidden="true" focusable="false"><g fill="none" stroke="var(--ink-hand)">' +
+      '<circle cx="18" cy="13" r="7" stroke-width="1.6"/><circle cx="18" cy="13" r="9.5" stroke-width="1.6"/>' +
+      '<circle cx="40" cy="13" r="7" stroke-width="2.8"/><circle cx="52" cy="13" r="7" stroke-width="2.8"/></g></svg>';
+    if (s.tip === 'eight') {
+      var top = s.eight_side === 'bottom' ? rings + eight : eight + rings;
+      tip = '<span class="pl-tip pl-tip--circles" role="img" aria-label="кончик полоски: две линии до края, по обе стороны ряды кружков; один не кружок — два кружка срослись боками, как восьмёрка, и обведены с нажимом">' + top + '</span>';
+    }
+    else tip = s.tip === 'circles'
       ? '<span class="pl-tip pl-tip--circles" role="img" aria-label="кончик полоски: две линии до края и кружки по обе стороны, каждый обведён дважды">' + rings + rings + '</span>'
       : s.tip === 'stuck' ? '<span class="pl-tip pl-tip--stuck" role="img" aria-label="кончик присох к трубочке"></span>' : '';
     var desc = [];
@@ -709,7 +718,7 @@
           }).join('') + '</div>';
       } else if (st.type === 'pick' || st.type === 'strike') {
         var list = st.type === 'pick'
-          ? S.cards.map(function (c) { return { id: c.id, label: CARDS[c.id] ? CARDS[c.id].title : c.id, sub: CARDS[c.id] && CARDS[c.id].n ? 'Остановка ' + CARDS[c.id].n : '', struck: !!S.struck[c.id] }; })
+          ? S.cards.filter(function (c) { return !(CARDS[c.id] && CARDS[c.id].kind === 'version'); }).map(function (c) { return { id: c.id, label: CARDS[c.id] ? CARDS[c.id].title : c.id, sub: CARDS[c.id] && CARDS[c.id].n ? 'Остановка ' + CARDS[c.id].n : '', struck: !!S.struck[c.id] }; })
           : (st.items || []).map(function (x) { return { id: x.id, label: x.label, sub: x.sub || '' }; });
         var need = st.type === 'pick' ? (st.pick || 2) : 0;
         if (st.type === 'strike' && st.img !== undefined) h += figureHtml({ img: st.img, alt: st.alt || 'Снимок', ratio: st.ratio });
@@ -794,12 +803,18 @@
     var h = head(caseName(), 'Доска улик', n ? 'На доске: ' + n : '', 2);
     if (S.board.length) h += boardLetters(true);
     if (!n) return h + '<p class="pl-empty">' + esc(plain(Q.board_empty || 'Доска пока пуста. Всё, что найдёте, будет ложиться сюда.')) + '</p>';
+    h += '<!--vers-->';
     if (S.letter && Q.letter) {
       h += '<section class="pl-card pl-card--letter"><span class="pl-label">' + esc(plain(Q.letter.title || 'Письмо')) + '</span>' + letterHtml(S.letter) +
         '<button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="letter">Рассмотреть крупно</button></section>';
     }
     var list = S.cards.slice().reverse();
-    return h + '<div class="pl-cards">' + list.map(function (c) { return cardHtml(c.id); }).join('') + '</div>';
+    var isVer = function (c) { return CARDS[c.id] && CARDS[c.id].kind === 'version'; };
+    var vers = list.filter(isVer), clues = list.filter(function (c) { return !isVer(c); });
+    // версии — над письмом и уликами (доска версий: неверное зачёркивается с причиной)
+    var vh = vers.length ? '<section class="pl-vers"><span class="pl-label">Версии</span><div class="pl-cards">' + vers.map(function (c) { return cardHtml(c.id); }).join('') + '</div></section>' : '';
+    h = h.replace('<!--vers-->', vh);
+    return h + (clues.length ? (vers.length ? '<span class="pl-label">Улики</span>' : '') + '<div class="pl-cards">' + clues.map(function (c) { return cardHtml(c.id); }).join('') + '</div>' : '');
   }
   function boardView() {
     if (usesCards()) return cardsBoardView();
