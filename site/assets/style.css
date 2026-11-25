@@ -1450,9 +1450,6 @@ img.is-broken { visibility: hidden; }
 /* ===== Правки по замечаниям владельца 22–23.11 (итерация 10) ===== */
 /* Карточки дел: «Дело №N» отдельной строкой, название — с новой строки */
 .qc-no { display: block; white-space: nowrap; font-size: .78em; margin-bottom: 2px; }
-/* T-78: «Один код — вся компания» — полосой по низу обложки: крупно и без лишней строки (высоту ленты держит T-62) */
-.qgrid .qcard .qc-code { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 22px 22px 9px; font: 700 17px/1.25 var(--font-text); color: #fff; background: linear-gradient(180deg, rgba(8,12,30,0) 0, rgba(8,12,30,.82) 62%); pointer-events: none; }
-@media (min-width: 600px) { .qgrid .qcard .qc-code { padding-left: 26px; padding-right: 26px; } }
 /* «Как это устроено»: заголовок и рукописная пометка — по левому краю, как во всех блоках */
 .how-head { align-items: flex-start; text-align: left; margin: 0 0 44px; max-width: 40em; }
 /* Первый экран: одна иллюстрация-ссылка, а не стопка карточек — не выглядит как карусель, которую надо листать */
@@ -1486,14 +1483,16 @@ img.is-broken { visibility: hidden; }
 .rating-new { display: inline-flex; align-items: center; gap: 6px; font: 600 14px/1.2 var(--font-text); color: var(--text); border: 1px solid var(--control); border-radius: 999px; padding: 4px 10px; }
 .rating-new::before { content: "✦"; color: var(--accent); font-size: 12px; }
 @media (forced-colors: active) { .rating .stars::before { background: GrayText; opacity: 1; } .rating .stars::after { background: CanvasText; } }
-/* В карточке — полосой по низу обложки (место плашки «Один код», H-36): высота ленты на телефоне не растёт (T-62).
-   Если у дела есть и плашка «Один код», она встаёт над рейтингом. На странице дела — под плашкой с номером, цветом темы. */
-.qgrid .qcard .qc-rating { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 26px 22px 10px; color: #fff;
-  background: linear-gradient(180deg, rgba(8,12,30,0) 0, rgba(8,12,30,.85) 60%); pointer-events: none; }
-@media (min-width: 600px) { .qgrid .qcard .qc-rating { padding-left: 26px; padding-right: 26px; } }
+/* В карточке — маленькой плашкой в правом верхнем углу обложки, без затемнения: картинка видна целиком
+   (владелец 25.11: полоса по низу обложки «уменьшила картинки»). Высота ленты на телефоне не растёт (T-62).
+   На странице дела — под плашкой с номером, цветом темы. */
+.qgrid .qcard .qc-rating { position: absolute; top: 12px; right: 12px; z-index: 2; max-width: calc(100% - 24px); padding: 4px 10px; border-radius: 999px;
+  color: #fff; background: rgba(8,12,30,.62); border: 1px solid rgba(255,255,255,.55); font-size: 14px; pointer-events: none; }
 .qgrid .qcard .qc-rating .rating-v { color: #fff; }
-.qgrid .qcard .qc-rating .rating-new { color: #fff; border-color: rgba(255,255,255,.7); background: rgba(8,12,30,.35); }
-.qgrid .qcard .qc-code + .qc-rating { bottom: 34px; background: none; padding-top: 0; }
+.qgrid .qcard .qc-rating .rating-n { color: rgba(255,255,255,.85); }
+.qgrid .qcard .qc-rating .rating-new { color: #fff; border: 0; background: none; padding: 0; }
+/* телефон: левый верхний угол занят статусом дела — рейтинг в правом нижнем, чтобы звёзды с числом оценок не наезжали на статус */
+@media (max-width: 699px) { .qgrid .qcard .qc-rating { top: auto; bottom: 10px; right: 10px; } }
 .c-rating { margin: 10px 0 4px; color: inherit; }
 .c-rating .stars { --star: currentColor; }
 .c-rating .rating-v { color: inherit; }

@@ -6,6 +6,8 @@
 
 Глубокие ссылки https://t.me/dvorami_bot?start=...:
   done_<дело>       — финал в плеере: «дело закрыто» → оценка → понравилось → непонятно → цитата.
+  done_<дело>_<1–5> — то же, но оценку игрок уже поставил звёздами в плеере (H-47): бот её не спрашивает,
+                      а сразу благодарит и просит пару слов (дальше — тот же диалог).
                       Только здесь бот говорит «поздравляем»; запись помечается confirmed: true.
                       Оценку принимаем кнопкой (в т. ч. с более раннего сообщения: дело и финал зашиты
                       в кнопку) и цифрой текстом. Оценки с финала идут в рейтинг дела (scripts/build_ratings.py).
@@ -134,6 +136,8 @@ T = {
             "Команды: /start — меню, /cases — дела, /cancel — прервать разговор.",
     "rating_done": "Дело закрыто — поздравляем! 🕊\nКак вам {what}, от 1 до 5?",
     "rating": "Поделитесь впечатлением: как вам {what}, от 1 до 5?",
+    "rated_done": "Дело закрыто — поздравляем! 🕊\nСпасибо за оценку: {stars} {n} из 5.\n\n"
+                  "Что понравилось больше всего? Напишите пару слов.",
     "not_played": "Ещё не проходил(а)",
     "not_played_text": "Тогда напишите, что думаете или что хотели бы узнать, — передадим команде.",
     "liked": "Что понравилось больше всего? Напишите пару слов.",
@@ -520,6 +524,9 @@ class Bot:
         self.state["dialogs"][user] = d
         if flow == "report":
             return self.ask(chat, d, "report_text" if d["data"].get("category") else "report_cat")
+        if flow == "review" and d["data"].get("rating"):   # H-47: оценка уже поставлена в плеере
+            return self.ask(chat, d, "liked", lead=T["rated_done"].format(
+                stars="⭐" * d["data"]["rating"], n=d["data"]["rating"]))
         self.ask(chat, d, {"review": "rating", "suggest": "where", "question": "question", "remind": "when"}[flow])
 
     @staticmethod
@@ -533,7 +540,7 @@ class Bot:
             bits.append(REPORT_CATS[data["category"]].lower())
         return ("Записали: " + " · ".join(bits) + ".") if bits else ""
 
-    def ask(self, chat, d, step):
+    def ask(self, chat, d, step, lead=None):
         d["step"] = step
         sid = d["sid"]
         b = None
@@ -568,7 +575,7 @@ class Bot:
             text = T["remind_when"].format(what=case_name(d["data"].get("quest")))
         elif step == "not_played":
             text = T["not_played_text"]
-        self.send(chat, text, b)
+        self.send(chat, lead or text, b)
 
     def advance(self, chat, d, value):
         """Записать ответ на текущий шаг и перейти к следующему."""
@@ -671,6 +678,10 @@ class Bot:
     # ---------- обработка ----------
 
     def start(self, chat, user, arg):
+        rated = None
+        m = re.fullmatch(r"(done[_-].+?)[_-]([1-5])", arg or "")
+        if m and find_case(m.group(1).replace("_", "-").partition("-")[2]):   # done_<дело>_<оценка> из плеера (H-47)
+            arg, rated = m.group(1), int(m.group(2))
         flow, _, quest = arg.replace("_", "-").partition("-")
         flow = flow.lower()
         quest = alnum(quest) or None
@@ -680,7 +691,7 @@ class Bot:
         if flow == "report":
             self.begin(chat, user, "report", data=parse_report_start(arg))
         elif flow == "done":
-            self.begin(chat, user, "review", quest, {"confirmed": True})
+            self.begin(chat, user, "review", quest, {"confirmed": True, **({"rating": rated} if rated else {})})
         elif flow == "review":
             self.begin(chat, user, "review", quest)
         elif flow == "remind":

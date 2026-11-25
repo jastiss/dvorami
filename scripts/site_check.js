@@ -14,7 +14,7 @@
  *     осознанное исключение — атрибут data-size-exception="почему" на элементе и комментарий в CSS;
  *   - карточки дел: кнопки одного ряда на одной высоте (±2 px), цена ≥ 12 px от разделителя, тизер не обрезан на телефоне;
  *   - карточка дела в каталоге (главная, /moscow/) = страница дела: номер, название, статус, цифры, метро; карточки двух каталогов одинаковые;
- *   - карточка дела: первая фраза тизера — вопрос (H-31/H-38); плашка «Один код — вся компания» только у дел в продаже (H-36);
+ *   - карточка дела: первая фраза тизера — вопрос (H-31/H-38); на карточке нет «Один код — вся компания» ни в каком виде (владелец 25.11) и обложка не затемнена полосой;
  *   - ошибки в консоли и ошибки JS; предупреждения о неиспользованном preload шрифтов.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
@@ -191,9 +191,18 @@ function inPage(MAIN_CTA) {
     if (visible(p) && p.scrollHeight > p.clientHeight + 2) out.problems.push(`карточка дела №${p.closest('.qcard').dataset.case}: тизер длиннее 4 строк и обрезан — сократить поле card.teaser`);
   });
 
-  // 3a''. H-36: плашка «Один код — вся компания» на карточке — только у дела, которое можно взять сейчас
-  document.querySelectorAll('.qgrid .qcard[data-case]:not([data-status="sale"]) .qc-code').forEach(el => {
-    out.problems.push(`карточка дела №${el.closest('.qcard').dataset.case}: плашка «Один код» у дела не в продаже (${el.closest('.qcard').dataset.status}) — H-36`);
+  // 3a''. Владелец 25.11: «Один код — вся компания» — только в блоке покупки дела (#buy) и в FAQ, на карточках — нет
+  //       (ни плашкой, ни строкой цены); обложка карточки — картинка целиком: поверх неё нет полосы во всю ширину
+  document.querySelectorAll('.qgrid .qcard[data-case]').forEach(card => {
+    const no = card.dataset.case;
+    if (/один\s+код|вся\s+компания|на\s+(всю\s+)?компанию/i.test(card.textContent)) out.problems.push(`карточка дела №${no}: «один код / на компанию» на карточке — только в блоке покупки и FAQ (владелец 25.11)`);
+    const cover = card.querySelector('.qc-cover');
+    if (!cover || !visible(cover)) return;
+    const cw = cover.getBoundingClientRect().width;
+    cover.querySelectorAll(':scope > *:not(img)').forEach(el => {
+      const r = el.getBoundingClientRect(), bg = getComputedStyle(el).backgroundImage;
+      if (r.width > cw * 0.8 || /gradient/.test(bg)) out.problems.push(`карточка дела №${no}: поверх обложки полоса ${Math.round(r.width)}×${Math.round(r.height)} px (${el.className}) — картинка должна быть видна целиком (владелец 25.11)`);
+    });
   });
 
   // 3b. Схемы-карты: подписи одной роли одного размера; подписи не пересекаются между собой и с точками

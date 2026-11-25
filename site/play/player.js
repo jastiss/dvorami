@@ -75,7 +75,11 @@
   // ---------- формат 5 (docs/quest-format.md): ветки, реплики, доска карточек, письмо-улика ----------
   // Ветки А/Б: элемент любого списка с полем "if" остаётся, только если флаг совпал. Флаги — Q.flags (по умолчанию «A»),
   // для проверки на месте их можно переключить ссылкой ?flags=st4:B,st10:B (дело уже открыто кодом — тайны в этом нет).
-  var FLAGS = {};
+  var FLAGS = {}, URL_FLAGS = {};
+  // Ветки «по часам» (H-45, docs/quest-format.md, раздел 6а): Q.clock = {"zum": {"label": "ТЦ «ЗУМ»", "open": "10:00", "close": "22:00"}}.
+  // Флаг такой ветки — "open" / "closed": по местному времени Москвы на подходе к точке или кнопкой «Двери закрыты».
+  // Отбор по таким флагам — не при загрузке, а при показе (реплики дороги, сцены, итога точки и walk_m); ?flags=zum:closed — для проверки.
+  var CLOCK = {}, CLOCK_SEC = -1;
   function readFlags(q) {
     var f = {}, d = q.flags || {};
     for (var k in d) if (Object.prototype.hasOwnProperty.call(d, k)) f[k] = String(d[k]);
@@ -83,11 +87,42 @@
     if (m) {
       var raw = m[1];
       try { raw = decodeURIComponent(raw); } catch (e) { /* как есть */ }
-      raw.split(',').forEach(function (p) { var kv = p.split(/[:=]/); if (kv[0] && kv[1]) f[kv[0].trim()] = kv[1].trim(); });
+      raw.split(',').forEach(function (p) { var kv = p.split(/[:=]/); if (kv[0] && kv[1]) { f[kv[0].trim()] = kv[1].trim(); URL_FLAGS[kv[0].trim()] = kv[1].trim(); } });
     }
     return f;
   }
-  function flag(k) { return FLAGS[k] || 'A'; }
+  // Минуты от полуночи по Москве; ?at=21:30 — подставное время для проверки
+  function mskMinutes() {
+    var m = location.search.match(/[?&]at=(\d{1,2})(?::|%3A)(\d{2})/i);
+    if (m) return (+m[1]) * 60 + (+m[2]);
+    try {
+      var t = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Moscow', hour12: false, hour: '2-digit', minute: '2-digit' }).split(':');
+      return ((+t[0]) % 24) * 60 + (+t[1]);
+    } catch (e) { var d = new Date(); return ((d.getUTCHours() + 3) % 24) * 60 + d.getUTCMinutes(); }
+  }
+  function hm2min(s) { var m = String(s || '').match(/^(\d{1,2}):(\d{2})$/); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+  // open/close по часам; закрытие после полуночи («10:00–02:00») тоже работает; без часов — считаем открытым
+  function openAt(def, min) {
+    var a = hm2min(def.open), b = hm2min(def.close);
+    if (a == null || b == null || a === b) return true;
+    return a < b ? (min >= a && min < b) : (min >= a || min < b);
+  }
+  // Значение ветки «по часам» для точки: выбор, сделанный на подходе (по часам или рукой), запоминается — экран не меняется на ходу
+  function clockVal(k, sec) {
+    if (URL_FLAGS[k]) return URL_FLAGS[k];
+    var rec = S && S.clk && S.clk[sec] && S.clk[sec][k];
+    if (rec) return rec.v;
+    var v = openAt(CLOCK[k], mskMinutes()) ? 'open' : 'closed';
+    if (S && S.clk && sec === liveSec() && sec >= 0 && sec < Q.points.length) { (S.clk[sec] = S.clk[sec] || {})[k] = { v: v, by: 'time' }; }
+    return v;
+  }
+  function flag(k) { return CLOCK[k] ? (CLOCK_SEC < 0 ? (URL_FLAGS[k] || 'open') : clockVal(k, CLOCK_SEC)) : (FLAGS[k] || 'A'); }
+  function condKeys(cond) {
+    if (!cond) return [];
+    if (typeof cond === 'string') { var m = cond.match(/^\s*([\w-]+)\s*!?=/); return m ? [m[1]] : []; }
+    return Object.keys(cond);
+  }
+  function isClockCond(cond) { return condKeys(cond).some(function (k) { return !!CLOCK[k]; }); }
   function passes(cond) {
     if (!cond) return true;
     if (typeof cond === 'string') {
@@ -99,8 +134,9 @@
     for (var k in cond) if ([].concat(cond[k]).map(String).indexOf(flag(k)) === -1) return false;
     return true;
   }
+  // Ветки по часам при загрузке не отбираются (решаются при показе — clockPick)
   function prune(x) {
-    if (Array.isArray(x)) return x.filter(function (e) { return !(e && typeof e === 'object' && !Array.isArray(e) && !passes(e['if'])); }).map(prune);
+    if (Array.isArray(x)) return x.filter(function (e) { return !(e && typeof e === 'object' && !Array.isArray(e) && !isClockCond(e['if']) && !passes(e['if'])); }).map(prune);
     if (x && typeof x === 'object') { var o = {}; for (var k in x) if (Object.prototype.hasOwnProperty.call(x, k)) o[k] = prune(x[k]); return o; }
     return x;
   }
@@ -129,8 +165,48 @@
     var sp = (Q.speakers || {})[who] || {};
     return { name: sp.name || who, style: sp.style || 'hero', img: sp.img || '' };
   }
+  function clockKeysOf(list) {
+    var out = [];
+    (Array.isArray(list) ? list : []).forEach(function (e) { if (e && typeof e === 'object') condKeys(e['if']).forEach(function (k) { if (CLOCK[k] && out.indexOf(k) === -1) out.push(k); }); });
+    return out;
+  }
+  // Ветка по часам допустима в репликах walk / scene / outro и в walk_m списком; у точки и шага — нет (число шагов не должно меняться на ходу)
+  function clockWarn(q) {
+    (q.points || []).forEach(function (p) {
+      if (p && isClockCond(p['if'])) console.warn('clock: условие по часам у точки ' + p.n + ' не поддерживается — только в walk, scene, outro, walk_m');
+      (p.steps || []).forEach(function (st, i) { if (st && isClockCond(st['if'])) console.warn('clock: условие по часам у шага ' + (i + 1) + ' точки ' + p.n + ' не поддерживается'); });
+    });
+  }
+  // Отбор реплик (или вариантов walk_m) по веткам «по часам» для точки sec
+  // Строка с условием пишется объектом {"text": "…", "if": "zum=closed"} — после отбора она снова простая строка (абзац дороги)
+  function bareText(e) {
+    if (!e || typeof e !== 'object' || Array.isArray(e) || typeof e.text !== 'string') return e;
+    for (var k in e) if (k !== 'text' && k !== 'if') return e;
+    return e.text;
+  }
+  function clockPick(list, sec) {
+    if (!Array.isArray(list) || !clockKeysOf(list).length) return list;
+    CLOCK_SEC = sec;
+    try { return list.filter(function (e) { return !(e && typeof e === 'object' && !Array.isArray(e) && isClockCond(e['if']) && !passes(e['if'])); }).map(bareText); }
+    finally { CLOCK_SEC = -1; }
+  }
+  function pointClockKeys(p) {
+    var ks = [];
+    [p.walk, p.scene, p.outro, p.walk_m].forEach(function (l) { clockKeysOf(l).forEach(function (k) { if (ks.indexOf(k) === -1) ks.push(k); }); });
+    return ks;
+  }
+  function walkM(p, sec) {
+    var w = p.walk_m;
+    if (!Array.isArray(w)) return w;
+    var hit = clockPick(w, sec)[0];
+    return hit && typeof hit === 'object' ? hit.m : hit;
+  }
   function prepare(q) {
+    CLOCK = {};
+    var cq = q.clock || {};
+    for (var ck in cq) if (Object.prototype.hasOwnProperty.call(cq, ck) && cq[ck] && typeof cq[ck] === 'object') CLOCK[ck] = cq[ck];
     FLAGS = readFlags(q);
+    clockWarn(q);
     var p = prune(q);
     p.flags = FLAGS;
     return p;
@@ -261,7 +337,7 @@
       // формат 5: карточки доски [{id, n}], вычеркнутые {id: true}, состояние письма, увиденные «стрелки», вопросы на ходу
       cards: [], struck: {}, letter: null, arrows: {}, wa: [], reply: '', sel: [],
       // мини-шаги: f — экран, на котором игрок сейчас (в пределах точки); hist — ответы пройденных точек, чтобы их можно было пересмотреть
-      f: 0, hist: {} };
+      f: 0, hist: {}, clk: {} };
   }
   function fill(s) {
     s.res = s.res || []; s.board = s.board || []; s.events = s.events || [];
@@ -269,6 +345,7 @@
     if (s.letter === undefined) s.letter = null;
     if (s.reply === undefined) s.reply = '';
     s.hist = s.hist || {};
+    s.clk = s.clk || {};   // ветки «по часам»: {номер раздела: {ключ: {v: "open"|"closed", by: "time"|"hand"}}}
     if (typeof s.f !== 'number') s.f = -1;   // сохранение до мини-шагов: место подберёт fixCursor()
     return s;
   }
@@ -1033,7 +1110,7 @@
   // stage: 0 — дорога, 1 — на месте (шаги до k включительно), 2 — точка пройдена
   function pointFrames(pi, stage, k, res, wa) {
     var p = Q.points[pi], F = [], road = [], chat = [];
-    asLines(p.walk).forEach(function (l) { (typeof l === 'string' || (l && l.arrow && !chat.length) ? road : chat).push(l); });
+    asLines(clockPick(p.walk, pi)).forEach(function (l) { (typeof l === 'string' || (l && l.arrow && !chat.length) ? road : chat).push(l); });
     F.push({ id: 'w', kind: 'road', lines: road });
     beatsOf(chat).forEach(function (b, i) { F.push({ id: 'wc' + i, kind: 'beat', lines: b, audio: i ? null : p.walk_audio }); });
     walkAsks(p).forEach(function (w, i) {
@@ -1046,13 +1123,13 @@
     if (stage === 0 && F.length > 1) F.push({ id: 'wg', kind: 'go', lines: road });
     if (stage >= 1) {
       F.push({ id: 'a', kind: 'arrive' });
-      beatsOf(p.scene).forEach(function (b, i) { F.push({ id: 'sc' + i, kind: 'beat', lines: b, audio: i ? null : p.audio }); });
+      beatsOf(clockPick(p.scene, pi)).forEach(function (b, i) { F.push({ id: 'sc' + i, kind: 'beat', lines: b, audio: i ? null : p.audio }); });
       var last = Math.min(k, p.steps.length - 1);
       for (var i = 0; i <= last; i++) stepFrames(F, p, i, i < k ? (res[i] || { st: 'none' }) : null);
     }
     if (stage === 2) {
       F.push({ id: 'd', kind: 'done', end: true });
-      beatsOf(p.outro).forEach(function (b, i) { F.push({ id: 'o' + i, kind: 'beat', lines: b, end: true }); });
+      beatsOf(clockPick(p.outro, pi)).forEach(function (b, i) { F.push({ id: 'o' + i, kind: 'beat', lines: b, end: true }); });
     }
     return F;
   }
@@ -1126,7 +1203,24 @@
     if (p.img !== undefined && p.img) return figureHtml({ img: p.img, alt: p.img_alt || plain(p.title), ratio: '16 / 9' });
     return '<div class="pl-poster" data-shape="' + ((p.n - 1) % 3) + '" aria-hidden="true"><i></i><i></i><i></i><b>' + (p.n < 10 ? '0' : '') + p.n + '</b></div>';
   }
-  function distHtml(p) { return p.walk_m ? '<p class="pl-dist">≈ ' + p.walk_m + ' м <span>пешком</span></p>' : ''; }
+  function distHtml(p) { var m = walkM(p, Q.points.indexOf(p)); return m ? '<p class="pl-dist">≈ ' + m + ' м <span>пешком</span></p>' : ''; }
+  // H-45: строка «ТЦ «ЗУМ» открыт до 22:00» и кнопка «Двери закрыты» / «Двери открыты» — только на текущей дороге
+  function clockHtml(p, live) {
+    var sec = Q.points.indexOf(p), ks = pointClockKeys(p);
+    if (!ks.length) return '';
+    return ks.map(function (k) {
+      var d = CLOCK[k], v = clockVal(k, sec), rec = S.clk[sec] && S.clk[sec][k], hand = rec && rec.by === 'hand';
+      var label = d.label || 'Вход';
+      var txt = v === 'open'
+        ? (hand ? (d.hand_open_text || '{label}: вы отметили, что двери открыты') : (d.open_text || '{label} сейчас открыт, до {close}'))
+        : (hand ? (d.hand_closed_text || '{label}: вы отметили, что двери закрыты') : (d.closed_text || '{label} сейчас закрыт, откроется в {open}'));
+      txt = txt.replace('{label}', label).replace('{open}', d.open || '').replace('{close}', d.close || '');
+      var to = v === 'open' ? 'closed' : 'open';
+      return '<div class="pl-clock" data-clock="' + esc(k) + '" data-clock-v="' + esc(v) + '"><p class="pl-small">' + esc(txt) + '</p>' +
+        (live ? '<button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="clock" data-k="' + esc(k) + '" data-v="' + to + '">' +
+          esc(to === 'closed' ? (d.closed_button || 'Двери закрыты') : (d.open_button || 'Двери открыты')) + '</button>' : '') + '</div>';
+    }).join('');
+  }
   function mapBtn(p) {
     return '<a class="pl-btn pl-btn--ghost pl-btn--sm pl-maplink" href="' + esc(mapLink(p)) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + p.n + '">' + ico('out') + 'Открыть в Яндекс Картах</a>';
   }
@@ -1160,6 +1254,8 @@
   function rateNote(v) {
     return !v ? 'Нажмите на звезду.' : v >= 4 ? 'Спасибо! Пара слов в Telegram поможет другим решиться.' : 'Спасибо за честность. Напишите, что было не так, — поправим.';
   }
+  // H-47: оценка со звёзд финала едет в ссылку бота (done_<дело>_<1–5>) — бот не спрашивает её второй раз
+  function reviewLink(v) { return botLink('done_' + QID + (v >= 1 && v <= 5 ? '_' + v : '')); }
   function closedHtml() {
     var hints = S.events.filter(function (e) { return e.kind === 'hint' || e.kind === 'reveal'; }).length;
     var rated = Math.max(0, Math.min(5, parseInt(store.get(RATE_KEY), 10) || 0));
@@ -1179,7 +1275,7 @@
       '<section class="pl-card pl-rate" id="rate"><h2 class="pl-rate-q">Как вам дело?</h2>' +
       '<div class="pl-stars" role="radiogroup" aria-label="Оценка дела, от 1 до 5">' + starsHtml(rated) + '</div>' +
       '<p class="pl-small" id="rate-note" role="status">' + rateNote(rated) + '</p>' +
-      '<div class="pl-actions"><a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + esc(botLink('done_' + QID)) + '" target="_blank" rel="noopener" data-track="review_click" data-track-quest="' + esc(QID) + '">' + ico('send') + 'Оставить отзыв в Telegram</a></div></section>' +
+      '<div class="pl-actions"><a class="pl-btn pl-btn--ghost pl-btn--sm" id="rate-bot" href="' + esc(reviewLink(rated)) + '" target="_blank" rel="noopener" data-track="review_click" data-track-quest="' + esc(QID) + '">' + ico('send') + 'Оставить отзыв в Telegram</a></div></section>' +
       (S.field ? '<section class="pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
         '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="note">Заметка</button><button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт</button></div></section>' : '');
   }
@@ -1190,12 +1286,12 @@
     LETTER_CTX = now ? null : letterAt(c.sec, fr.end ? 1e9 : fr.step == null ? -1 : fr.step);
     var hasGo = c.F.some(function (x) { return x.kind === 'go'; });
     if (fr.kind === 'road') {
-      return pointHead(p) + '<section class="pl-card pl-road">' + distHtml(p) + (fr.lines.length ? '<div class="pl-lines">' + linesHtml(fr.lines) + '</div>' : '') + mapBtn(p) + '</section>' +
+      return pointHead(p) + '<section class="pl-card pl-road">' + distHtml(p) + (fr.lines.length ? '<div class="pl-lines">' + linesHtml(fr.lines) + '</div>' : '') + clockHtml(p, now && S.phase === 'walk') + mapBtn(p) + '</section>' +
         (hasGo ? '' : checkBlock(p, false));
     }
     if (fr.kind === 'go') {
       return '<section class="pl-card pl-road pl-road--go"><span class="pl-label">Точка ' + p.n + ' · идём</span>' + (distHtml(p) || '<p class="pl-dist">' + esc(plain(p.place)) + '</p>') +
-        (fr.lines.length ? moreHtml('Как дойти', linesHtml(fr.lines)) : '') + mapBtn(p) +
+        (fr.lines.length ? moreHtml('Как дойти', linesHtml(fr.lines)) : '') + clockHtml(p, now && S.phase === 'walk') + mapBtn(p) +
         '<p class="pl-small pl-road-note">Дойдёте — нажмите «Мы на месте».</p></section>' + checkBlock(p, false);
     }
     if (fr.kind === 'arrive') return pointHead(p) + coverHtml(p) + kidsHtml(p.kids) + checkBlock(p, true);
@@ -1245,7 +1341,7 @@
   }
   function barHtml(fr, c) {
     var btn = function (act, label, ghost) { return '<button class="pl-btn' + (ghost ? ' pl-btn--ghost' : '') + '" type="button" data-act="' + act + '">' + esc(label) + '</button>'; };
-    if (c.live && fr.kind === 'closed') return c.F.length > 1 ? '<div class="pl-actions pl-bar pl-bar--flow">' + btn('fwd', 'Что здесь правда, а что мы придумали', true) + '</div>' : '';
+    if (c.live && fr.kind === 'closed') return c.F.length > 1 ? '<div class="pl-actions pl-bar pl-bar--flow">' + btn('fwd', 'Где правда, а где вымысел', true) + '</div>' : '';
     if (!c.live) return '<div class="pl-actions pl-stick pl-bar pl-bar--review">' + btn('fwd', 'Дальше', true) + btn('current', 'К текущему шагу') + '</div>';
     var last = c.f === c.F.length - 1, h = '';
     if (fr.kind === 'task') return '';
@@ -1579,6 +1675,10 @@
       out.push('   ' + hm(w) + ' → ' + hm(a) + ' → ' + hm(d) +
         ' · дорога ' + (w && a ? dur(a - w) : '—') + ' · на точке ' + (a && d ? dur(d - a) : (a ? 'идёт' : '—')));
       out.push('   ошибок ' + wrong + ' · подсказок ' + hints + ' · ответ показан ' + rev + ' · пропущено ' + sk);
+      var ck = S.clk[Q.points.indexOf(p)] || {};   // H-45: какая ветка «по часам» была на этой дороге и кто её выбрал
+      Object.keys(ck).forEach(function (k) {
+        out.push('   ' + plain((CLOCK[k] || {}).label || k) + ': ' + (ck[k].v === 'open' ? 'открыто' : 'закрыто') + (ck[k].by === 'hand' ? ' (отмечено вручную)' : ' (по часам)'));
+      });
     });
     out.push('Итого: ошибок ' + totals.wrong + ', подсказок ' + totals.hint + ', ответ показан ' + totals.reveal + ', пропущено ' + totals.skip + '.');
     out.push('');
@@ -1720,6 +1820,18 @@
       el.setAttribute('aria-label', el.getAttribute('aria-label').replace(/Слой \d+ из/, 'Слой ' + (i + 1) + ' из'));
     },
     nextpoint: nextPoint,
+    clock: function (el) {
+      var k = el.dataset.k, v = el.dataset.v === 'closed' ? 'closed' : 'open', sec = liveSec();
+      if (!CLOCK[k] || S.phase !== 'walk') return;
+      var F0 = framesOf(sec), id = (F0[S.f] || {}).id;
+      (S.clk[sec] = S.clk[sec] || {})[k] = { v: v, by: 'hand' };
+      log('clock', { key: k, value: v });
+      var F1 = framesOf(sec);
+      S.f = frameIndex(F1, function (x) { return x.id === id; }, Math.min(S.f, F1.length - 1));
+      commit(null, '[data-act="clock"][data-k="' + k + '"]');
+      var d = CLOCK[k];
+      toast(v === 'closed' ? (d.closed_toast || 'Маршрут обновлён: двери закрыты') : (d.open_toast || 'Маршрут обновлён: двери открыты'));
+    },
     view: function (el) {
       var v = el.dataset.view;
       if (v === view && v !== 'point') return;
@@ -1859,6 +1971,8 @@
     var box = document.getElementById('rate');
     if (!box) return;
     box.querySelector('.pl-stars').innerHTML = starsHtml(v);
+    var bot = document.getElementById('rate-bot');
+    if (bot) bot.setAttribute('href', reviewLink(v));
     document.getElementById('rate-note').textContent = rateNote(v);
     refocus('#app .pl-star[data-v="' + v + '"]');
   }
@@ -2041,6 +2155,7 @@
   // Для проверок: функции сверки ответов и состояние
   window.__dvorami = { norm: norm, matches: matches, state: function () { return S; }, quest: function () { return Q; }, report: function () { return report(); },
     flags: function () { return FLAGS; }, cards: function () { return CARDS; },
+    clockOpenAt: function (def, min) { return openAt(def, min); }, mskMinutes: function () { return mskMinutes(); },
     // мини-шаги: где игрок (live), что на экране (shown), сколько экранов в разделе, режим чтения
     pos: function () { var p = shownPos(), F = framesOf(p.sec), x = F[p.f] || {}; return { sec: p.sec, f: p.f, live: liveSec(), cur: S.f, peek: !!peek, total: F.length, mode: MODE, id: x.id, kind: x.kind, step: x.step == null ? null : x.step }; },
     frames: function (sec) { return framesOf(sec).map(function (x) { return { id: x.id, kind: x.kind, step: x.step == null ? null : x.step }; }); } };

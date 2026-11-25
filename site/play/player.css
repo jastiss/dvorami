@@ -605,6 +605,9 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-toboard ul { list-style: none; padding: 0; display: grid; gap: 4px; font-size: 16px; }
 .pl-road .pl-lines { margin-bottom: 4px; }
 .pl-road-note { margin-top: 12px; }
+/* H-45: ветка «по часам» на дороге — строка «ТЦ открыт до 22:00» и кнопка «Двери закрыты» */
+.pl-clock { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0; padding-top: 12px; border-top: 1px dashed var(--line, currentColor); }
+.pl-clock .pl-small { margin: 0; flex: 1 1 14em; }
 .pl-bar--review { grid-template-columns: auto minmax(0, 1fr); }
 .pl-bar--review .pl-btn--ghost { width: auto; }
 .pl-how .pl-seg { margin-bottom: 10px; }

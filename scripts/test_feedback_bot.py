@@ -336,8 +336,41 @@ class FeedbackBotTest(unittest.TestCase):
             self.assertIn("Синей птице", self.tg.sent()[-1]["text"], arg)
             self.assertTrue(any(b.startswith("r|5.zilart.1|") for b in self.tg.last_buttons()), arg)
         player = pathlib.Path(fb.ROOT, "site", "play", "player.js").read_text(encoding="utf-8")
-        self.assertIn("botLink('done_' + QID)", player)
+        self.assertIn("botLink('done_' + QID + (v >= 1 && v <= 5 ? '_' + v : ''))", player)  # H-47
         self.assertIn("var BOT = 'dvorami_bot'", player)
+
+    def test_rating_from_player_link_not_asked_again(self):
+        """H-47: оценка со звёзд финала приходит в ссылке (done_<дело>_<1–5>) — бот не спрашивает её
+        повторно, сразу благодарит и просит текст; запись — с этой оценкой и подтверждённым финалом."""
+        for arg, n in (("done_zilart_4", 4), ("done-zilart-2", 2), ("done_zilart-sinyaya-ptica_5", 5)):
+            self.tg.text(f"/start {arg}")
+            self.step()
+            msg = self.tg.sent()[-1]["text"]
+            self.assertIn("поздравляем", msg, arg)
+            self.assertIn(f"Спасибо за оценку: {'⭐' * n} {n} из 5", msg, arg)
+            self.assertIn("понравилось", msg, arg)
+            self.assertNotIn("от 1 до 5", msg, arg)
+            self.assertFalse(any(b.startswith("r|") for b in self.tg.last_buttons()), arg)
+            self.assertEqual(self.tg.last_buttons()[0][:11], "skip|liked|", arg)
+            self.tg.text("Понравился кот-обманщик")
+            self.step()
+            self.assertIn("непонятно", self.tg.sent()[-1]["text"])
+            self.press_button("skip|unclear|")
+            self.step()
+            self.press_button("q|0|")
+            self.step()
+        recs = self.records()
+        self.assertEqual([(r["quest"], r["rating"], r["confirmed"], r.get("liked")) for r in recs],
+                         [("zilart", n, True, "Понравился кот-обманщик") for n in (4, 2, 5)])
+        low = [m["text"] for m in self.tg.owner_msgs() if "Низкая оценка: 2/5" in m["text"]]
+        self.assertEqual(len(low), 1)   # низкая оценка из плеера тоже сразу владельцу
+
+    def test_rating_in_link_out_of_range_falls_back_to_question(self):
+        """Оценка вне 1–5 в ссылке не принимается — бот спрашивает оценку как обычно."""
+        for arg in ("done_zilart_9", "done_zilart_0"):
+            self.tg.text(f"/start {arg}")
+            self.step()
+            self.assertIn("от 1 до 5", self.tg.sent()[-1]["text"], arg)
 
     def test_rating_shown_from_ratings_source(self):
         """Рейтинг дела в боте — из того же источника, что на сайте; меньше 5 оценок — «мало оценок»."""

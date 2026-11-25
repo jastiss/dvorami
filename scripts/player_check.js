@@ -327,6 +327,44 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       // скриншоты — JPEG q80 (team/std/site-check.md)
       const shot = async name => { if (args.shots && theme === 'dark') { fs.mkdirSync(args.shots, { recursive: true }); await page.waitForTimeout(150); await page.screenshot({ path: path.join(args.shots, `${name}-${vp.width}.jpg`), type: 'jpeg', quality: 80 }); } };
 
+      // H-45: ветка «по часам» (Q.clock): на дороге — строка «открыт / закрыт» и кнопка «Двери закрыты»; видна ветка по часам Москвы,
+      // кнопка переключает реплики дороги и walk_m, выбор переживает перезагрузку и попадает в отчёт полевого теста
+      const clockCheck = async (pi, p, at) => {
+        const rp = (RAW.points || []).find(x => x.id === p.id && x.n === p.n) || {};
+        const conds = [].concat(rp.walk || [], rp.walk_m || []).filter(e => e && typeof e === 'object' && typeof e.if === 'string' && /^\s*([\w-]+)\s*=/.test(e.if) && (RAW.clock || {})[e.if.match(/^\s*([\w-]+)/)[1]]);
+        if (!conds.length) return;
+        const k = conds[0].if.match(/^\s*([\w-]+)/)[1], def = RAW.clock[k];
+        const cases = [[9 * 60 + 59, false], [10 * 60, true], [21 * 60 + 59, true], [22 * 60, false], [3 * 60, false]];
+        for (const [m, want] of cases) if (await page.evaluate(([d, x]) => window.__dvorami.clockOpenAt(d, x), [def, m]) !== want) err(tag, `${at}: часы ${def.open}–${def.close}, ${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} — ожидалось ${want ? 'открыто' : 'закрыто'}`);
+        if (await page.evaluate(() => window.__dvorami.clockOpenAt({ open: '20:00', close: '02:00' }, 60)) !== true) err(tag, `${at}: часы через полночь (20:00–02:00) в 01:00 — должно быть открыто`);
+        const expectNow = await page.evaluate(d => window.__dvorami.clockOpenAt(d, window.__dvorami.mskMinutes()), def) ? 'open' : 'closed';
+        const seen = async () => page.evaluate(key => {
+          const box = document.querySelector('#frame .pl-clock[data-clock="' + key + '"]'), dist = document.querySelector('#frame .pl-dist');
+          return { v: box && box.dataset.clockV, btn: !!(box && box.querySelector('[data-act="clock"]')), text: (document.getElementById('frame') || {}).textContent || '', dist: dist ? dist.textContent : '' };
+        }, k);
+        const lineOf = v => (rp.walk || []).filter(e => e && typeof e === 'object' && e.if === `${k}=${v}` && e.text).map(e => e.text);
+        const mOf = v => ((rp.walk_m || []).find(e => e && e.if === `${k}=${v}`) || {}).m;
+        const verify = async (v, why) => {
+          const s0 = await seen();
+          if (s0.v !== v) return err(tag, `${at}: ${why}: ветка «${s0.v}», ожидалась «${v}»`);
+          if (!s0.btn) err(tag, `${at}: ${why}: нет кнопки «${def.closed_button || 'Двери закрыты'}» / «${def.open_button || 'Двери открыты'}»`);
+          const other = v === 'open' ? 'closed' : 'open';
+          for (const t of lineOf(v)) if (!s0.text.includes(t)) err(tag, `${at}: ${why}: нет реплики своей ветки «${t.slice(0, 40)}»`);
+          for (const t of lineOf(other)) if (s0.text.includes(t)) err(tag, `${at}: ${why}: видна реплика чужой ветки «${t.slice(0, 40)}»`);
+          if (mOf(v) && !s0.dist.includes(String(mOf(v)))) err(tag, `${at}: ${why}: расстояние «${s0.dist}», ожидалось ${mOf(v)} м`);
+        };
+        await verify(expectNow, 'по часам');
+        const flipTo = expectNow === 'open' ? 'closed' : 'open';
+        await click(`#frame [data-act="clock"][data-k="${k}"]`);
+        await verify(flipTo, 'после кнопки');
+        await check(at + ' · ветка по часам переключена');
+        const st = await state();
+        if (!(st.clk && st.clk[pi] && st.clk[pi][k] && st.clk[pi][k].by === 'hand' && st.clk[pi][k].v === flipTo)) err(tag, `${at}: ручной выбор ветки не сохранён`);
+        await page.reload({ waitUntil: 'load' }); await page.waitForSelector('#frame');
+        await verify(flipTo, 'после перезагрузки');
+        if (!(await page.$('#app [data-act="here"]'))) err(tag, `${at}: после переключения ветки пропала кнопка «Мы на месте»`);
+      };
+
       await check('обложка');
       // режим «читаю / слушаю и читаю»: по умолчанию плеер реплик есть; в одном прогоне переключаем на «Читаю» — плеера нет нигде
       const readMode = vp.width === 1024 && theme === 'sun';
@@ -384,6 +422,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         }
         if (seenAsk.size !== asks.length) err(tag, `${at}: вопросов на ходу показано ${seenAsk.size} из ${asks.length}`);
         await fresh(at + ' · идём');
+        await clockCheck(pi, p, at);
         await click('[data-act="here"]');
         if ((await pos()).kind !== 'arrive') err(tag, `${at}: после «Мы на месте» открылся не экран точки`);
         await fresh(at + ' · на месте');

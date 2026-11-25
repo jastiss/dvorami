@@ -26,12 +26,11 @@ SITE = os.path.join(REPO, 'site')
 ORIGIN = 'https://dvorami.ru'
 TG = 'https://t.me/dvorami_quest'
 MAIN_CTA = 'Взять дело'
-# T-78 (H-26): главный ответ на вопрос «сколько нас может играть» — одной строкой в карточке, в hero и в блоке покупки.
-# Числа «до N человек» нет: код не ограничивает ни людей, ни телефоны (docs/codes.md, «Ограничения»); появится лимит — править здесь.
+# T-78 (H-26): ответ на вопрос «сколько нас может играть» — там, где человек выбирает, сколько платить:
+# блок покупки страницы дела (#buy) и FAQ. На карточках каталога и в первом экране дела его нет (владелец 25.11:
+# «зачем на каждой карточке… было красивее»; site_check ловит). Числа «до N человек» нет: код не ограничивает
+# ни людей, ни телефоны (docs/codes.md, «Ограничения»); появится лимит — править здесь.
 ONE_CODE = 'Один код&nbsp;— вся компания'
-# H-36: плашка «Один код — вся компания» на обложке карточки — только у дел, которые можно взять сейчас
-# (не обещать покупку, которой нет). Сейчас ни одно дело не в продаже — плашки нет; статус 'sale' включит её.
-ONE_CODE_ON_CARD = {'sale'}
 CARD_CTA = 'Подробнее о&nbsp;деле'  # если у дела нет card.ask (H-37: вопрос дела на кнопке)
 RATINGS = os.path.join(SITE, 'assets', 'ratings.json')  # настоящие оценки игроков (scripts/build_ratings.py)
 ONE_CODE_NOTE = 'Цена за&nbsp;дело, а&nbsp;не&nbsp;за&nbsp;человека. Играйте с&nbsp;одного телефона или введите код на&nbsp;нескольких.'
@@ -285,7 +284,7 @@ def body(c):
       <div class="c-cta" data-cta>
         <a class="c-btn" href="#buy">{MAIN_CTA} · <span class="p">990&nbsp;₽</span></a>
         <a class="c-link" href="#how">Как устроен квест</a>
-        <p class="c-status">{st}. <b>Один код&nbsp;— вся компания:</b> 990&nbsp;₽ за&nbsp;дело, а&nbsp;не&nbsp;за&nbsp;человека.</p>
+        <p class="c-status">{st}. 990&nbsp;₽ за&nbsp;дело, а&nbsp;не&nbsp;за&nbsp;человека.</p>
       </div>
     </div>
     {cover_html}
@@ -441,7 +440,6 @@ def card_html(c, root, place, first, ratings=None):
     li_id = '' if home else f' id="case-{c["no"]}"'
     lazy = '' if (first and not home) else ' loading="lazy"'
     href = ('moscow/' if home else '') + c['slug'] + '/'
-    code = f'<span class="qc-code">{ONE_CODE}</span>' if c['status'] in ONE_CODE_ON_CARD else ''
     ask = k.get('ask')
     # H-37: на кнопке — вопрос дела; для чтения с экрана — и куда ведёт (видимый текст входит в имя кнопки)
     cta = (f'<a class="qc-btn" href="{href}" aria-label="{esc(ask)} Подробнее о деле №{c["no"]}" data-track="quest_card" '
@@ -449,7 +447,7 @@ def card_html(c, root, place, first, ratings=None):
            f'<a class="qc-btn" href="{href}" data-track="quest_card" data-track-quest="{c["slug"]}" data-track-place="{place}">{CARD_CTA}</a>')
     rating = rating_html(c['slug'], ratings or load_ratings())
     return (f'      <li class="qcard"{li_id} data-status="{c["status"]}" data-case="{c["no"]}">\n'
-            f'        <span class="qc-cover"><img src="{root}assets/ill/{k["img"]}" width="1200" height="900"{lazy} alt="{esc(k["alt"])}">{code}<span class="qc-rating rating" data-rating="{c["slug"]}">{rating}</span></span>\n'
+            f'        <span class="qc-cover"><img src="{root}assets/ill/{k["img"]}" width="1200" height="900"{lazy} alt="{esc(k["alt"])}"><span class="qc-rating rating" data-rating="{c["slug"]}">{rating}</span></span>\n'
             f'        <{h} class="qc-title"><span class="qc-no">Дело №{c["no"]}</span> {c["short"]}</{h}>\n'
             f'        <span class="qc-where">{k["where"]}</span>\n'
             f'        <p>{k["teaser"]}</p>\n'
