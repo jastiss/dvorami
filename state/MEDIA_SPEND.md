@@ -32,3 +32,6 @@
 | 2026-11-23 | Зиля говорит, 5,4 с, клюв под голос v3b (A-41) | fal-ai/bytedance/omnihuman/v1.5, 720p | 1 | 0,86 | 01a209f3-3d84-7082-b131-fa69d00577a9 | A-41 | quests/zilart/media/assets/video/zilya-omnihuman-5s-talking.mp4 |
 | 2026-11-23 | Ключ: башня — простой прямоугольник, попытка 1 (брак: башня встала вертикально — ошибка промпта Продюсера) | fal-ai/nano-banana-pro/edit | 2 | 0,30 | 01a209ff-59b2-7f80-90bb-a1b13013ac56 | владелец в чате 23.11 | не сохранено |
 | 2026-11-23 | Ключ: башня — простой прямоугольник, попытка 2 | fal-ai/nano-banana-pro/edit | 2 | 0,30 | 01a209ff-d8f6-71d1-b5c9-57e19c9df7d4 | владелец в чате 23.11 | platform/design/logo/fal/pro-b-klyuch-rect-1.png, -2.png |
+| 2026-11-25 | Пост 003 «Циклоп»: 3 черновика (авто с одной фарой, 4:5, 1K) | fal-ai/nano-banana-2 | 3 | 0,24 | 01a210de-a159-7a81-a70a-d40a48993fff | A-45 (T-74) | не сохранены (выбран №3, правка ниже) |
+| 2026-11-25 | Пост 007 «подсказки»: 3 черновика (арка двора, три фонаря, 4:5, 1K) | fal-ai/nano-banana-2 | 3 | 0,24 | 01a210de-a154-7e71-bc7e-b776938332e6 | A-45 (T-74) | docs/marketing/channel/img/007-kak-ustroeno-podskazki.jpg (черновик №3) |
+| 2026-11-25 | Пост 003: правка лучшего — убраны дома и фонари на фоне | fal-ai/nano-banana-2/edit | 1 | 0,08 | 01a210df-089d-7601-a705-11c114ace324 | A-45 (T-74) | docs/marketing/channel/img/003-otvet-zis-112.jpg |
