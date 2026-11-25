@@ -185,7 +185,10 @@ html:not(.js) .c-car-nav, .c-carousel.is-static .c-car-nav { display: none; }
 .c-buy-card { position: relative; display: grid; gap: 14px; justify-items: start; padding: 28px 24px; max-width: 640px; border: 2px solid var(--accent); border-radius: var(--card-radius); background: var(--bg-2); }
 @media (min-width: 700px) { .c-buy-card { padding: 40px 44px; } }
 .c-buy-card .price { font-family: var(--font-display); font-weight: var(--h-weight); font-size: 56px; line-height: 1; }
-.c-buy-card .per { color: var(--text-2); }
+/* T-78: «Один код — вся компания» — вторая по величине строка блока после цены, видна на 390 без прокрутки */
+.c-buy-card .one { font-family: var(--font-display); font-weight: var(--h-weight); font-size: 26px; line-height: 1.15; }
+.c-buy-card .per { color: var(--text-2); max-width: 30em; }
+.c-cta .c-status b { color: var(--text); }
 .c-buy-card .status { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,.08); font-size: 15px; font-weight: 600; }
 .c-buy-card .status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
 .c-buy-card p { color: var(--text-2); max-width: 32em; }

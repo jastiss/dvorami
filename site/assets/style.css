@@ -1450,6 +1450,9 @@ img.is-broken { visibility: hidden; }
 /* ===== Правки по замечаниям владельца 22–23.11 (итерация 10) ===== */
 /* Карточки дел: «Дело №N» отдельной строкой, название — с новой строки */
 .qc-no { display: block; white-space: nowrap; font-size: .78em; margin-bottom: 2px; }
+/* T-78: «Один код — вся компания» — полосой по низу обложки: крупно и без лишней строки (высоту ленты держит T-62) */
+.qgrid .qcard .qc-code { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 22px 22px 9px; font: 700 17px/1.25 var(--font-text); color: #fff; background: linear-gradient(180deg, rgba(8,12,30,0) 0, rgba(8,12,30,.82) 62%); pointer-events: none; }
+@media (min-width: 600px) { .qgrid .qcard .qc-code { padding-left: 26px; padding-right: 26px; } }
 /* «Как это устроено»: заголовок и рукописная пометка — по левому краю, как во всех блоках */
 .how-head { align-items: flex-start; text-align: left; margin: 0 0 44px; max-width: 40em; }
 /* Первый экран: одна иллюстрация-ссылка, а не стопка карточек — не выглядит как карусель, которую надо листать */

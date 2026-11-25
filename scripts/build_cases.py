@@ -26,6 +26,10 @@ SITE = os.path.join(REPO, 'site')
 ORIGIN = 'https://dvorami.ru'
 TG = 'https://t.me/dvorami_quest'
 MAIN_CTA = 'Взять дело'
+# T-78 (H-26): главный ответ на вопрос «сколько нас может играть» — одной строкой в карточке, в hero и в блоке покупки.
+# Числа «до N человек» нет: код не ограничивает ни людей, ни телефоны (docs/codes.md, «Ограничения»); появится лимит — править здесь.
+ONE_CODE = 'Один код&nbsp;— вся компания'
+ONE_CODE_NOTE = 'Цена за&nbsp;дело, а&nbsp;не&nbsp;за&nbsp;человека. Играйте с&nbsp;одного телефона или введите код на&nbsp;нескольких.'
 
 FONTS = {  # что нужно первому экрану темы — подгружаем заранее
     'avangard': ['onest-cyrillic-600-normal', 'oswald-cyrillic-700-normal', 'onest-cyrillic-400-normal', 'caveat-cyrillic-700-normal', 'unbounded-cyrillic-800-normal'],
@@ -237,7 +241,7 @@ def body(c):
       <div class="c-cta" data-cta>
         <a class="c-btn" href="#buy">{MAIN_CTA} · <span class="p">990&nbsp;₽</span></a>
         <a class="c-link" href="#how">Как устроен квест</a>
-        <p class="c-status">{st}. 990&nbsp;₽ — один код доступа на&nbsp;всю компанию.</p>
+        <p class="c-status">{st}. <b>Один код&nbsp;— вся компания:</b> 990&nbsp;₽ за&nbsp;дело, а&nbsp;не&nbsp;за&nbsp;человека.</p>
       </div>
     </div>
     {cover_html}
@@ -333,7 +337,8 @@ def body(c):
     {sec_head('buy', c['buy']['h2'], 'h-buy')}
     <div class="c-buy-card" data-cta>
       <span class="price">990&nbsp;₽</span>
-      <span class="per">за квест, один код доступа на&nbsp;всю компанию</span>
+      <strong class="one">{ONE_CODE}</strong>
+      <span class="per">{ONE_CODE_NOTE}</span>
       <span class="status">{st}</span>
       <p>{c['buy']['text']}</p>
       <div class="c-buy-actions">
@@ -369,7 +374,7 @@ def body(c):
 '''
 
 
-CARD_STATUS = {'soon': '<span class="qc-badge qc-badge--soon">Скоро в&nbsp;продаже</span><span class="qc-price"><b>990&nbsp;₽</b> на&nbsp;компанию</span>',
+CARD_STATUS = {'soon': '<span class="qc-badge qc-badge--soon">Скоро в&nbsp;продаже</span><span class="qc-price"><b>990&nbsp;₽</b> за&nbsp;дело</span>',
                'dev': '<span class="qc-badge">В&nbsp;разработке</span>'}
 # Каталоги, куда вставляются карточки дел (между метками cards:start / cards:end): файл, путь до корня site/, место (для аналитики)
 CATALOGS = [('index.html', '', 'home'), (os.path.join('moscow', 'index.html'), '../', 'moscow')]
@@ -393,7 +398,7 @@ def card_html(c, root, place, first):
     lazy = '' if (first and not home) else ' loading="lazy"'
     href = ('moscow/' if home else '') + c['slug'] + '/'
     return (f'      <li class="qcard"{li_id} data-status="{c["status"]}" data-case="{c["no"]}">\n'
-            f'        <span class="qc-cover"><img src="{root}assets/ill/{k["img"]}" width="1200" height="900"{lazy} alt="{esc(k["alt"])}"></span>\n'
+            f'        <span class="qc-cover"><img src="{root}assets/ill/{k["img"]}" width="1200" height="900"{lazy} alt="{esc(k["alt"])}"><span class="qc-code">{ONE_CODE}</span></span>\n'
             f'        <{h} class="qc-title"><span class="qc-no">Дело №{c["no"]}</span> {c["short"]}</{h}>\n'
             f'        <span class="qc-where">{k["where"]}</span>\n'
             f'        <p>{k["teaser"]}</p>\n'
