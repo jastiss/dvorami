@@ -29,6 +29,11 @@ MAIN_CTA = 'Взять дело'
 # T-78 (H-26): главный ответ на вопрос «сколько нас может играть» — одной строкой в карточке, в hero и в блоке покупки.
 # Числа «до N человек» нет: код не ограничивает ни людей, ни телефоны (docs/codes.md, «Ограничения»); появится лимит — править здесь.
 ONE_CODE = 'Один код&nbsp;— вся компания'
+# H-36: плашка «Один код — вся компания» на обложке карточки — только у дел, которые можно взять сейчас
+# (не обещать покупку, которой нет). Сейчас ни одно дело не в продаже — плашки нет; статус 'sale' включит её.
+ONE_CODE_ON_CARD = {'sale'}
+CARD_CTA = 'Подробнее о&nbsp;деле'  # если у дела нет card.ask (H-37: вопрос дела на кнопке)
+RATINGS = os.path.join(SITE, 'assets', 'ratings.json')  # настоящие оценки игроков (scripts/build_ratings.py)
 ONE_CODE_NOTE = 'Цена за&nbsp;дело, а&nbsp;не&nbsp;за&nbsp;человека. Играйте с&nbsp;одного телефона или введите код на&nbsp;нескольких.'
 
 FONTS = {  # что нужно первому экрану темы — подгружаем заранее
@@ -60,6 +65,40 @@ LOGO = ('<svg viewBox="0 0 512 512" aria-hidden="true" focusable="false">'
 
 def esc(s):
     return html.escape(s, quote=True)
+
+
+def load_ratings():
+    try:
+        with open(RATINGS, encoding='utf-8') as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {'threshold': 5, 'cases': {}}
+
+
+def plural(n, one, few, many):
+    n = abs(n) % 100
+    return many if 11 <= n <= 14 else one if n % 10 == 1 else few if 2 <= n % 10 <= 4 else many
+
+
+def rating_of(slug, ratings):
+    """(среднее, количество) по настоящим оценкам или None, пока оценок меньше порога (тогда «Новое дело»)."""
+    row = ratings.get('cases', {}).get(slug) or {}
+    n = row.get('count', 0)
+    if n < ratings.get('threshold', 5) or n <= 0:
+        return None
+    return row['sum'] / n, n
+
+
+def rating_html(slug, ratings):
+    """Звёзды с сотыми: «4,86 · 37 оценок», заливка звёзд — доля от 5. Тот же вид рисует site.js из ratings.json."""
+    got = rating_of(slug, ratings)
+    if not got:
+        return '<span class="rating-new">Новое дело</span>'
+    avg, n = got
+    v = f'{avg:.2f}'.replace('.', ',')
+    return (f'<span class="stars" role="img" aria-label="Оценка {v} из 5" style="--w:{avg / 5 * 100:.1f}%"></span>'
+            f'<span class="rating-v" aria-hidden="true">{v}</span>'
+            f'<span class="rating-n">·&nbsp;{n}&nbsp;{plural(n, "оценка", "оценки", "оценок")}</span>')
 
 
 def strip(s):
@@ -95,6 +134,10 @@ def head(c):
                    'description': 'Цена за квест, один код доступа на всю компанию. ' + ('Продажи скоро откроются.' if c['status'] == 'soon' else 'Квест в разработке.'),
                    'seller': {'@id': ORIGIN + '/#org'}},
     }
+    got = rating_of(c['slug'], load_ratings())
+    if got:  # только настоящие оценки и только от порога — как на карточке
+        trip['aggregateRating'] = {'@type': 'AggregateRating', 'ratingValue': f'{got[0]:.2f}', 'ratingCount': got[1],
+                                   'bestRating': 5, 'worstRating': 1}
     ld = {'@context': 'https://schema.org', '@graph': [
         {'@type': 'Organization', '@id': ORIGIN + '/#org', 'name': 'Дворами', 'url': ORIGIN + '/'},
         trip,
@@ -236,6 +279,7 @@ def body(c):
     <div>
       <nav class="c-crumbs" aria-label="Хлебные крошки"><ol><li><a href="../../">Главная</a></li><li><a href="../">Квесты по Москве</a></li><li aria-current="page">Дело №{no} · {c['short']}</li></ol></nav>
       <span class="c-plaque">Дело №{no} · {c['short']}</span>
+      <div class="c-rating rating" data-rating="{c['slug']}">{rating_html(c['slug'], load_ratings())}</div>
       <h1 id="h1"><span class="pre">{c['hero']['pre']}</span><span class="big">{c['hero']['h1']}</span></h1>
       {intro}
       <div class="c-cta" data-cta>
@@ -389,7 +433,7 @@ def meta_html(meta):
     return ' '.join(f'<span class="nw">{p}{" ·" if i < len(parts) - 1 else ""}</span>' for i, p in enumerate(parts))
 
 
-def card_html(c, root, place, first):
+def card_html(c, root, place, first, ratings=None):
     """Карточка дела в каталоге — из поля card дела (H-5: один источник; site_check сверяет её со страницей дела)."""
     k = c['card']
     home = place == 'home'
@@ -397,14 +441,21 @@ def card_html(c, root, place, first):
     li_id = '' if home else f' id="case-{c["no"]}"'
     lazy = '' if (first and not home) else ' loading="lazy"'
     href = ('moscow/' if home else '') + c['slug'] + '/'
+    code = f'<span class="qc-code">{ONE_CODE}</span>' if c['status'] in ONE_CODE_ON_CARD else ''
+    ask = k.get('ask')
+    # H-37: на кнопке — вопрос дела; для чтения с экрана — и куда ведёт (видимый текст входит в имя кнопки)
+    cta = (f'<a class="qc-btn" href="{href}" aria-label="{esc(ask)} Подробнее о деле №{c["no"]}" data-track="quest_card" '
+           f'data-track-quest="{c["slug"]}" data-track-place="{place}" data-track-cta="ask">{ask}</a>') if ask else (
+           f'<a class="qc-btn" href="{href}" data-track="quest_card" data-track-quest="{c["slug"]}" data-track-place="{place}">{CARD_CTA}</a>')
+    rating = rating_html(c['slug'], ratings or load_ratings())
     return (f'      <li class="qcard"{li_id} data-status="{c["status"]}" data-case="{c["no"]}">\n'
-            f'        <span class="qc-cover"><img src="{root}assets/ill/{k["img"]}" width="1200" height="900"{lazy} alt="{esc(k["alt"])}"><span class="qc-code">{ONE_CODE}</span></span>\n'
+            f'        <span class="qc-cover"><img src="{root}assets/ill/{k["img"]}" width="1200" height="900"{lazy} alt="{esc(k["alt"])}">{code}<span class="qc-rating rating" data-rating="{c["slug"]}">{rating}</span></span>\n'
             f'        <{h} class="qc-title"><span class="qc-no">Дело №{c["no"]}</span> {c["short"]}</{h}>\n'
             f'        <span class="qc-where">{k["where"]}</span>\n'
             f'        <p>{k["teaser"]}</p>\n'
             f'        <p class="qc-meta">{meta_html(k["meta"])}</p>\n'
             f'        <div class="qc-foot">{CARD_STATUS[c["status"]]}</div>\n'
-            f'        <a class="qc-btn" href="{href}" data-track="quest_card" data-track-quest="{c["slug"]}" data-track-place="{place}">Подробнее о&nbsp;деле</a>\n'
+            f'        {cta}\n'
             f'      </li>\n')
 
 
@@ -413,7 +464,8 @@ def build_catalogs(cases):
         path = os.path.join(SITE, rel)
         with open(path, encoding='utf-8') as fh:
             page = fh.read()
-        cards = ''.join(card_html(c, root, place, i == 0) for i, c in enumerate(cases))
+        ratings = load_ratings()
+        cards = ''.join(card_html(c, root, place, i == 0, ratings) for i, c in enumerate(cases))
         page, n = re.subn(r'(<!-- cards:start[^>]*-->\n).*?(      <!-- cards:end -->)',
                           lambda m: m.group(1) + cards + m.group(2), page, flags=re.S)
         if n != 1:

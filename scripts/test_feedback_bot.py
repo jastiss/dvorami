@@ -167,7 +167,7 @@ class FeedbackBotTest(unittest.TestCase):
         self.assertIn("Синей птице", ask)
         self.assertNotIn("r|", " ".join(b for b in self.tg.last_buttons() if b.startswith("np|")))
         self.assertFalse(any(b.startswith("np|") for b in self.tg.last_buttons()))
-        self.press_button("r|5|")
+        self.press_button("r|5.")
         self.step()
         self.press_button("skip|liked|")
         self.step()
@@ -211,10 +211,10 @@ class FeedbackBotTest(unittest.TestCase):
         self.tg.text("/start review-zilart")
         self.step()
         self.assertIn("от 1 до 5", self.tg.sent()[-1]["text"])
-        self.tg.text("пять")  # текст вместо кнопки
+        self.tg.text("сложно сказать")  # текст вместо кнопки, но не оценка
         self.step()
         self.assertIn("кнопок", self.tg.sent()[-1]["text"])
-        self.press_button("r|2|")
+        self.press_button("r|2.")
         self.step()
         self.tg.text("Дворы и загадки")
         self.step()
@@ -252,7 +252,7 @@ class FeedbackBotTest(unittest.TestCase):
     def test_review_high_rating_skips_and_no_owner_ping(self):
         self.tg.text("/start review")
         self.step()
-        self.press_button("r|5|")
+        self.press_button("r|5.")
         self.step()
         self.press_button("skip|liked|")
         self.step()
@@ -268,19 +268,115 @@ class FeedbackBotTest(unittest.TestCase):
     def test_stale_button_ignored(self):
         self.tg.text("/start review")
         self.step()
-        old = self.tg.last_buttons()[0]  # r|1|<sid>
-        self.tg.text("/start review")  # начал заново — новый sid
+        old = self.tg.last_buttons()[0]  # r|1.…|<sid>
+        self.tg.text("/start suggest")  # ушёл в другой разговор — оценка из старого сообщения его не ломает
         self.step()
         self.tg.press(old)
         self.step()
         state = json.loads((self.root / ".telegram" / "feedback-state.json").read_text())
         [d] = state["dialogs"].values()
-        self.assertEqual(d["step"], "rating")
+        self.assertEqual((d["flow"], d["step"]), ("suggest", "where"))
+        [ans] = [p for t, m, p in self.tg.calls if m == "answerCallbackQuery"]
+        self.assertIn("прошлого разговора", ans["text"])
+
+    # ---------- баг 25.11: «Не могу поставить оценку после квеста в боте» ----------
+
+    def finish_review(self):
+        for prefix in ("skip|liked|", "skip|unclear|", "q|0|"):
+            self.press_button(prefix)
+            self.step()
+
+    def test_rating_from_first_prompt_after_second_deeplink(self):
+        """Игрок нажал «Оценить квест» в плеере, бот не ответил сразу (задание GitHub ещё не стартовало),
+        нажал ещё раз — пришли два сообщения «Дело закрыто». Оценка в первом раньше давала только
+        «кнопка из прошлого разговора»: оценить было нельзя. На старом коде этот тест красный."""
+        self.tg.text("/start done_zilart")
+        self.tg.text("/start done_zilart")
+        self.step()
+        prompts = [p for p in self.tg.sent() if "поздравляем" in p["text"]]
+        self.assertEqual(len(prompts), 2)
+        first = prompts[0]["reply_markup"]["inline_keyboard"][0][4]["callback_data"]  # «5» в первом сообщении
+        self.tg.press(first)
+        self.step()
+        self.assertIn("понравилось", self.tg.sent()[-1]["text"])
+        self.finish_review()
+        [rec] = self.records()
+        self.assertEqual((rec["quest"], rec["rating"], rec["confirmed"]), ("zilart", 5, True))
+
+    def test_rating_typed_as_text(self):
+        self.tg.text("/start done_zilart")
+        self.step()
+        self.tg.text("5")
+        self.step()
+        self.assertIn("понравилось", self.tg.sent()[-1]["text"])
+        self.finish_review()
+        [rec] = self.records()
+        self.assertEqual(rec["rating"], 5)
+
+    def test_rating_button_after_dialog_expired(self):
+        """Диалог истёк (сутки без ответа, бот был недоступен) — кнопка оценки всё равно работает: дело в кнопке."""
+        self.tg.text("/start done_zilart")
+        self.step()
+        btn = next(b for b in self.tg.last_buttons() if b.startswith("r|4."))
+        with mock.patch.object(fb, "now", return_value=fb.time.time() + fb.EXPIRE + 60):
+            self.step()   # sweep: диалог без оценки забыт
+            self.assertEqual(json.loads((self.root / ".telegram" / "feedback-state.json").read_text())["dialogs"], {})
+            self.tg.press(btn)
+            self.step()
+            self.assertIn("понравилось", self.tg.sent()[-1]["text"])
+            self.finish_review()
+        [rec] = self.records()
+        self.assertEqual((rec["quest"], rec["rating"], rec["confirmed"]), ("zilart", 4, True))
+
+    def test_deeplink_variants_from_player(self):
+        """Плеер шлёт done_<id квеста> (data-quest); slug страницы и дефис тоже работают."""
+        for arg in ("done_zilart", "done-zilart", "done_zilart-sinyaya-ptica"):
+            self.tg.text(f"/start {arg}")
+            self.step()
+            self.assertIn("Синей птице", self.tg.sent()[-1]["text"], arg)
+            self.assertTrue(any(b.startswith("r|5.zilart.1|") for b in self.tg.last_buttons()), arg)
+        player = pathlib.Path(fb.ROOT, "site", "play", "player.js").read_text(encoding="utf-8")
+        self.assertIn("botLink('done_' + QID)", player)
+        self.assertIn("var BOT = 'dvorami_bot'", player)
+
+    def test_rating_shown_from_ratings_source(self):
+        """Рейтинг дела в боте — из того же источника, что на сайте; меньше 5 оценок — «мало оценок»."""
+        self.tg.text("/start done_zilart")
+        self.step()
+        self.press_button("r|5.")
+        self.step()
+        self.finish_review()
+        self.assertIn("мало оценок", self.tg.sent()[-1]["text"])
+        import build_ratings
+        f = self.root / "feedback" / "2026-11.jsonl"
+        with f.open("a", encoding="utf-8") as fh:
+            for i, r in enumerate((4, 5, 5, 4)):
+                fh.write(json.dumps({"ts": "2026-11-25 10:00", "kind": "review", "user": f"u{i}", "quest": "zilart",
+                                     "confirmed": True, "rating": r}) + "\n")
+            # не идут в рейтинг: без финала, повтор того же игрока (считается последняя), неизвестное дело
+            fh.write(json.dumps({"kind": "review", "user": "x", "quest": "zilart", "confirmed": False, "rating": 1}) + "\n")
+            fh.write(json.dumps({"kind": "review", "user": "u0", "quest": "zilart", "confirmed": True, "rating": 5}) + "\n")
+            fh.write(json.dumps({"kind": "review", "user": "y", "quest": "nope", "confirmed": True, "rating": 1}) + "\n")
+        data = build_ratings.build(self.root / "feedback")
+        row = data["cases"]["zilart-sinyaya-ptica"]
+        self.assertEqual((row["count"], row["sum"]), (5, 24))
+        raw = json.dumps(data, ensure_ascii=False)
+        self.assertNotIn("u0", raw)   # в публичном файле нет псевдонимов
+        self.tg.text("/cases")
+        self.step()
+        self.assertIn("★ 4,80 · 5 оценок", self.tg.sent()[-1]["text"])
+
+    def test_ratings_json_in_site_is_real(self):
+        """site/assets/ratings.json = сборка из feedback/: никаких «стартовых» оценок руками."""
+        import build_ratings
+        shipped = json.loads((fb.ROOT / "site" / "assets" / "ratings.json").read_text(encoding="utf-8"))
+        self.assertEqual(shipped, build_ratings.build(fb.ROOT / "feedback"))
+        self.assertEqual(set(shipped["cases"]), {c["slug"] for c in fb.CASES})
 
     def test_abandoned_review_saved_as_partial(self):
         self.tg.text("/start review")
         self.step()
-        self.press_button("r|1|")
+        self.press_button("r|1.")
         self.step()
         with mock.patch.object(fb, "now", return_value=fb.time.time() + fb.EXPIRE + 60):
             self.step()

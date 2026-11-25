@@ -7,6 +7,8 @@
 Глубокие ссылки https://t.me/dvorami_bot?start=...:
   done_<дело>       — финал в плеере: «дело закрыто» → оценка → понравилось → непонятно → цитата.
                       Только здесь бот говорит «поздравляем»; запись помечается confirmed: true.
+                      Оценку принимаем кнопкой (в т. ч. с более раннего сообщения: дело и финал зашиты
+                      в кнопку) и цифрой текстом. Оценки с финала идут в рейтинг дела (scripts/build_ratings.py).
   review[-<дело>]   — отзыв без подтверждения финала: нейтральный текст, confirmed: false,
                       кнопка «Ещё не проходил(а)» уводит в сообщение команде.
   suggest           — предложить квест: где → почему → контакт (по желанию)
@@ -138,7 +140,9 @@ T = {
     "unclear": "А где было непонятно или вы застряли? Это помогает нам больше всего.",
     "quote": "Можно процитировать ваш отзыв на сайте?",
     "sign": "Как подписать цитату? Напишите имя (например, «Анна, Москва») или нажмите «Без имени».",
-    "review_done": f"Спасибо! Отзыв у команды. Новые дела — в канале: {CHANNEL}",
+    "review_done": "Спасибо! Отзыв у команды.{rating} Новые дела — в канале: " + CHANNEL,
+    "rating_now": " Рейтинг дела сейчас: ★ {value}.",
+    "rating_new": " У дела пока мало оценок — ваша среди первых.",
     "where": "Какое место или район стоит сделать квестом? Город, улица — что угодно, чтобы найти.",
     "why": "Чем оно интересно? Истории, дворы, архитектура — что зацепило.",
     "contact": "Оставите контакт, чтобы мы могли ответить? (@ник, телефон или почта) "
@@ -223,6 +227,49 @@ def case_url(case):
 def case_name(quest):
     c = find_case(quest)
     return f"«{c['title']}»" if c else ("дело" if quest else "наше дело")
+
+
+_WORDS = {"один": 1, "единица": 1, "кол": 1, "два": 2, "двойка": 2, "три": 3, "тройка": 3, "четыре": 4,
+          "четверка": 4, "пять": 5, "пятерка": 5}
+
+
+def parse_rating(text):
+    """Оценка, написанная текстом: «5», «5/5», «4 из 5», «⭐⭐⭐⭐», «пять», «пятёрка». Иначе None."""
+    t = (text or "").strip().lower().replace("ё", "е").rstrip(".!) ")
+    m = re.fullmatch(r"([1-5])(?:\s*(?:/|из)\s*5)?", t)
+    if m:
+        return int(m.group(1))
+    stars = re.sub(r"[\s\ufe0f]", "", t)
+    if stars and set(stars) <= {"⭐", "★"} and len(stars) <= 5:
+        return len(stars)
+    return _WORDS.get(t)
+
+
+def rating_button(n, quest, confirmed):
+    """Значение кнопки оценки: «5.zilart.1» — оценка, дело, финал подтверждён. Дело и подтверждение зашиты
+    в кнопку, чтобы оценка с раннего сообщения (второй переход по ссылке, бот был недоступен, диалог истёк)
+    не терялась."""
+    return f"{n}.{alnum(quest) if quest else ''}.{1 if confirmed else 0}"
+
+
+def parse_rating_button(value):
+    """«5» (старые кнопки) или «5.zilart.1» → (оценка, дело или None, подтверждено ли) или None."""
+    n, _, rest = str(value).partition(".")
+    if n not in ("1", "2", "3", "4", "5"):
+        return None
+    quest, _, conf = rest.partition(".")
+    case = find_case(quest)
+    return int(n), (case["id"] if case else None), conf == "1"
+
+
+def rating_text(quest, feedback_dir=None):
+    """Текущий рейтинг дела из того же источника, что на сайте (build_ratings): «4,86 · 37 оценок» или None."""
+    import build_ratings  # здесь, а не наверху: build_ratings сам импортирует этот модуль
+    try:
+        got = build_ratings.summary(quest, build_ratings.build(feedback_dir or FEEDBACK_DIR))
+    except (OSError, ValueError, KeyError):
+        return None
+    return build_ratings.fmt(*got) if got else None
 
 
 def remind_at(key, t):
@@ -412,7 +459,10 @@ class Bot:
         self.send(chat, T["menu"], b)
 
     def cases(self, chat):
-        lines = "\n".join(f"• «{c['title']}» — {c['place']}, {STATUS_LABEL[c['status']]}" for c in CASES)
+        def line(c):
+            r = rating_text(c["id"])
+            return f"• «{c['title']}» — {c['place']}, {STATUS_LABEL[c['status']]}" + (f" · ★ {r}" if r else "")
+        lines = "\n".join(line(c) for c in CASES)
         b = [[{"text": f"{c['place']}: {c['title']}", "url": case_url(c)}] for c in CASES]
         b += [[{"text": T["all_cases"], "url": CITY_URL}], [self.btn(T["back"], "m", "menu", 0)]]
         self.send(chat, T["cases"].format(lines=lines, channel=CHANNEL), b)
@@ -489,8 +539,9 @@ class Bot:
         b = None
         text = T.get(step, "")
         if step == "rating":
-            b = [[self.btn(str(i), "r", i, sid) for i in range(1, 6)]]
-            what = case_name(d["data"].get("quest"))
+            quest, conf = d["data"].get("quest"), d["data"].get("confirmed")
+            b = [[self.btn(str(i), "r", rating_button(i, quest, conf), sid) for i in range(1, 6)]]
+            what = case_name(quest)
             if d["data"].get("confirmed"):
                 text = T["rating_done"].format(what=what)
             else:  # финал не подтверждён: без «поздравляем» и с выходом для тех, кто ещё не играл
@@ -581,7 +632,11 @@ class Bot:
             if rec.get("rating") is not None and rec["rating"] <= LOW:
                 self.notify_owner(self.owner_text(rec), test)
             if chat is not None:
-                self.send(chat, T["review_done"])
+                extra = ""
+                if rec.get("quest") and rec.get("rating") is not None:
+                    r = rating_text(rec["quest"])
+                    extra = T["rating_now"].format(value=r) if r else T["rating_new"]
+                self.send(chat, T["review_done"].format(rating=extra))
         elif flow == "report":
             self.notify_owner(self.owner_text(rec), test)
             if chat is not None:
@@ -680,6 +735,8 @@ class Bot:
             self.send(chat, T["message_done"])
             self.menu(chat)
             return
+        if d["step"] == "rating" and parse_rating(text):
+            return self.advance(chat, d, parse_rating(text))   # «5» текстом — тоже оценка
         if d["step"] in ("rating", "quote", "report_cat", "when"):
             self.send(chat, T["use_buttons"])
             return
@@ -719,13 +776,17 @@ class Bot:
             if self.is_test(user):
                 self.test_item(chat, user, value)
             return
+        if action == "r" and (not d or d["sid"] != sid):
+            d = self._rating_dialog(user, d, value)   # оценка с более раннего сообщения — не теряем
+            if d:
+                sid = d["sid"]
         if not d or d["sid"] != sid:
             self._toast = T["stale"]   # старая кнопка: объясняем и даём меню, а не молчим
             if not d:
                 self.menu(chat)
             return
         step = d["step"]
-        ok = ((action == "r" and step == "rating" and value in ("1", "2", "3", "4", "5"))
+        ok = ((action == "r" and step == "rating" and parse_rating_button(value))
               or (action == "np" and step == "rating")
               or (action == "c" and step == "report_cat" and value in REPORT_CATS)
               or (action == "q" and step == "quote" and value in ("0", "1"))
@@ -735,7 +796,7 @@ class Bot:
             return
         self._unbutton(chat, msg)
         if action == "r":
-            self.advance(chat, d, int(value))
+            self.advance(chat, d, parse_rating_button(value)[0])
         elif action == "np":   # ещё не играл: не оценка, а сообщение команде
             d["flow"] = "question"
             d["data"] = {k: v for k, v in d["data"].items() if k == "quest"}
@@ -746,6 +807,30 @@ class Bot:
             self.advance(chat, d, value)
         else:
             self.advance(chat, d, "")
+
+    def _rating_dialog(self, user, d, value):
+        """Кнопка оценки не из текущего диалога. Раньше это было «из прошлого разговора» и оценка терялась:
+        игрок дважды открыл ссылку из финала (первый раз бот не ответил сразу) и нажал оценку в первом
+        сообщении, или диалог истёк, пока бот был недоступен. Теперь:
+          * идёт отзыв и ждёт оценку — принимаем в него (дело из кнопки, если в диалоге его нет);
+          * диалога нет, а в кнопке есть дело — начинаем отзыв заново с этой оценкой;
+          * игрок посреди другого разговора или кнопка старого образца без дела — как раньше, «из прошлого»."""
+        got = parse_rating_button(value)
+        if not got:
+            return None
+        _, quest, conf = got
+        if d and d["flow"] == "review" and d.get("step") == "rating":
+            if quest and not d["data"].get("quest"):
+                d["data"]["quest"] = quest
+            d["data"]["confirmed"] = bool(d["data"].get("confirmed") or conf)
+            return d
+        if d is None and quest:
+            self.state["seq"] = self.state.get("seq", 0) + 1
+            d = {"flow": "review", "user": user, "sid": self.state["seq"], "ts": now(), "step": "rating",
+                 "data": {"quest": quest, "confirmed": conf}}
+            self.state["dialogs"][user] = d
+            return d
+        return None
 
     def _unbutton(self, chat, msg):
         if msg.get("message_id"):

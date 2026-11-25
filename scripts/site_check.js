@@ -14,6 +14,7 @@
  *     осознанное исключение — атрибут data-size-exception="почему" на элементе и комментарий в CSS;
  *   - карточки дел: кнопки одного ряда на одной высоте (±2 px), цена ≥ 12 px от разделителя, тизер не обрезан на телефоне;
  *   - карточка дела в каталоге (главная, /moscow/) = страница дела: номер, название, статус, цифры, метро; карточки двух каталогов одинаковые;
+ *   - карточка дела: первая фраза тизера — вопрос (H-31/H-38); плашка «Один код — вся компания» только у дел в продаже (H-36);
  *   - ошибки в консоли и ошибки JS; предупреждения о неиспользованном preload шрифтов.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
@@ -188,6 +189,11 @@ function inPage(MAIN_CTA) {
   });
   if (vw <= 420) document.querySelectorAll('.qgrid .qcard[data-case] p:not(.qc-meta)').forEach(p => {
     if (visible(p) && p.scrollHeight > p.clientHeight + 2) out.problems.push(`карточка дела №${p.closest('.qcard').dataset.case}: тизер длиннее 4 строк и обрезан — сократить поле card.teaser`);
+  });
+
+  // 3a''. H-36: плашка «Один код — вся компания» на карточке — только у дела, которое можно взять сейчас
+  document.querySelectorAll('.qgrid .qcard[data-case]:not([data-status="sale"]) .qc-code').forEach(el => {
+    out.problems.push(`карточка дела №${el.closest('.qcard').dataset.case}: плашка «Один код» у дела не в продаже (${el.closest('.qcard').dataset.status}) — H-36`);
   });
 
   // 3b. Схемы-карты: подписи одной роли одного размера; подписи не пересекаются между собой и с точками
@@ -431,6 +437,12 @@ async function mapTaps() {
       }
       (byNo[k.no] = byNo[k.no] || []).push([cat || 'главная', k]);
     }
+  }
+  // H-38 (H-31): первая фраза тизера карточки — вопрос дела («Кто…?»), а не описание формата
+  for (const [no, list] of Object.entries(byNo)) {
+    const t = list[0][1].teaser;
+    const first = (t.match(/^[^.?!…]*[.?!…]/) || [t])[0].trim();
+    if (!first.endsWith('?')) err(`карточка дела №${no}`, '', `первая фраза тизера не вопрос: «${first.slice(0, 60)}» — начните card.teaser с вопроса дела (H-31)`);
   }
   for (const [no, list] of Object.entries(byNo)) {
     const [c0, k0] = list[0];

@@ -1,0 +1,56 @@
+{
+ "_about": "Настоящие оценки игроков 1–5: бот после финала дела и сайт. Один игрок — одна оценка дела. Меньше threshold оценок — показываем «Новое дело». Собирает scripts/build_ratings.py; руками не править.",
+ "cases": {
+  "arbat-gogol": {
+   "bot": 0,
+   "count": 0,
+   "quest": "arbat",
+   "site": 0,
+   "sum": 0
+  },
+  "chistye-prudy-bashnya": {
+   "bot": 0,
+   "count": 0,
+   "quest": "chistye-prudy",
+   "site": 0,
+   "sum": 0
+  },
+  "kitay-gorod-list": {
+   "bot": 0,
+   "count": 0,
+   "quest": "kitay-gorod",
+   "site": 0,
+   "sum": 0
+  },
+  "kolomenskoe-tuman": {
+   "bot": 0,
+   "count": 0,
+   "quest": "kolomenskoe",
+   "site": 0,
+   "sum": 0
+  },
+  "krasnaya-ploshchad-imena": {
+   "bot": 0,
+   "count": 0,
+   "quest": "krasnaya-ploshchad",
+   "site": 0,
+   "sum": 0
+  },
+  "vdnh-sestra": {
+   "bot": 0,
+   "count": 0,
+   "quest": "vdnh",
+   "site": 0,
+   "sum": 0
+  },
+  "zilart-sinyaya-ptica": {
+   "bot": 0,
+   "count": 0,
+   "quest": "zilart",
+   "site": 0,
+   "sum": 0
+  }
+ },
+ "threshold": 5,
+ "updated": null
+}

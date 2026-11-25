@@ -23,7 +23,10 @@ git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 for i in 1 2 3 4 5; do
   git fetch -q origin main && git reset -q --hard origin/main || { sleep 5; continue; }
   cp -a "$tmp"/. .
-  git add -A -- $paths
+  # Рейтинг дел для сайта — только суммы и количества из feedback/ (scripts/build_ratings.py, без псевдонимов).
+  # Не собрался — коммитим отзывы без него, рейтинг догонит при следующем сохранении.
+  python3 scripts/build_ratings.py >/dev/null || echo "::warning::build_ratings.py не отработал"
+  git add -A -- $paths site/assets/ratings.json
   if git diff --cached --quiet; then rm -rf "$tmp"; exit 0; fi
   git commit -q -m "Игровой бот: отзывы и состояние" && git push -q origin HEAD:main && { rm -rf "$tmp"; exit 0; }
   sleep $((i * 5))

@@ -208,3 +208,27 @@
     if (p) a.setAttribute('href', 'https://t.me/' + BOT + '?start=' + p);
   });
 })();
+
+/* Рейтинг дел: свежие настоящие оценки из assets/ratings.json (собирает scripts/build_ratings.py после новых
+   отзывов в боте). Страница уже содержит рейтинг на момент сборки — это лишь обновление без пересборки.
+   Меньше порога оценок — «Новое дело». Тот же вид, что в build_cases.py (rating_html). */
+(function () {
+  'use strict';
+  var els = document.querySelectorAll('[data-rating]');
+  var me = document.currentScript;
+  if (!els.length || !me || !window.fetch) return;
+  function plural(n, a, b, c) { n = Math.abs(n) % 100; return n > 10 && n < 15 ? c : n % 10 === 1 ? a : n % 10 > 1 && n % 10 < 5 ? b : c; }
+  fetch(new URL('ratings.json', me.src).href, { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (!d || !d.cases) return;
+    var min = d.threshold || 5;
+    els.forEach(function (el) {
+      var row = d.cases[el.getAttribute('data-rating')];
+      if (!row) return;
+      var n = row.count || 0;
+      if (n < min || n <= 0) { el.innerHTML = '<span class="rating-new">Новое дело</span>'; return; }
+      var avg = row.sum / n, v = avg.toFixed(2).replace('.', ',');
+      el.innerHTML = '<span class="stars" role="img" aria-label="Оценка ' + v + ' из 5" style="--w:' + (avg / 5 * 100).toFixed(1) + '%"></span>' +
+        '<span class="rating-v" aria-hidden="true">' + v + '</span><span class="rating-n">·&nbsp;' + n + '&nbsp;' + plural(n, 'оценка', 'оценки', 'оценок') + '</span>';
+    });
+  }).catch(function () { /* нет сети — остаётся рейтинг из сборки */ });
+})();
