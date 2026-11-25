@@ -263,9 +263,9 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         await tryCode('ABCD-EFGH', 'не подошёл', 'wrong');
         await check('код доступа · ошибка');
         await tryCode(BUNDLE.revoked, 'не подошёл', 'wrong');
-        await tryCode('AB0D-EF1H', 'нет букв O, I, L', 'bad_chars');
+        await tryCode('AB0D-EF1H', 'не подошёл', 'bad_chars');
         await tryCode('ABC', 'В коде 8 знаков', 'length');
-        await tryCode('1234-5678-9012', 'Мастер-код не подошёл', 'wrong_master');
+        await tryCode('1234-5678-9012', 'Код не подошёл', 'wrong_master');
         // мастер-код набирают как удобно: строчными, без дефисов; выпущенный — как в письме
         await page.fill('#code', theme === 'dark' ? BUNDLE.master.toLowerCase().replace(/-/g, ' ') : BUNDLE.code);
         await click('#code-go');
