@@ -18,6 +18,13 @@
  *   - цели Метрики экрана кода (T-69): code_fail с причиной (wrong, bad_chars, length…) на каждую ошибку, code_ok (typed/link)
  *     после верного кода; сам код в параметры целей не попадает;
  *   - на 390 главная кнопка шага видна без прокрутки и не закрыта навигацией (T-60);
+ *   - мини-шаги (quests/<id>/field/player-ui-v2.md): каждый новый экран начинается сверху (прокрутка 0, начало экрана на виду),
+ *     поле ответа — в верхней части экрана и не сдвигается, когда открывается клавиатура (высота окна уменьшается),
+ *     неверный ответ не перерисовывает поле; «назад» и оглавление открывают любой пройденный мини-шаг только для просмотра,
+ *     «К текущему шагу» возвращает; в оглавлении нет ни одного непройденного экрана и названий точек впереди;
+ *     у каждого свёрнутого блока — треугольная стрелка; режим «Читаю» убирает плеер реплик, «Слушаю и читаю» — показывает;
+ *     при prefers-reduced-motion ни одна анимация не идёт; место в точке переживает перезагрузку;
+ *   - финал: карточка «Дело № N · РАСКРЫТО» без слов-ответов, пять звёзд (оценка сохраняется на телефоне), отзыв в Telegram (done_<дело>);
  *   - формат 5 (docs/quest-format.md): реплики, варианты (choice), выбор карточек доски (pick), «вычеркни лишнее» (strike),
  *     ответ из частей (all) и «почти» (replies), вопросы на ходу (walk_ask), письмо-улика в шторке, задание для детей,
  *     «стрелки» показываются один раз; ветки А/Б — прогон с ?flags= (--flags=st4:B).
@@ -136,6 +143,17 @@ function audit() {
     }
     if (el.matches('.pl-btn:not(.pl-btn--ghost)')) { const c = ratio(parse(cs.backgroundColor), bgOf(el.parentElement)); if (c < 3) out.push(`кнопка сливается с фоном (${c.toFixed(2)}): ${name(el)}`); }
   }
+  // у каждого свёрнутого блока — стандартная треугольная стрелка
+  for (const d of root.querySelectorAll('details')) {
+    const sm = d.querySelector(':scope > summary');
+    if (!sm || !visible(sm)) continue;
+    const b = getComputedStyle(sm, '::before');
+    if (!d.matches('.pl-more') || !/polygon/.test(b.clipPath) || parseFloat(b.width) < 6) out.push(`свёрнутый блок без стрелки: ${name(sm)}`);
+  }
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const run = document.getAnimations().filter(a => a.animationName && a.playState === 'running').map(a => a.animationName);
+    if (run.length) out.push(`анимация при prefers-reduced-motion: ${[...new Set(run)].join(', ')}`);
+  }
   const nav = document.getElementById('tabs');
   if (nav && !nav.hidden) {
     const labels = [...nav.querySelectorAll('button span')].map(s => s.textContent).join(' · ');
@@ -145,23 +163,39 @@ function audit() {
   return out;
 }
 
-// T-60: главная кнопка шага видна целиком между шапкой и навигацией и не закрыта ничем
+// T-60 и мини-шаги: новый экран начинается сверху; главная кнопка («Дальше», «Мы на месте», «Проверить») видна целиком между
+// шапкой и навигацией и ничем не закрыта; поле ответа с кнопкой «Ответить» — в верхней части экрана (над будущей клавиатурой)
 function stickAudit() {
   if (document.querySelector('dialog[open]')) return [];
-  // своя кнопка задания прилипает над навигацией; если само задание ниже экрана — вместо неё «К заданию»
-  const fl = document.getElementById('float');
-  const box = fl && !fl.hidden ? fl : document.querySelector('.pl-stick');
-  const btn = box && box.querySelector('.pl-btn:not(.pl-btn--ghost)');
-  if (!btn) return [];
-  const r = btn.getBoundingClientRect();
+  const out = [];
   const nav = document.getElementById('tabs');
   const bottom = nav && !nav.hidden ? nav.getBoundingClientRect().top : innerHeight;
   const top = document.querySelector('.pl-top').getBoundingClientRect().bottom;
+  const frame = document.getElementById('frame');
+  if (frame) {
+    const r = frame.getBoundingClientRect();
+    if (scrollY > 1) out.push(`новый экран открылся с прокруткой ${Math.round(scrollY)} px, а не сверху`);
+    if (r.top < top - 1 || r.top > innerHeight * .4) out.push(`начало экрана не на виду (${Math.round(r.top)} px)`);
+  }
+  const form = document.querySelector('#app .pl-form');
+  if (form) {
+    const r = form.getBoundingClientRect();
+    // если над полем картинка или письмо, на которые нужно смотреть, отвечая, — достаточно, чтобы поле было на экране
+    const task = form.closest('.pl-task');
+    const pic = task && [...task.querySelectorAll('.pl-fig, .pl-letter')].some(e => !e.closest('details') && (e.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING));
+    if (r.top < top || r.bottom > (pic ? bottom : Math.min(bottom, innerHeight * .62))) out.push(`поле ответа не в верхней части экрана (${Math.round(r.top)}–${Math.round(r.bottom)} из ${innerHeight})`);
+    if (task && !task.querySelector('.pl-ask, .pl-lines')) out.push('на экране с полем ответа нет вопроса');
+    if (getComputedStyle(form).position !== 'static') out.push('поле ответа не в потоке страницы (прилипает — поедет от клавиатуры)');
+  }
+  const box = document.querySelector('#app .pl-stick');
+  const btn = box && box.querySelector('.pl-btn:not(.pl-btn--ghost)');
+  if (!btn) return out;
+  const r = btn.getBoundingClientRect();
   const name = `«${btn.textContent.trim()}»`;
-  if (r.top < top - 1 || r.bottom > bottom + 1) return [`главная кнопка ${name} не видна без прокрутки (${Math.round(r.top)}–${Math.round(r.bottom)}, видно ${Math.round(top)}–${Math.round(bottom)})`];
+  if (r.top < top - 1 || r.bottom > bottom + 1) return out.concat(`главная кнопка ${name} не видна без прокрутки (${Math.round(r.top)}–${Math.round(r.bottom)}, видно ${Math.round(top)}–${Math.round(bottom)})`);
   const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-  if (!hit || hit.closest('.pl-btn') !== btn) return [`главная кнопка ${name} закрыта другим элементом`];
-  return [];
+  if (!hit || hit.closest('.pl-btn') !== btn) out.push(`главная кнопка ${name} закрыта другим элементом`);
+  return out;
 }
 const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if (scrollY === y) { if (++n > 3) return r(); } else { y = scrollY; n = 0; } requestAnimationFrame(f); }; f(); });
 
@@ -205,14 +239,25 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       const click = sel => page.click(sel);
       const check = async where => {
         screens++; (await page.evaluate(audit)).forEach(m => err(`${tag} · ${where}`, m));
-        if (vp.width < 1024) {
-          await page.evaluate(settle); (await page.evaluate(stickAudit)).forEach(m => err(`${tag} · ${where}`, m));
-          if (await page.isVisible('#float')) { // «К заданию» ведёт к заданию, и там главная кнопка уже на экране
-            await page.click('#float button'); await page.waitForTimeout(50); await page.evaluate(settle);
-            if (await page.isVisible('#float')) err(`${tag} · ${where}`, '«К заданию» не привела к главной кнопке');
-            else (await page.evaluate(stickAudit)).forEach(m => err(`${tag} · ${where} · после «К заданию»`, m));
-          }
+      };
+      // новый экран (после «Дальше», ответа, перехода): общий аудит + «новое сверху, главная кнопка и поле на виду»
+      const fresh = async where => {
+        await check(where);
+        if (vp.width < 1024) { await page.evaluate(settle); (await page.evaluate(stickAudit)).forEach(m => err(`${tag} · ${where}`, m)); }
+      };
+      const pos = () => page.evaluate(() => window.__dvorami.pos());
+      const FWD = '#app .pl-bar [data-act="fwd"]';
+      // листать «Дальше», пока не появится stop (селектор) или кнопка «Дальше» не кончится; каждый экран проверяется
+      const flip = async (where, stop) => {
+        for (let i = 0; i < 80; i++) {
+          if (stop && await page.$(stop)) return true;
+          const b = await page.$(FWD);
+          if (!b) return false;
+          const ps = await pos();
+          await fresh(`${where} · экран ${ps.id}`);
+          await b.click();
         }
+        err(tag, `${where}: «Дальше» не кончается`); return false;
       };
       // Ответить на задание формата 5 в контексте sel («#active» — шаг, «#walk-0» — вопрос на ходу); wrong — сначала неверно
       const solve = async (sel, st, sat, wrong) => {
@@ -279,47 +324,117 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         if ((await goals()).some(([, p]) => codes.some(c => JSON.stringify(p).toUpperCase().replace(/-/g, '').includes(c)))) err(tag, 'код доступа ушёл в параметры цели Метрики');
       }
       if (SEALED && !(await page.evaluate(k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, 'dvorami:code:' + QID))) err(tag, 'код не запомнился на устройстве');
-      const shot = async name => { if (args.shots && theme === 'dark') { fs.mkdirSync(args.shots, { recursive: true }); await page.waitForTimeout(150); await page.screenshot({ path: path.join(args.shots, `${name}-${vp.width}.png`) }); } };
+      // скриншоты — JPEG q80 (team/std/site-check.md)
+      const shot = async name => { if (args.shots && theme === 'dark') { fs.mkdirSync(args.shots, { recursive: true }); await page.waitForTimeout(150); await page.screenshot({ path: path.join(args.shots, `${name}-${vp.width}.jpg`), type: 'jpeg', quality: 80 }); } };
 
       await check('обложка');
-      await click('[data-act="start"]'); await check('вступление');
+      // режим «читаю / слушаю и читаю»: по умолчанию плеер реплик есть; в одном прогоне переключаем на «Читаю» — плеера нет нигде
+      const readMode = vp.width === 1024 && theme === 'sun';
+      if ((await page.$$('#app [data-act="mode"]')).length !== 2) err(tag, 'обложка: нет выбора «Слушаю и читаю / Читаю»');
+      if (readMode) {
+        await click('#app [data-act="mode"][data-mode="read"]');
+        if ((await pos()).mode !== 'read') err(tag, 'режим «Читаю» не включился');
+        await check('обложка · режим «Читаю»');
+      }
+      await click('[data-act="start"]');
+      if (!readMode && Q.format >= 5 && !(await page.$('#frame .pl-voice.is-soon'))) err(tag, 'вступление: в режиме «Слушаю и читаю» нет плеера реплики с плашкой «Аудио скоро»');
+      if (!(await page.$('#app .pl-crumb .pl-minis'))) err(tag, 'вступление: нет линии мини-шагов');
+      await flip('вступление', '[data-act="go"]');
+      await fresh('вступление · конец');
       await click('[data-act="go"]');
+      let reviewed = false;
       for (const [pi, p] of Q.points.entries()) {
         const at = `точка ${p.n}`;
         if ((await state()).phase !== 'walk') { err(tag, `${at}: нет экрана дороги`); break; }
-        await check(at + ' · дорога');
-        // вопросы на ходу: чётный — ответить (с неверной попытки), нечётный — пропустить; прогресс точки не меняется
-        for (const [wi, w] of [].concat(p.walk_ask || []).entries()) {
-          const wsel = `#walk-${wi}`, wat = `${at} · на ходу ${wi + 1}`;
-          if (!(await page.$(wsel))) { err(tag, `${wat}: нет вопроса на ходу`); continue; }
-          if (wi % 2 === 0 && (w.answers || w.all || w.options)) await solve(wsel, w, wat, true);
-          else await click(`${wsel} [data-act="skip"]`);
-          const ws = await state();
-          if (!ws.wa[wi] || !ws.wa[wi].res) err(tag, `${wat}: ответ не засчитан`);
-          if (ws.phase !== 'walk') err(tag, `${wat}: вопрос на ходу сдвинул прогресс (${ws.phase})`);
-          await check(wat + ' · после ответа');
-        }
+        await fresh(at + ' · дорога');
         if (pi === 1) {
           await click('[data-view="map"]'); await check(at + ' · карта');
           await click('[data-view="board"]'); await check(at + ' · улики');
           await click('[data-view="point"]');
           await click('[data-act="menu"]'); await check(at + ' · меню'); await click('[data-act="close"]');
-          await page.reload({ waitUntil: 'load' }); await page.waitForSelector('[data-act="here"]');
-          const s = await state();
+          // место внутри точки (мини-шаг) переживает перезагрузку
+          if (await page.$(FWD)) await click(FWD);
+          const before = await pos();
+          await page.reload({ waitUntil: 'load' }); await page.waitForSelector('#frame');
+          const s = await state(), after = await pos();
           if (s.p !== pi || s.phase !== 'walk') err(tag, `${at}: прогресс не пережил перезагрузку`);
+          if (after.cur !== before.cur || after.id !== before.id) err(tag, `${at}: мини-шаг не пережил перезагрузку (${before.id} → ${after.id})`);
         }
+        // дорога по экранам: разговор в пути, вопросы на ходу (чётный — ответить с неверной попытки, нечётный — пропустить), «идём»
+        const asks = [].concat(p.walk_ask || []);
+        const seenAsk = new Set();
+        for (let g = 0; g < 60; g++) {
+          if (await page.$('#app [data-act="here"]')) break;
+          const ps = await pos();
+          if (ps.kind === 'wask') {
+            const wi = +ps.id.slice(2), w = asks[wi], wsel = `#walk-${wi}`, wat = `${at} · на ходу ${wi + 1}`;
+            if (!seenAsk.has(wi)) {
+              seenAsk.add(wi);
+              await fresh(wat);
+              if (wi % 2 === 0 && (w.answers || w.all || w.options)) await solve(wsel, w, wat, true);
+              else await click(`${wsel} [data-act="skip"]`);
+              const ws = await state();
+              if (!ws.wa[wi] || !ws.wa[wi].res) err(tag, `${wat}: ответ не засчитан`);
+              if (ws.phase !== 'walk') err(tag, `${wat}: вопрос на ходу сдвинул прогресс (${ws.phase})`);
+              await check(wat + ' · после ответа');
+            }
+          } else await fresh(`${at} · дорога · экран ${ps.id}`);
+          if (!(await page.$(FWD))) { err(tag, `${at}: на экране дороги ${ps.id} нет ни «Дальше», ни «Мы на месте»`); break; }
+          await click(FWD);
+        }
+        if (seenAsk.size !== asks.length) err(tag, `${at}: вопросов на ходу показано ${seenAsk.size} из ${asks.length}`);
+        await fresh(at + ' · идём');
         await click('[data-act="here"]');
+        if ((await pos()).kind !== 'arrive') err(tag, `${at}: после «Мы на месте» открылся не экран точки`);
+        await fresh(at + ' · на месте');
+        if (p.kids) {
+          await page.click('#frame .pl-kids > summary'); await check(at + ' · детям');
+          if ((await state()).k !== 0) err(tag, `${at}: задание для детей сдвинуло прогресс`);
+          await page.click('#frame .pl-kids > summary');
+        }
         for (const [si, st] of p.steps.entries()) {
           const sat = `${at} шаг ${si + 1}`; if (process.env.PC_DEBUG) console.log(tag, sat, st.type);
+          const plain = !st.type || st.type === 'info' || st.type === 'board' || st.type === 'say';
+          // реплики шага (и разбор предыдущего) листаются до загадки или до последней реплики шага
+          await flip(sat, plain ? '#app .pl-bar [data-act="next"]' : '#active');
           const s0 = await state();
           if (s0.phase !== 'step' || s0.k !== si) { err(tag, `${sat}: ожидали шаг ${si + 1}, состояние ${s0.phase}/${s0.k}`); break; }
-          if (si === 0 || st.type !== 'info') await check(sat);
-          if (si === 0 && p.kids) {
-            await page.click('.pl-kids > summary'); await check(sat + ' · детям');
-            if ((await state()).k !== si) err(tag, `${sat}: задание для детей сдвинуло прогресс`);
-            await page.click('.pl-kids > summary');
+          await fresh(sat);
+          // пройденное: «назад» и оглавление открывают прошлые мини-шаги только для просмотра; непройденного в оглавлении нет
+          if (!reviewed && pi === 2 && si === 1) {
+            reviewed = true;
+            const here = await pos();
+            await click('#app [data-act="back"]');
+            const pk = await pos();
+            if (!pk.peek || pk.f !== here.f - 1 || pk.sec !== here.sec) err(tag, `${sat}: «назад» не открыл предыдущий мини-шаг (${JSON.stringify(pk)})`);
+            if (await page.$('#frame form, #frame [data-act="choose"], #frame [data-act="check"], #frame [data-act="hint"]')) err(tag, `${sat}: в пройденном мини-шаге можно отвечать`);
+            if (!(await page.$('#app .pl-review'))) err(tag, `${sat}: просмотр пройденного не помечен`);
+            await fresh(sat + ' · назад');
+            await click('#app .pl-crumb-btn'); await page.waitForSelector('#sheet[open] .pl-toc-sec[open] .pl-toc');
+            await check(sat + ' · оглавление'); await shot('player-toc');
+            const toc = await page.evaluate(() => ({
+              text: document.getElementById('sheet-body').textContent,
+              items: [...document.querySelectorAll('#sheet [data-act="jump"]')].map(b => [+b.dataset.sec, +b.dataset.f])
+            }));
+            if (toc.items.some(([sec, f]) => sec > here.sec || (sec === here.sec && f > here.f))) err(tag, `${sat}: в оглавлении есть непройденные мини-шаги`);
+            if (toc.items.filter(([sec]) => sec === here.sec).length !== here.f + 1) err(tag, `${sat}: в оглавлении текущей точки ${toc.items.filter(([sec]) => sec === here.sec).length} мини-шагов, пройдено ${here.f + 1}`);
+            for (const fp of Q.points.slice(pi + 1)) for (const w of [fp.title, fp.place]) if (w && toc.text.includes(w.replace(/<[^>]+>/g, ''))) err(tag, `${sat}: оглавление раскрывает то, что впереди: «${w}»`);
+            if (!toc.items.some(([sec]) => sec === 0) || !toc.items.some(([sec]) => sec === -1)) err(tag, `${sat}: в оглавлении нет пройденных точек и вступления`);
+            // открыть мини-шаг первой точки: виден её экран, состояние дела не меняется
+            await page.click('#sheet .pl-toc-sec:nth-of-type(2) > summary');
+            await click('#sheet [data-act="jump"][data-sec="0"][data-f="0"]');
+            const far = await pos(), sFar = await state();
+            if (!far.peek || far.sec !== 0 || far.f !== 0) err(tag, `${sat}: оглавление не открыло мини-шаг первой точки`);
+            if (!(await page.$eval('#frame', (e, t) => e.textContent.includes(t), Q.points[0].title).catch(() => false))) err(tag, `${sat}: на экране не первая точка`);
+            if (sFar.p !== pi || sFar.k !== si || sFar.phase !== 'step') err(tag, `${sat}: просмотр пройденного сдвинул прогресс`);
+            await fresh(sat + ' · пройденная точка');
+            await click('#app .pl-bar [data-act="fwd"]');
+            if ((await pos()).f !== 1) err(tag, `${sat}: «Дальше» в просмотре не листает пройденное`);
+            await click('#app [data-act="current"]');
+            const back = await pos();
+            if (back.peek || back.f !== here.f || back.sec !== here.sec) err(tag, `${sat}: «К текущему шагу» не вернул на место (${JSON.stringify(back)})`);
           }
-          if (!st.type || st.type === 'info' || st.type === 'board' || st.type === 'say') { await click('#active [data-act="next"]'); continue; }
+          if (plain) { await click('#app .pl-bar [data-act="next"]'); continue; }
           if (st.type === 'free') { await page.fill('#ans', '10'); await click('#active button[type="submit"]'); continue; }
           if (st.type === 'choice' || st.type === 'pick' || st.type === 'strike') {
             await solve('#active', st, sat, si % 2 === 0);
@@ -327,11 +442,28 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
             if (sx.k === si && sx.phase === 'step') err(tag, `${sat}: не принят верный выбор`);
             continue;
           }
-          // загадка: неверный ответ не проходит
+          // клавиатура: окно стало ниже (как при открытой клавиатуре) — поле на том же месте страницы, на виду, навигация убрана
+          if (vp.width === 390 && pi === 0) {
+            await page.focus('#ans'); await page.waitForTimeout(80);
+            const m0 = await page.evaluate(() => { const r = document.getElementById('ans').getBoundingClientRect(); return { y: r.top + scrollY, sy: scrollY }; });
+            await page.setViewportSize({ width: vp.width, height: 500 }); await page.waitForTimeout(500);
+            const m1 = await page.evaluate(() => { const i = document.getElementById('ans'), r = i.getBoundingClientRect(), b = i.form.querySelector('button').getBoundingClientRect();
+              return { y: r.top + scrollY, sy: scrollY, top: r.top, bottom: Math.max(r.bottom, b.bottom), h: innerHeight, head: document.querySelector('.pl-top').getBoundingClientRect().bottom,
+                nav: getComputedStyle(document.getElementById('tabs')).display, focus: document.activeElement === i }; });
+            if (Math.abs(m1.y - m0.y) > 1) err(tag, `${sat}: клавиатура сдвинула поле ответа на странице (${Math.round(m0.y)} → ${Math.round(m1.y)})`);
+            if (m1.top < m1.head || m1.bottom > m1.h) err(tag, `${sat}: при клавиатуре поле ответа не на виду (${Math.round(m1.top)}–${Math.round(m1.bottom)} из ${m1.h})`);
+            if (m1.nav !== 'none') err(tag, `${sat}: при клавиатуре нижняя навигация осталась на экране`);
+            if (!m1.focus) err(tag, `${sat}: поле ответа потеряло фокус`);
+            await page.setViewportSize(vp); await page.evaluate(() => { document.activeElement.blur(); scrollTo(0, 0); }); await page.waitForTimeout(200);
+          }
+          // загадка: неверный ответ не проходит; поле не перерисовывается — фокус и набранное остаются
           if (si % 2 === 0) {
+            await page.evaluate(() => { document.getElementById('ans').dataset.same = '1'; });
             await page.fill('#ans', 'заведомо неверно'); await click('#active button[type="submit"]');
             if ((await state()).k !== si) err(tag, `${sat}: принят неверный ответ`);
             if (!(await page.$('.pl-wrong'))) err(tag, `${sat}: нет сообщения о неверном ответе`);
+            if (!(await page.evaluate(() => { const i = document.getElementById('ans'); const r = i && i.getBoundingClientRect(), w = document.querySelector('#active .pl-wrong').getBoundingClientRect(); return i && i.dataset.same === '1' && document.activeElement === i && r.top >= 56 && w.bottom <= innerHeight; }))) err(tag, `${sat}: неверный ответ перерисовал поле (фокус потерян) или поле с сообщением ушли с экрана`);
+            await check(sat + ' · неверный ответ');
           }
           const hints = st.hints || [];
           if (pi % 4 === 2 && si === p.steps.findIndex(x => x.type === 'ask') && hints.length) {
@@ -346,11 +478,13 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
             if (hints.length && si % 2 === 1) { await click('#active [data-act="hint"]'); await check(sat + ' · подсказка'); }
             await page.fill('#ans', firstAnswer(st)); await click('#active button[type="submit"]');
             if ((await state()).k === si && (await state()).phase === 'step') err(tag, `${sat}: не принят верный ответ «${firstAnswer(st)}»`);
+            else if ((await pos()).kind === 'result' && !(await page.$('#frame .pl-result-top .pl-stamp'))) err(tag, `${sat}: на экране разбора нет штампа «Верно»`);
           }
         }
         const s1 = await state();
         if (s1.phase !== 'point_done') { err(tag, `${at}: точка не закрылась (${s1.phase}/${s1.k})`); break; }
-        await check(at + ' · пройдена');
+        await flip(at + ' · разбор', '[data-act="nextpoint"]');
+        await fresh(at + ' · пройдена');
         if (pi === 3 || (Q.letter && pi === Q.points.length - 2)) {
           await shot('player-clue');
           await click('[data-view="board"]'); await check(at + ' · улики'); await shot('player-board');
@@ -368,12 +502,49 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       const clues = Q.points.filter(p => p.clue).length;
       if (end.phase !== 'done') err(tag, `финал не достигнут: ${end.phase}, точка ${end.p + 1}`);
       else {
-        await check('финал');
+        await fresh('финал'); await shot('player-final');
         if (end.board.length !== clues) err(tag, `улик ${end.board.length}, ожидали ${clues}`);
         // «стрелки»: каждая цель показана, и показана один раз (запомнена за одним экраном)
         const targets = new Set(JSON.stringify(Q).match(/"arrow":"[^"]+"/g) || []);
         for (const t of targets) { const k = t.split('"')[3]; if (!end.arrows || !end.arrows[k]) err(tag, `стрелка «${k}» ни разу не показана`); }
         if (Q.letter && !end.letter) err(tag, 'письмо-улика не попало на доску');
+        // финальная карточка: номер дела, штамп «Раскрыто», ни одного слова-ответа; оценка звёздами хранится на телефоне; отзыв — в бота
+        const pageQid = await page.evaluate(() => document.body.dataset.quest);   // у макета темы папка дела своя
+        const card = await page.$eval('#closed-card', e => e.textContent).catch(() => null);
+        if (card === null) err(tag, 'финал: нет карточки раскрытого дела');
+        else {
+          const caseNo = await page.evaluate(() => document.body.dataset.caseNo || '');
+          if (!/раскрыто/i.test(card)) err(tag, 'финал: на карточке нет штампа «Раскрыто»');
+          if (caseNo && !card.includes('№ ' + caseNo)) err(tag, `финал: на карточке нет номера дела (№ ${caseNo})`);
+          const nrm = x => String(x).toLowerCase().replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+          const safe = nrm([Q.title, Q.city, Q.district, 'дворами городские квесты расследования раскрыто дело дата в пути точек подсказок ни одной из'].join(' '));
+          const answers = new Set();
+          const collect = x => { if (Array.isArray(x)) return x.forEach(collect); if (!x || typeof x !== 'object') return;
+            for (const a of [].concat(x.answers || [])) for (const v of [].concat(a)) { const w = nrm(String(v).replace(/^~/, '')); if (w.length >= 4 && !/^\d+$/.test(w) && !safe.includes(w)) answers.add(w); }
+            Object.values(x).forEach(collect); };
+          collect(Q.points);
+          const leak = [...answers].filter(w => (' ' + nrm(card) + ' ').includes(' ' + w + ' '));
+          if (leak.length) err(tag, `финал: на карточке для снимка есть слова-ответы: ${leak.slice(0, 5).join(', ')}`);
+        }
+        if ((await page.$$('#rate .pl-star')).length !== 5) err(tag, 'финал: нет пяти звёзд оценки');
+        else {
+          await click('#rate .pl-star[data-v="4"]');
+          const saved = await page.evaluate(k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, 'dvorami:rating:' + pageQid);
+          if (saved !== '4') err(tag, `финал: оценка не сохранилась на телефоне (${saved})`);
+          if ((await page.$$('#rate .pl-star[data-on="true"]')).length !== 4) err(tag, 'финал: звёзды не показывают выбранную оценку');
+          await check('финал · оценка');
+        }
+        const tg = await page.$eval('#rate a[data-track="review_click"]', a => a.textContent.trim() + ' ' + a.href).catch(() => '');
+        if (!tg.includes('Оставить отзыв в Telegram') || !tg.includes('start=done_' + pageQid)) err(tag, `финал: нет кнопки «Оставить отзыв в Telegram» со ссылкой done_${pageQid} («${tg}»)`);
+        if (await page.$(FWD)) {
+          await click(FWD); await fresh('финал · что здесь правда');
+          const fact = await page.$('#frame .pl-fact > summary');
+          if (fact) { await fact.click(); await check('финал · что здесь правда · раскрыто'); }
+          await click('#app [data-act="back"]');
+          if ((await pos()).kind !== 'closed') err(tag, 'финал: «назад» не вернул к карточке дела');
+        }
+        await page.reload({ waitUntil: 'load' }); await page.waitForSelector('#closed-card');
+        if ((await page.$$('#rate .pl-star[data-on="true"]')).length !== 4) err(tag, 'финал: оценка не пережила перезагрузку');
         await click('[data-view="board"]'); await check('финал · улики');
         await click('[data-view="map"]'); await check('финал · карта');
       }

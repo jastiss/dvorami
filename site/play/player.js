@@ -6,6 +6,8 @@
    Экран — единый каркас для всех дел (platform/design/player-frame.md): страница дела даёт только
    <body data-quest data-case-no>, <main id="app"> и theme.css; шапку, навигацию и шторку строит этот файл.
    ?field=1 — режим полевого теста: «что проверить», тайминг, ошибки, подсказки, заметки, отчёт.
+   Экран прохождения — по мини-шагам (quests/zilart/field/player-ui-v2.md): один экран — одна реплика, блок, загадка или разбор;
+   «Дальше» и «назад», оглавление пройденного, режим «читаю / слушаю и читаю», финальная карточка с оценкой.
    Прогресс — в localStorage (если доступен). Без внешних зависимостей.
    «Что-то не так?» на каждой точке: категория + текст → копия в буфер → игровой бот (docs/feedback-bot.md).
    Аналитика: window.dvoramiTrack из site/assets/analytics.js (если подключён и задан счётчик). */
@@ -36,7 +38,10 @@
     hint: '<path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3Z"/>',
     out: '<path d="M8 16 16 8M9 8h7v7"/>',
     down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
-    sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>'
+    sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+    back: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
+    list: '<path d="M9 7h11M9 12h11M9 17h11"/><path d="M4.5 7h.1M4.5 12h.1M4.5 17h.1"/>',
+    play: '<path d="M8.5 5.5v13l10-6.5Z"/>'
   };
   function ico(name) { return '<svg class="pl-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + ICONS[name] + '</svg>'; }
   (function shell() {
@@ -52,8 +57,6 @@
       '<button type="button" data-act="view" data-view="point">' + ico('point') + '<span>Точка</span></button>' +
       '<button type="button" data-act="view" data-view="board">' + ico('board') + '<span>Улики</span><b class="pl-badge" id="badge"></b></button>' +
       '<button type="button" data-act="view" data-view="map">' + ico('map') + '<span>Карта</span></button></nav>' +
-      // Задание ниже экрана (длинная сцена) — над навигацией кнопка «К заданию» (T-60); у самого задания главная кнопка прилипает сама
-      '<div class="pl-float" id="float" hidden><button class="pl-btn" type="button" data-act="totask">' + ico('down') + '<span>К заданию</span></button></div>' +
       '<dialog class="pl-sheet" id="sheet" aria-labelledby="sheet-title"><div class="pl-sheet-head"><h2 id="sheet-title"></h2>' +
       '<button type="button" class="pl-x" data-act="close" aria-label="Закрыть">' + ico('close') + '</button></div>' +
       '<div class="pl-sheet-body" id="sheet-body"></div></dialog>' +
@@ -124,7 +127,7 @@
   }
   function speaker(who) {
     var sp = (Q.speakers || {})[who] || {};
-    return { name: sp.name || who, style: sp.style || 'hero' };
+    return { name: sp.name || who, style: sp.style || 'hero', img: sp.img || '' };
   }
   function prepare(q) {
     FLAGS = readFlags(q);
@@ -256,13 +259,17 @@
     return { v: 1, quest: QID, version: Q.version, phase: 'idle', p: 0, k: 0, hint: 0, res: [], board: [],
       events: [], t_start: null, t_end: null, sort: false, wrong: null, last: '', paused: false, field: FIELD,
       // формат 5: карточки доски [{id, n}], вычеркнутые {id: true}, состояние письма, увиденные «стрелки», вопросы на ходу
-      cards: [], struck: {}, letter: null, arrows: {}, wa: [], reply: '', sel: [] };
+      cards: [], struck: {}, letter: null, arrows: {}, wa: [], reply: '', sel: [],
+      // мини-шаги: f — экран, на котором игрок сейчас (в пределах точки); hist — ответы пройденных точек, чтобы их можно было пересмотреть
+      f: 0, hist: {} };
   }
   function fill(s) {
     s.res = s.res || []; s.board = s.board || []; s.events = s.events || [];
     s.cards = s.cards || []; s.struck = s.struck || {}; s.arrows = s.arrows || {}; s.wa = s.wa || []; s.sel = s.sel || [];
     if (s.letter === undefined) s.letter = null;
     if (s.reply === undefined) s.reply = '';
+    s.hist = s.hist || {};
+    if (typeof s.f !== 'number') s.f = -1;   // сохранение до мини-шагов: место подберёт fixCursor()
     return s;
   }
   function load() {
@@ -312,7 +319,7 @@
   }
   function clearSlot(o) { o.hint = 0; o.wrong = null; o.last = ''; o.reply = ''; o.sel = []; }
   function showWalk() {
-    S.phase = 'walk'; S.k = 0; S.res = []; S.wa = []; clearSlot(S);
+    S.phase = 'walk'; S.k = 0; S.res = []; S.wa = []; S.f = 0; clearSlot(S);
     log('walk');
     commit('top');
   }
@@ -320,6 +327,7 @@
     S.phase = 'step'; S.k = 0; S.res = []; clearSlot(S);
     log('arrive');
     enterStep();
+    S.f = frameIndex(framesOf(S.p), function (x) { return x.kind === 'arrive'; }, 0);
     commit('top');
   }
   function step() { return pt().steps[S.k]; }
@@ -349,7 +357,10 @@
     effects(step(), pt().n);
     S.k += 1; clearSlot(S);
     if (S.k >= pt().steps.length) finishPoint(); else enterStep();
-    commit('active');
+    // следующий экран — разбор ответа, следующий шаг или «точка пройдена»: он уже построен сразу за текущим
+    S.f = Math.min(S.f + 1, framesOf(S.p).length - 1);
+    moveDir = 'fwd';
+    commit('top');
   }
   function finishPoint() {
     var p = pt();
@@ -359,6 +370,7 @@
     if (p.steps.some(function (s) { return s.type === 'board'; })) S.sort = true;
     log('done');
     S.phase = 'point_done';
+    S.hist[S.p] = { res: S.res.slice(), wa: S.wa.slice() };
   }
   function nextPoint() {
     if (S.p + 1 >= Q.points.length) return finishQuest();
@@ -366,7 +378,7 @@
     showWalk();
   }
   function finishQuest() {
-    S.phase = 'done';
+    S.phase = 'done'; S.f = 0;
     S.t_end = Date.now();
     effects({ cards: Q.finale_cards }, 0);
     if (Q.letter && Q.letter.end) S.letter = Q.letter.end;
@@ -390,7 +402,7 @@
     var w = ctxSlot(ctx);
     w.res = r; w.wrong = null; w.reply = '';
     effects(ctxDef(ctx), pt().n);
-    commit('walk:' + ctxIndex(ctx));
+    commit('same', '#walk-' + ctxIndex(ctx) + ' .pl-stamp');
   }
   // Проверка текстового ответа: ответы (answers) → ответ из частей (all) → «почти» (replies) → «половина верна» (all.missing)
   function checkText(st, text) {
@@ -426,7 +438,18 @@
     }
     log('wrong', { step: lbl, text: text });
     o.wrong = text; o.last = text; o.reply = r.reply || '';
-    commit(ctx === 'step' ? 'input' : 'input:' + ctx);
+    // неверный ответ: экран не перерисовываем — поле остаётся на месте, клавиатура не закрывается, под полем появляется сообщение
+    save();
+    var box = document.getElementById(ctx === 'step' ? 'active' : 'walk-' + ctxIndex(ctx));
+    var form = box && box.querySelector('.pl-form');
+    if (!form) return commit('same');
+    var old = box.querySelector('.pl-wrong');
+    if (old) old.remove();
+    form.insertAdjacentHTML('afterend', wrongHtml(st, o));
+    var inp = form.elements.ans;
+    try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); }
+    inp.select();
+    box.querySelector('.pl-wrong').scrollIntoView({ block: 'nearest', behavior: smooth() });
   }
   // Выбор варианта (choice): option.reply — ответ на неверный выбор
   function choose(id, ctx) {
@@ -439,7 +462,7 @@
     }
     log('wrong', { step: lbl, text: opt.label || id });
     o.wrong = opt.label || id; o.reply = opt.reply || '';
-    commit('active');
+    commit('same', '.pl-wrong');
   }
   // Выбор нескольких (pick — карточки доски; strike — вычеркнуть лишнее на снимке)
   function toggleSel(id, ctx) {
@@ -451,7 +474,7 @@
       o.sel.push(id);
     }
     o.wrong = null; o.reply = '';
-    save(); render(); refocus('[data-sel="' + id + '"]');
+    save(); render(); refocus('#app [data-sel="' + id + '"]');
   }
   function sameSet(a, b) { if (a.length !== b.length) return false; for (var i = 0; i < a.length; i++) if (b.indexOf(a[i]) === -1) return false; return true; }
   function checkSel(ctx) {
@@ -475,7 +498,7 @@
     if (ok) { log('correct', { step: lbl, text: label, hints: o.hint }); return ctxDone(ctx, { st: 'ok', text: label }); }
     log('wrong', { step: lbl, text: label || '—' });
     o.wrong = label || '—'; o.reply = reply;
-    commit('active');
+    commit('same', '.pl-wrong');
   }
   function hint(level, ctx) {
     ctx = ctx || 'step';
@@ -484,7 +507,7 @@
     o.hint = level + 1;
     var isAnswer = o.hint >= hints.length;
     log(isAnswer ? 'reveal' : 'hint', { step: ctxLabel(ctx), level: o.hint });
-    commit(ctx === 'step' ? 'active' : 'walk:' + ctxIndex(ctx));
+    commit('same', (ctx === 'step' ? '#active' : '#walk-' + ctxIndex(ctx)) + ' .pl-hint:last-of-type');
   }
   function reveal(ctx) {
     ctx = ctx || 'step';
@@ -501,10 +524,11 @@
   // Разметку каркаса тема дела не меняет — только переменные CSS и вид артефакта.
   function head(eyebrow, title, place, shape) {
     return '<header class="pl-head" id="top"><span class="pl-deco" data-shape="' + (shape % 3) + '" aria-hidden="true"></span>' +
-      '<p class="pl-eyebrow">' + esc(eyebrow) + '</p><h1>' + esc(plain(title)) + '</h1>' +
+      (eyebrow ? '<p class="pl-eyebrow">' + esc(eyebrow) + '</p>' : '') + '<h1>' + esc(plain(title)) + '</h1>' +
       (place ? '<p class="pl-place">' + esc(plain(place)) + '</p>' : '') + '</header>';
   }
-  function pointHead(p, stage) { return head('Точка ' + p.n + ' · ' + stage, p.title, p.place, p.n - 1); }
+  // «Точка N · дорога / на месте» стоит в строке мини-шагов над экраном, поэтому в самом заголовке её нет
+  function pointHead(p) { return head('', p.title, p.place, p.n - 1); }
   function caseName() { return CASE_NO ? 'Дело № ' + CASE_NO : 'Дело'; }
   function clueTotal() { return Q.points.filter(function (p) { return p.clue; }).length; }
   function mapLink(p) { return 'https://yandex.ru/maps/?pt=' + p.lon + ',' + p.lat + '&z=18&l=map'; }
@@ -512,7 +536,7 @@
     if (!S.field || !p.check || !p.check.length) return '';
     var items = '<ul>' + p.check.map(function (c) { return '<li>' + inline(c) + '</li>'; }).join('') + '</ul>' +
       '<p class="pl-small" style="margin-top:10px">Фотографии сохраняйте в галерею телефона. Замечания записывайте через меню → «Заметка» — они попадут в отчёт к точке ' + p.n + '.</p>';
-    if (collapsed) return '<details class="pl-field"><summary>Полевой тест: что проверить</summary>' + items + '</details>';
+    if (collapsed) return '<details class="pl-more pl-field"><summary>Полевой тест: что проверить</summary>' + items + '</details>';
     return '<section class="pl-field"><span class="pl-label">Полевой тест: что проверить</span>' + items + '</section>';
   }
   // Артефакт дела — улика: метка (буква и год) и слова свидетеля
@@ -534,7 +558,7 @@
   // Текст сцены — строка (формат 3) или список реплик: {who, text} · {arrow, text} · {img|layers, alt, caption} · {doc: "letter"} · {audio}
   function linesHtml(src) {
     if (src == null || src === '') return '';
-    if (!Array.isArray(src)) return '<div class="pl-prose">' + prose(src) + '</div>';
+    if (!Array.isArray(src)) return '<div class="pl-prose">' + proseFold(src) + '</div>';
     var prev = null;
     return src.map(function (l) {
       // подряд у одного говорящего имя подписано один раз (для чтения с экрана — у каждой реплики)
@@ -545,20 +569,22 @@
     }).join('');
   }
   function lineHtml(l, cont) {
-    if (typeof l === 'string') return '<div class="pl-prose">' + prose(l) + '</div>';
+    if (typeof l === 'string') return '<div class="pl-prose">' + proseFold(l) + '</div>';
     if (!l || typeof l !== 'object') return '';
     if (l.arrow) return arrowHtml(l.arrow, l.text);
-    if (l.doc === 'letter') return letterHtml(l.state || S.letter, { reveal: l.reveal });
+    if (l.doc === 'letter') return letterHtml(l.state || LETTER_CTX || S.letter, { reveal: l.reveal });
     if (l.doc === 'card') return CARDS[l.id] ? cardHtml(l.id, { full: true }) : '';
     if (l.img !== undefined || l.layers) return figureHtml(l);
-    if (l.audio && !l.text) return audioBtn(l.audio);
+    if (l.audio && !l.text) return typeof l.audio === 'string' && mediaSrc(l.audio) ? voiceStrip([mediaSrc(l.audio)], true) : '';
     var sp = speaker(l.who || 'zilya');
     var paper = sp.style === 'note' || sp.style === 'letter' || sp.style === 'card';
-    var body = (sp.style === 'letter' || l.mono) ? '<div class="pl-prose pl-hand">' + prose(l.text) + '</div>' : '<div class="pl-prose">' + prose(l.text) + '</div>';
+    var body = (sp.style === 'letter' || l.mono) ? '<div class="pl-prose pl-hand">' + prose(l.text) + '</div>' : '<div class="pl-prose">' + proseFold(l.text) + '</div>';
+    // место под портрет героя: пока портрета нет — плитка с фигурой его роли (speakers.<id>.img — путь к портрету)
+    var ava = paper || sp.style === 'titr' ? '' : '<i class="pl-ava" data-style="' + esc(sp.style) + '" aria-hidden="true">' + (mediaSrc(sp.img) ? '<img src="' + esc(mediaSrc(sp.img)) + '" alt="" loading="lazy" decoding="async">' : '') + '</i>';
     var quiet = sp.style === 'titr' || (cont && !l.note);
     return '<div class="pl-line pl-line--' + esc(sp.style) + (paper ? ' pl-line--paper' : '') + (cont ? ' pl-line--cont' : '') + '" data-who="' + esc(l.who || '') + '">' +
-      (quiet ? '<span class="visually-hidden">' + esc(sp.name) + ': </span>' : '<span class="pl-who">' + esc(sp.name) + (l.note ? ' <small>' + esc(plain(l.note)) + '</small>' : '') + '</span>') +
-      body + (l.audio ? audioBtn(l.audio) : '') + '</div>';
+      (quiet ? '<span class="visually-hidden">' + esc(sp.name) + ': </span>' : '<span class="pl-who">' + ava + esc(sp.name) + (l.note ? ' <small>' + esc(plain(l.note)) + '</small>' : '') + '</span>') +
+      body + '</div>';
   }
   // Картинка или заглушка: место под картинку держится всегда (aspect-ratio), нет файла — подпись вместо картинки
   function mediaSrc(src) { return /^(https?:)?\/\//.test(src) ? '' : String(src); }
@@ -566,7 +592,7 @@
     var srcs = [].concat(l.layers || l.img || []).filter(Boolean).map(mediaSrc).filter(Boolean);
     var alt = plain(l.alt || l.caption || 'Картинка');
     var ratio = l.ratio || '3 / 2';
-    var ph = '<span class="pl-ph" aria-hidden="true"><b>Картинка готовится</b><span>' + esc(alt) + '</span></span>';
+    var ph = '<span class="pl-ph" aria-hidden="true"><b>Здесь будет иллюстрация</b><span>' + esc(alt) + '</span></span>';
     var imgs = srcs.map(function (s, i) {
       return '<img src="' + esc(s) + '" alt="' + (i ? '' : esc(alt)) + '" loading="lazy" decoding="async"' + (i ? ' hidden' : '') + ' data-layer="' + i + '">';
     }).join('');
@@ -576,12 +602,24 @@
       : '<div class="pl-frame" style="aspect-ratio:' + esc(ratio) + '"' + (srcs.length ? '' : ' role="img" aria-label="' + esc(alt) + ' (картинка готовится)"') + '>' + ph + imgs + '</div>';
     return '<figure class="pl-fig" data-arrow-at="image">' + box + (l.caption ? '<figcaption>' + inline(l.caption) + '</figcaption>' : '') + '</figure>';
   }
-  // Звук: путь к файлу — кнопка «Слушать»; true — место под озвучку («Озвучка скоро»)
-  function audioBtn(src) {
-    if (src === true) return '<button type="button" class="pl-audio" data-act="audio" data-arrow-at="sound" aria-disabled="true">' + ico('sound') + '<span>Озвучка скоро</span></button>';
-    var s = mediaSrc(src);
-    if (!s) return '';
-    return '<button type="button" class="pl-audio" data-act="audio" data-src="' + esc(s) + '" data-arrow-at="sound" aria-pressed="false">' + ico('sound') + '<span>Слушать</span></button>';
+  // Звук: плеер реплики. У всех реплик экрана есть файлы — играет их подряд; нет — то же место с плашкой «Аудио скоро».
+  // В режиме «Читаю» плеера нет: текст на экране есть всегда. Отдельная звуковая улика ({audio} без текста) видна в обоих режимах.
+  var WAVE = [5, 9, 14, 8, 12, 18, 10, 6, 13, 17, 9, 5, 11, 15, 8, 12, 6, 10, 16, 9, 7, 13, 5, 9];
+  function voiceStrip(srcs, force) {
+    if (MODE !== 'listen' && !force) return '';
+    var ready = srcs.length > 0;
+    return '<div class="pl-voice' + (ready ? '' : ' is-soon') + '" data-arrow-at="sound"' + (ready ? ' data-srcs="' + esc(srcs.join('|')) + '"' : '') + '>' +
+      '<button type="button" class="pl-voice-btn" data-act="voice" aria-label="' + (ready ? 'Слушать' : 'Слушать: аудио скоро') + '"' + (ready ? ' aria-pressed="false"' : ' aria-disabled="true"') + '>' + ico('play') + ico('pause') + '</button>' +
+      '<span class="pl-voice-wave" aria-hidden="true">' + WAVE.map(function (h) { return '<i style="height:' + h + 'px"></i>'; }).join('') + '</span>' +
+      '<span class="pl-voice-note">' + (ready ? '0:00' : 'Аудио скоро') + '</span></div>';
+  }
+  // lines — реплики экрана; whole — одна запись на весь блок (audio у точки, шага, дороги)
+  function voiceHtml(lines, whole) {
+    var spoken = asLines(lines).filter(function (l) { return l && typeof l === 'object' && !l.arrow && l.text != null; });
+    if (!spoken.length) return '';
+    if (typeof whole === 'string' && mediaSrc(whole)) return voiceStrip([mediaSrc(whole)]);
+    var list = spoken.map(function (l) { return typeof l.audio === 'string' ? mediaSrc(l.audio) : ''; });
+    return voiceStrip(list.every(Boolean) ? list : []);
   }
   // «Стрелка» — подсказка интерфейса у нужного элемента; показывается один раз (S.arrows), на том экране, где появилась
   var ARROW_NAMES = { sound: 'Звук', image: 'Картинка', board: 'Доска улик', hint: 'Подсказки', plus: 'По желанию', letter: 'Письмо', plan: 'План' };
@@ -595,7 +633,7 @@
       if (seen && seen !== key) { a.remove(); return; }
       if (!seen) { S.arrows[t] = key; changed = true; }
       var tg = app.querySelector('[data-arrow-at="' + t + '"]');
-      if (tg && !a.closest('.pl-past')) { tg.insertAdjacentElement('afterend', a); a.classList.add('is-at'); }
+      if (tg && !a.closest('details')) { tg.insertAdjacentElement('afterend', a); a.classList.add('is-at'); }
       if (t === 'board') { var nb = document.querySelector('.pl-nav [data-view="board"]'); if (nb) { nb.classList.remove('pl-callme'); void nb.offsetWidth; nb.classList.add('pl-callme'); } }
     });
     if (changed) save();
@@ -669,9 +707,9 @@
   function kidsHtml(k) {
     if (!k) return '';
     var list = [].concat(k).map(function (x) { return typeof x === 'string' ? { text: x } : x; });
-    return '<details class="pl-kids"><summary>Задание для детей</summary>' + list.map(function (x) {
+    return '<details class="pl-more pl-kids"><summary>Задание для детей</summary>' + list.map(function (x) {
       return '<div class="pl-kids-item"><div class="pl-prose">' + prose(x.text) + '</div>' +
-        (x.answer ? '<details class="pl-kids-ans"><summary>Ответ</summary><p>' + inline(x.answer) + '</p></details>' : '') + '</div>';
+        (x.answer ? '<details class="pl-more pl-kids-ans"><summary>Ответ</summary><p>' + inline(x.answer) + '</p></details>' : '') + '</div>';
     }).join('') + '</details>';
   }
   function resultStamp(r) {
@@ -686,18 +724,6 @@
     if (r.st === 'skipped' && !st.ok_on_skip) return '';
     return Array.isArray(st.ok) ? '<div class="pl-ok">' + linesHtml(st.ok) + '</div>' : '<p class="pl-ok">' + inline(st.ok) + '</p>';
   }
-  function doneStep(st, r, i) {
-    var t = tagOf(st);
-    var body = linesHtml(st.lines) + (t.text ? '<div class="pl-prose">' + prose(t.text) + '</div>' : '');
-    // реплики пройденного шага свёрнуты: экран точки не растёт на пять экранов вверх
-    if (st.lines && st.lines.length > 1) {
-      var who = [];
-      st.lines.forEach(function (l) { if (l && l.who) { var n = speaker(l.who).name; if (who.indexOf(n) === -1 && speaker(l.who).style !== 'titr') who.push(n); } });
-      body = '<details class="pl-past-more"><summary>' + esc(st.title || (who.length ? who.join(', ') : 'Сцена')) + '</summary>' + body + '</details>';
-    }
-    return '<section class="pl-past" data-step="' + i + '">' + (t.tag ? '<div>' + tagHtml(t) + '</div>' : '') +
-      body + resultStamp(r) + okHtml(st, r) + '</section>';
-  }
   // Лестница подсказок: у загадки последняя ступень — ответ; у свободного вопроса ответа нет
   function hintSteps(st) {
     var n = (st.hints || []).length, out = [];
@@ -709,17 +735,26 @@
     }
     return out;
   }
-  // Поле ответа, варианты, выбор карточек, подсказки и «Пропустить» — общие для шага точки и вопроса на ходу
-  function taskInput(st, o, ctx, main) {
+  function wrongHtml(st, o) {
+    return '<p class="pl-wrong" role="status">' + (o.reply
+      ? (st.type === 'pick' || st.type === 'strike' ? '' : '«' + esc(o.wrong) + '» — ') + inline(o.reply)
+      : '«' + esc(o.wrong) + '» — не подходит. Попробуйте ещё раз' + ((st.hints || []).length ? ' или откройте подсказку.' : '.')) + '</p>';
+  }
+  // Поле ответа, варианты, выбор карточек, подсказки и «Пропустить» — общие для шага точки и вопроса на ходу.
+  // Поле ответа стоит в потоке сразу под вопросом (не прилипает к низу): клавиатура его не двигает. Сообщение об ошибке —
+  // рядом с тем, на что смотрит игрок: под полем, а у вариантов и карточек — над ними. recap — свёрнутые реплики шага.
+  function taskInput(st, o, ctx, main, recap) {
     var h = '';
     var hints = st.hints || [];
     var steps = hintSteps(st);
     var revealed = st.type !== 'free' && hints.length && o.hint >= hints.length;
     var stick = main ? ' pl-stick' : '';
     var aid = ctx === 'step' ? 'ans' : 'ans-' + ctx.replace(':', '');
+    var wrong = o.wrong ? wrongHtml(st, o) : '';
+    recap = recap || '';
     if (!revealed) {
       if (st.type === 'choice') {
-        h += '<div class="pl-opts' + ((st.options || []).some(function (x) { return x.img !== undefined; }) ? ' pl-opts--img' : '') + '" role="group" aria-label="Варианты ответа">' +
+        h += recap + wrong + '<div class="pl-opts' + ((st.options || []).some(function (x) { return x.img !== undefined; }) ? ' pl-opts--img' : '') + '" role="group" aria-label="Варианты ответа">' +
           (st.options || []).map(function (x) {
             return '<button type="button" class="pl-opt" data-act="choose" data-id="' + esc(x.id) + '">' +
               (x.img !== undefined ? figureHtml({ img: x.img, alt: x.alt || x.label || x.id, ratio: x.ratio || '1 / 1' }) : '') +
@@ -730,6 +765,7 @@
           ? S.cards.filter(function (c) { return !(CARDS[c.id] && CARDS[c.id].kind === 'version'); }).map(function (c) { return { id: c.id, label: CARDS[c.id] ? CARDS[c.id].title : c.id, sub: CARDS[c.id] && CARDS[c.id].n ? 'Остановка ' + CARDS[c.id].n : '', struck: !!S.struck[c.id] }; })
           : (st.items || []).map(function (x) { return { id: x.id, label: x.label, sub: x.sub || '' }; });
         var need = st.type === 'pick' ? (st.pick || 2) : 0;
+        h += recap + wrong;
         if (st.type === 'strike' && st.img !== undefined) h += figureHtml({ img: st.img, alt: st.alt || 'Снимок', ratio: st.ratio });
         h += '<div class="pl-sel' + (st.type === 'strike' ? ' pl-sel--strike' : '') + '" role="group" aria-label="' + (st.type === 'pick' ? 'Карточки доски: выберите ' + need : 'Вычеркните лишнее') + '">' +
           list.map(function (x) {
@@ -738,20 +774,15 @@
               '<span><b>' + inline(x.label) + '</b>' + (x.sub ? '<small>' + esc(x.sub) + (x.struck ? ' · вычеркнута' : '') + '</small>' : '') + '</span>' +
               '<i class="pl-selmark" aria-hidden="true"></i></button>';
           }).join('') + '</div>' +
-          '<div class="pl-actions' + stick + '"><button class="pl-btn' + (main ? '' : ' pl-btn--ghost') + '" type="button" data-act="check">' +
+          '<div class="pl-actions' + stick + '"><button class="pl-btn" type="button" data-act="check">' +
           (st.type === 'pick' ? 'Проверить' + (o.sel.length < need ? ' (' + o.sel.length + ' из ' + need + ')' : '') : 'Проверить') + '</button></div>';
       } else {
-        h += '<form class="pl-form' + stick + '" data-form="answer" autocomplete="off">' +
+        h += '<form class="pl-form" data-form="answer" autocomplete="off">' +
           '<label class="visually-hidden" for="' + aid + '">Ваш ответ</label>' +
-          '<input class="pl-input" id="' + aid + '" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + esc(st.placeholder || (st.type === 'free' ? 'Ваш ответ' : 'Ответ в одно-два слова')) + '" value="' + esc(o.last) + '">' +
-          '<button class="pl-btn' + (main ? '' : ' pl-btn--ghost') + '" type="submit">Ответить</button></form>';
+          '<input class="pl-input" id="' + aid + '" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + esc(st.placeholder || (st.type === 'free' ? 'Ваш ответ' : 'Одно-два слова')) + '" value="' + esc(o.last) + '">' +
+          '<button class="pl-btn" type="submit">Ответить</button></form>' + wrong + recap;
       }
-      if (o.wrong) {
-        h += '<p class="pl-wrong" role="status">' + (o.reply
-          ? (st.type === 'pick' || st.type === 'strike' ? '' : '«' + esc(o.wrong) + '» — ') + inline(o.reply)
-          : '«' + esc(o.wrong) + '» — не подходит. Попробуйте ещё раз' + (hints.length ? ' или откройте подсказку.' : '.')) + '</p>';
-      }
-    }
+    } else h += recap;
     if (hints.length) {
       h += '<div class="pl-hints">';
       for (var j = 0; j < Math.min(o.hint, hints.length); j++) h += '<div class="pl-hint"><b>' + steps[j].name + '</b>' + inline(hints[j]) + '</div>';
@@ -763,33 +794,23 @@
           '<span class="pl-pips" aria-hidden="true">' + pips + '</span></button>';
       }
       h += '</div>';
-      if (revealed) h += '<div class="pl-actions' + stick + '"><button class="pl-btn' + (main ? '' : ' pl-btn--ghost') + '" type="button" data-act="reveal">' + (main ? 'Дальше' : 'Понятно') + '</button></div>';
+      if (revealed) h += '<div class="pl-actions' + stick + '"><button class="pl-btn" type="button" data-act="reveal">' + (ctx === 'step' ? 'Дальше' : 'Понятно') + '</button></div>';
     }
     if (!revealed && (st.optional || st.type === 'free' || !hints.length)) h += '<button type="button" class="pl-skip" data-act="skip">Пропустить</button>';
     return h;
   }
-  function activeStep(st) {
-    var t = tagOf(st);
-    var total = pt().steps.length;
-    var h = '<section class="pl-card pl-task' + (t.cls === 'opt' ? ' pl-task--opt' : '') + '" id="active" data-step="' + S.k + '" data-ctx="step">' +
-      '<div class="pl-task-top">' + tagHtml(t) + '<span class="pl-stepno">Шаг ' + (S.k + 1) + ' из ' + total + '</span></div>' +
-      (st.audio ? audioBtn(st.audio) : '') + linesHtml(st.lines) +
-      (t.text ? '<div class="pl-prose">' + prose(t.text) + '</div>' : '');
-    if (st.type === 'board') h += '<div style="margin-top:16px">' + boardLetters(false) + '</div>';
-    if (st.type === 'info' || st.type === 'board' || st.type === 'say' || !st.type) {
-      return h + '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="next">' + esc(st.button || 'Дальше') + '</button></div></section>';
-    }
-    return h + taskInput(st, S, 'step', true) + '</section>';
-  }
-  // Вопрос на ходу: на экране дороги, по желанию, на прогресс не влияет
-  function walkAskHtml(w, i) {
-    var ctx = 'w:' + i, o = ctxSlot(ctx), t = tagOf(w);
+  // Вопрос на ходу: свой экран в дороге, по желанию, на прогресс не влияет. o — его состояние (ответ, подсказки)
+  function walkAskHtml(w, fr, o, canAnswer) {
+    var i = fr.i, ctx = 'w:' + i, t = tagOf(w);
     if (!t.tag) { t.tag = 'По желанию'; t.cls = 'opt'; }
+    var recap = fr.recap && fr.recap.length ? moreHtml('Напомнить, что было сказано', linesHtml(fr.recap), 'pl-recap') : '';
     var h = '<section class="pl-card pl-task pl-task--opt" id="walk-' + i + '" data-ctx="' + ctx + '" data-arrow-at="plus">' +
-      '<div class="pl-task-top">' + tagHtml(t) + '</div>' + (w.audio ? audioBtn(w.audio) : '') + linesHtml(w.lines) +
-      (t.text ? '<div class="pl-prose">' + prose(t.text) + '</div>' : '');
-    if (o.res) return h + resultStamp(o.res) + okHtml(Object.assign({ ok_on_skip: true }, w), o.res) + '</section>';
-    return h + taskInput(Object.assign({ optional: true }, w), o, ctx, false) + '</section>';
+      '<div class="pl-task-top">' + tagHtml(t) + '<span class="pl-stepno">Вопрос на ходу</span></div>' +
+      (fr.inline && fr.inline.length ? voiceHtml(fr.inline, w.audio) + '<div class="pl-lines">' + linesHtml(fr.inline) + '</div>' : '') +
+      (t.text ? '<div class="pl-prose pl-ask">' + prose(t.text) + '</div>' : fr.ask ? '<div class="pl-prose pl-ask"><p>' + esc(fr.ask) + '</p></div>' : '');
+    var arrows = (fr.arrows || []).map(function (a) { return arrowHtml(a.arrow, a.text); }).join('');
+    if (o.res || !canAnswer) return h + resultStamp(o.res) + okHtml(Object.assign({ ok_on_skip: true }, w), o.res) + recap + '</section>' + arrows;
+    return h + taskInput(Object.assign({ optional: true }, w), o, ctx, true, recap) + '</section>' + arrows;
   }
   function issueBtn() {
     return '<button type="button" class="pl-issue" data-act="issue">Что-то не так? Напишите нам</button>';
@@ -897,63 +918,396 @@
       '<span class="pl-label" style="margin-top:20px">Улики: ' + b.length + ' из ' + clueTotal() + '</span>' + boardLetters(true) +
       '<p class="pl-small">' + (b.length ? 'Слова свидетелей — в разделе «Улики».' : 'За каждую точку — буква, год и слова свидетеля.') + '</p>';
   }
+  // ---------- мини-шаги (player-ui-v2): один экран — одна реплика, блок, загадка или разбор ----------
+  // Точка раскладывается в ряд экранов: дорога → разговор в пути → вопросы на ходу → «идём» → на месте → сцена →
+  // шаги (реплики → загадка → разбор) → «точка пройдена». Игрок видит один экран; новое всегда начинается сверху.
+  // S.f — на каком экране игрок сейчас; peek — просмотр пройденного (не сохраняется). Экраны дальше S.f не строятся в оглавление.
+  var BUDGET = (window.innerHeight || 700) < 700 ? 330 : 480;   // столько знаков текста помещается на экран телефона без прокрутки; картинка и письмо — как ~250 знаков
+  var INLINE = 100;   // реплики короче — на одном экране с загадкой: поле ответа остаётся в верхней половине экрана
+  var FOLD = 600;     // текст длиннее сворачивается под «стрелку»: начало видно, остальное — по нажатию
+  var MODE_KEY = 'dvorami:mode', RATE_KEY = 'dvorami:rating:' + QID;
+  var MODE = store.get(MODE_KEY) === 'read' ? 'read' : 'listen';   // «слушаю и читаю» | «читаю»
+  var peek = null, moveDir = 'fwd', LETTER_CTX = null;
+
+  function lineWeight(l) {
+    if (typeof l === 'string') return plain(l).length;
+    if (!l || typeof l !== 'object' || l.arrow) return 0;
+    if (l.img !== undefined || l.layers) return 250;
+    if (l.doc === 'letter') return 280;
+    if (l.doc === 'card') return 180;
+    return plain(l.text).length + 24;
+  }
+  function asLines(src) { return src == null || src === '' ? [] : (Array.isArray(src) ? src : [src]); }
+  // Реплики → экраны: подряд идущие короткие реплики делят экран, длинная или картинка занимает его целиком
+  function beatsOf(src) {
+    var out = [], cur = [], w = 0;
+    asLines(src).forEach(function (l) {
+      if (l && typeof l === 'object' && l.arrow) { (cur.length || !out.length ? cur : out[out.length - 1]).push(l); return; }
+      var lw = lineWeight(l);
+      if (cur.length && w + lw > BUDGET) { out.push(cur); cur = []; w = 0; }
+      cur.push(l); w += lw;
+    });
+    if (cur.length) out.push(cur);
+    return out;
+  }
+  // Состояние письма на момент шага — чтобы в пройденном письмо выглядело так, как тогда
+  function letterAt(sec, step) {
+    if (!Q.letter) return null;
+    var id = Q.letter.start || null;
+    for (var i = 0; i <= sec && i < Q.points.length; i++) {
+      var p = Q.points[i], all = i < sec || step >= 1e9;
+      for (var j = 0; j < p.steps.length && (all || j <= step); j++) if (p.steps[j].letter) id = p.steps[j].letter;
+      if (all && p.letter) id = p.letter;
+    }
+    return id;
+  }
+  function isVisual(l) { return !!l && typeof l === 'object' && (l.img !== undefined || !!l.layers || !!l.doc); }
+  // Реплики загадки делятся на три части: разговор (talk) — отдельными экранами до загадки, если он длинный;
+  // то, на что нужно смотреть, отвечая (картинка, письмо, карточка в конце реплик — tail), — на экране самой загадки;
+  // «стрелки» к подсказкам и «по желанию» (late) — там, где сама кнопка.
+  function taskParts(lines) {
+    var ln = asLines(lines);
+    var late = ln.filter(function (l) { return l && l.arrow && (l.arrow === 'hint' || l.arrow === 'plus'); });
+    var rest = ln.filter(function (l) { return late.indexOf(l) === -1; });
+    var cut = rest.length;
+    while (cut > 0 && (isVisual(rest[cut - 1]) || (rest[cut - 1] && rest[cut - 1].arrow && rest.slice(0, cut - 1).some(isVisual)))) cut--;
+    if (cut < rest.length && !isVisual(rest[cut])) cut++;
+    var talk = rest.slice(0, cut), tail = rest.slice(cut);
+    var inline = talk.reduce(function (a, l) { return a + lineWeight(l); }, 0) <= INLINE;
+    return { talk: talk, tail: tail, late: late, inline: inline };
+  }
+  // У загадки нет своего текста (вопрос — в конце реплики): на экран с полем ответа выносим последнюю фразу с вопросом
+  function askFrom(talk) {
+    for (var i = talk.length - 1; i >= 0; i--) {
+      var l = talk[i];
+      if (!l || typeof l !== 'object' || l.text == null) continue;
+      var t = plain(l.text), m = t.match(/[^.!?…]*\?[»"]?\s*$/);
+      var q = m && m[0].trim();
+      if (q && q.length >= 4 && q.length <= 160) return q;
+      return t.length <= 160 ? t : '';
+    }
+    return '';
+  }
+  function isInteractive(st) { return !(st.type === 'info' || st.type === 'board' || st.type === 'say' || !st.type); }
+  function stepCards(st) {
+    var ids = [];
+    [].concat(st.cards || [], st.add || []).forEach(function (c) { var id = typeof c === 'string' ? c : c && c.id; if (id && CARDS[id] && ids.indexOf(id) === -1) ids.push(id); });
+    return ids;
+  }
+  function introFrames() {
+    var lines = [];
+    (Q.intro || []).forEach(function (m) { lines = lines.concat(m); });
+    var bs = beatsOf(lines);
+    if (!bs.length) bs = [[]];
+    return bs.map(function (b, i) { return { id: 'i' + i, kind: 'beat', lines: b }; });
+  }
+  function finaleFrames() {
+    var F = [{ id: 'fc', kind: 'closed' }];
+    if ((Q.finale || []).length) F.push({ id: 'ff', kind: 'facts' });
+    return F;
+  }
+  function stepFrames(F, p, i, r) {
+    var st = p.steps[i], t = tagOf(st), ln = asLines(st.lines);
+    if (!isInteractive(st)) {
+      var bs = beatsOf(ln.concat(t.text ? [t.text] : []));
+      if (!bs.length) bs = [[]];
+      bs.forEach(function (b, j) {
+        F.push({ id: 's' + i + 'b' + j, kind: 'beat', step: i, lines: b, tag: j ? null : t, title: j ? null : st.title, audio: j ? null : st.audio,
+          board: st.type === 'board' && j === bs.length - 1, gate: j === bs.length - 1, button: st.button });
+      });
+      return;
+    }
+    var tp = taskParts(ln);
+    if (!tp.inline) beatsOf(tp.talk).forEach(function (b, j) {
+      F.push({ id: 's' + i + 'b' + j, kind: 'beat', step: i, lines: b, tag: null, title: j ? null : st.title, audio: j ? null : st.audio });
+    });
+    F.push({ id: 's' + i + 't', kind: 'task', step: i, inline: (tp.inline ? tp.talk : []).concat(tp.tail), recap: tp.inline ? null : tp.talk, arrows: tp.late,
+      ask: t.text ? '' : (tp.inline ? '' : askFrom(tp.talk)), res: r });
+    if (!r) return;
+    var okl = st.ok && (r.st !== 'skipped' || st.ok_on_skip) ? asLines(st.ok) : [];
+    if (r.st !== 'ok' && !okl.length) return;
+    var rb = beatsOf(okl);
+    if (!rb.length) rb = [[]];
+    rb.forEach(function (b, j) { F.push({ id: 's' + i + 'r' + j, kind: 'result', step: i, lines: b, res: j ? null : r }); });
+  }
+  // stage: 0 — дорога, 1 — на месте (шаги до k включительно), 2 — точка пройдена
+  function pointFrames(pi, stage, k, res, wa) {
+    var p = Q.points[pi], F = [], road = [], chat = [];
+    asLines(p.walk).forEach(function (l) { (typeof l === 'string' || (l && l.arrow && !chat.length) ? road : chat).push(l); });
+    F.push({ id: 'w', kind: 'road', lines: road });
+    beatsOf(chat).forEach(function (b, i) { F.push({ id: 'wc' + i, kind: 'beat', lines: b, audio: i ? null : p.walk_audio }); });
+    walkAsks(p).forEach(function (w, i) {
+      if (stage !== 0 && !(wa[i] && wa[i].res)) return;   // после дороги остаются только те вопросы, на которые ответили
+      var tp = taskParts(w.lines), t = tagOf(w);
+      if (!tp.inline) beatsOf(tp.talk).forEach(function (b, j) { F.push({ id: 'wa' + i + 'b' + j, kind: 'beat', lines: b, audio: j ? null : w.audio, tag: j ? null : { tag: 'По желанию', cls: 'opt' }, title: j ? null : 'Вопрос на ходу' }); });
+      F.push({ id: 'wa' + i, kind: 'wask', i: i, inline: (tp.inline ? tp.talk : []).concat(tp.tail), recap: tp.inline ? null : tp.talk, arrows: tp.late,
+        ask: t.text ? '' : (tp.inline ? '' : askFrom(tp.talk)) });
+    });
+    if (stage === 0 && F.length > 1) F.push({ id: 'wg', kind: 'go', lines: road });
+    if (stage >= 1) {
+      F.push({ id: 'a', kind: 'arrive' });
+      beatsOf(p.scene).forEach(function (b, i) { F.push({ id: 'sc' + i, kind: 'beat', lines: b, audio: i ? null : p.audio }); });
+      var last = Math.min(k, p.steps.length - 1);
+      for (var i = 0; i <= last; i++) stepFrames(F, p, i, i < k ? (res[i] || { st: 'none' }) : null);
+    }
+    if (stage === 2) {
+      F.push({ id: 'd', kind: 'done', end: true });
+      beatsOf(p.outro).forEach(function (b, i) { F.push({ id: 'o' + i, kind: 'beat', lines: b, end: true }); });
+    }
+    return F;
+  }
+  function liveSec() { return S.phase === 'intro' ? -1 : S.phase === 'done' ? Q.points.length : S.p; }
+  function framesOf(sec) {
+    var n = Q.points.length;
+    if (sec < 0) return introFrames();
+    if (sec >= n) return finaleFrames();
+    if (sec === liveSec()) return pointFrames(sec, S.phase === 'walk' ? 0 : S.phase === 'step' ? 1 : 2, S.k, S.res, S.wa);
+    var h = (S.hist || {})[sec] || {};
+    return pointFrames(sec, 2, Q.points[sec].steps.length, h.res || [], h.wa || []);
+  }
+  function frameIndex(F, test, fallback) { for (var i = 0; i < F.length; i++) if (test(F[i])) return i; return fallback; }
+  // Сохранение без S.f (до player-ui-v2) или с устаревшим — ставим на начало текущего шага
+  function fixCursor() {
+    if (S.phase === 'idle') { S.f = 0; return; }
+    var F = framesOf(liveSec());
+    if (typeof S.f === 'number' && S.f >= 0 && S.f < F.length) return;
+    S.f = S.phase === 'step' ? frameIndex(F, function (x) { return x.step === S.k; }, F.length - 1)
+      : S.phase === 'point_done' ? frameIndex(F, function (x) { return x.kind === 'done'; }, F.length - 1) : 0;
+  }
+  function shownPos() { return peek || { sec: liveSec(), f: S.f }; }
+  function secName(sec) {
+    if (sec < 0) return 'Вступление';
+    if (sec >= Q.points.length) return 'Финал';
+    return 'Точка ' + Q.points[sec].n + ' · ' + plain(Q.points[sec].title);
+  }
+  function clip(s, n) { s = plain(s).replace(/\s+/g, ' '); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '').replace(/[\s,.;:!?«»—…-]+$/, '') + '…' : s; }
+  function frameLabel(fr, sec) {
+    if (fr.kind === 'road') return 'Дорога';
+    if (fr.kind === 'go') return 'Идём';
+    if (fr.kind === 'wask') return 'Вопрос на ходу';
+    if (fr.kind === 'arrive') return 'На месте';
+    if (fr.kind === 'done') return 'Точка пройдена';
+    if (fr.kind === 'closed') return 'Дело раскрыто';
+    if (fr.kind === 'facts') return 'Что здесь правда';
+    if (fr.kind === 'result') return 'Разбор';
+    if (fr.kind === 'task') {
+      var st = Q.points[sec].steps[fr.step], r = fr.res;
+      return (tagOf(st).tag || 'Загадка') + (r ? (r.st === 'ok' ? ' · верно' : r.st === 'revealed' ? ' · ответ показан' : r.st === 'skipped' ? ' · пропущено' : '') : '');
+    }
+    for (var i = 0; i < fr.lines.length; i++) {
+      var l = fr.lines[i];
+      if (typeof l === 'string') return clip(l, 44);
+      if (!l || l.arrow) continue;
+      if (l.doc === 'letter') return 'Письмо';
+      if (l.doc === 'card') return 'Карточка';
+      if (l.img !== undefined || l.layers) return 'Картинка';
+      if (l.text != null) { var sp = speaker(l.who || 'zilya'); return (sp.style === 'titr' ? '' : sp.name + ': ') + clip(l.text, 38); }
+    }
+    return fr.title ? plain(fr.title) : 'Сцена';
+  }
+
+  // Длинный текст сворачивается под «стрелку»: начало видно сразу, остальное — по нажатию
+  function moreHtml(summary, body, cls, open) {
+    return '<details class="pl-more' + (cls ? ' ' + cls : '') + '"' + (open ? ' open' : '') + '><summary>' + summary + '</summary><div class="pl-more-body">' + body + '</div></details>';
+  }
+  function proseFold(src) {
+    var s = String(src || '');
+    if (plain(s).length <= FOLD) return prose(s);
+    var cut = -1, re = /[.!?…»]\s+(?=[«А-ЯЁA-Z0-9<])/g, m;
+    while ((m = re.exec(s))) { var at = m.index + 1; if (at > 260) break; if (at >= 90) cut = at; }
+    if (cut < 0) return prose(s);
+    var a = s.slice(0, cut), b = s.slice(cut);
+    var open = (a.match(/<(b|i|u|s|code)>/g) || []).length, shut = (a.match(/<\/(b|i|u|s|code)>/g) || []).length;
+    if (open !== shut) return prose(s);
+    return prose(a) + moreHtml('Подробнее', prose(b), 'pl-more--text');
+  }
+  // Место под иллюстрацию точки: пока картинки нет — плакат с номером в фигурах темы
+  function coverHtml(p) {
+    if (p.img !== undefined && p.img) return figureHtml({ img: p.img, alt: p.img_alt || plain(p.title), ratio: '16 / 9' });
+    return '<div class="pl-poster" data-shape="' + ((p.n - 1) % 3) + '" aria-hidden="true"><i></i><i></i><i></i><b>' + (p.n < 10 ? '0' : '') + p.n + '</b></div>';
+  }
+  function distHtml(p) { return p.walk_m ? '<p class="pl-dist">≈ ' + p.walk_m + ' м <span>пешком</span></p>' : ''; }
+  function mapBtn(p) {
+    return '<a class="pl-btn pl-btn--ghost pl-btn--sm pl-maplink" href="' + esc(mapLink(p)) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + p.n + '">' + ico('out') + 'Открыть в Яндекс Картах</a>';
+  }
+  function taskHtml(fr, c, p) {
+    var st = p.steps[fr.step], t = tagOf(st);
+    var isLive = c.live && S.phase === 'step' && fr.step === S.k;
+    var h = '<section class="pl-card pl-task' + (t.cls === 'opt' ? ' pl-task--opt' : '') + '"' + (isLive ? ' id="active"' : '') + ' data-step="' + fr.step + '" data-ctx="step">' +
+      '<div class="pl-task-top">' + tagHtml(t) + '<span class="pl-stepno">Шаг ' + (fr.step + 1) + ' из ' + p.steps.length + '</span></div>' +
+      (fr.inline && fr.inline.length ? voiceHtml(fr.inline, st.audio) + '<div class="pl-lines">' + linesHtml(fr.inline) + '</div>' : '') +
+      (t.text ? '<div class="pl-prose pl-ask">' + prose(t.text) + '</div>' : fr.ask ? '<div class="pl-prose pl-ask"><p>' + esc(fr.ask) + '</p></div>' : '');
+    var recap = fr.recap && fr.recap.length ? moreHtml('Напомнить, что было сказано', linesHtml(fr.recap), 'pl-recap') : '';
+    if (!isLive) return h + resultStamp(fr.res) + recap + '</section>';
+    return h + taskInput(st, S, 'step', true, recap) + (fr.arrows || []).map(function (a) { return arrowHtml(a.arrow, a.text); }).join('') + '</section>';
+  }
+  function factsHtml() {
+    return (Q.finale || []).map(function (m) {
+      if (Array.isArray(m)) return '<div class="pl-lines pl-facts-head">' + linesHtml(m) + '</div>';
+      var lead = String(m).match(/^\s*<b>([^<]{2,40}?)[.:]?<\/b>\s*/);
+      if (lead && plain(m).length > 160) return moreHtml(esc(plain(lead[1])), prose(String(m).slice(lead[0].length)), 'pl-fact');
+      return '<div class="pl-prose pl-fact-open">' + proseFold(m) + '</div>';
+    }).join('');
+  }
+  function starsHtml(v) {
+    var h = '';
+    for (var i = 1; i <= 5; i++) {
+      h += '<button type="button" class="pl-star" role="radio" aria-checked="' + (i === v) + '" data-on="' + (i <= v) + '" data-act="rate" data-v="' + i + '" aria-label="' + i + ' из 5">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 2.7 5.8 6.3.8-4.6 4.4 1.2 6.3L12 17.2 6.4 20.3l1.2-6.3L3 9.6l6.3-.8L12 3Z"/></svg></button>';
+    }
+    return h;
+  }
+  function rateNote(v) {
+    return !v ? 'Нажмите на звезду.' : v >= 4 ? 'Спасибо! Пара слов в Telegram поможет другим решиться.' : 'Спасибо за честность. Напишите, что было не так, — поправим.';
+  }
+  function closedHtml() {
+    var hints = S.events.filter(function (e) { return e.kind === 'hint' || e.kind === 'reveal'; }).length;
+    var rated = Math.max(0, Math.min(5, parseInt(store.get(RATE_KEY), 10) || 0));
+    var n = Q.points.length, where = [Q.city, Q.district].filter(Boolean).join(' · ');
+    var cell = function (k, v) { return '<div><dt>' + k + '</dt><dd>' + esc(v) + '</dd></div>'; };
+    return '<h1 class="visually-hidden">Дело раскрыто</h1>' +
+      // карточка для снимка экрана: номер дела, штамп и цифры прохождения — без единого слова разгадки
+      '<figure class="pl-closed" id="closed-card">' +
+      '<div class="pl-closed-top"><span class="pl-closed-no">' + esc(caseName()) + '</span>' + (where ? '<span class="pl-closed-where">' + esc(where) + '</span>' : '') + '</div>' +
+      '<p class="pl-closed-title">' + esc(plain(Q.title)) + '</p>' +
+      '<span class="pl-closed-stamp" role="img" aria-label="Штамп: раскрыто"><span aria-hidden="true">Раскрыто</span></span>' +
+      '<dl class="pl-closed-facts">' + cell('Дата', day(S.t_end || Date.now())) + cell('В пути', dur((S.t_end || Date.now()) - S.t_start)) +
+      cell('Точек', n + ' из ' + n) + cell('Подсказок', hints ? String(hints) : 'ни одной') + '</dl>' +
+      '<figcaption class="pl-closed-brand">Дворами · городские квесты-расследования</figcaption></figure>' +
+      '<div class="pl-closed-row"><button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="sharecase">' + ico('send') + 'Поделиться</button>' +
+      '<p class="pl-small">Без разгадки — снимок можно показать друзьям.</p></div>' +
+      '<section class="pl-card pl-rate" id="rate"><h2 class="pl-rate-q">Как вам дело?</h2>' +
+      '<div class="pl-stars" role="radiogroup" aria-label="Оценка дела, от 1 до 5">' + starsHtml(rated) + '</div>' +
+      '<p class="pl-small" id="rate-note" role="status">' + rateNote(rated) + '</p>' +
+      '<div class="pl-actions"><a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + esc(botLink('done_' + QID)) + '" target="_blank" rel="noopener" data-track="review_click" data-track-quest="' + esc(QID) + '">' + ico('send') + 'Оставить отзыв в Telegram</a></div></section>' +
+      (S.field ? '<section class="pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
+        '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="note">Заметка</button><button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт</button></div></section>' : '');
+  }
+  // Один экран. c = {sec, f, F, live}: live — это текущий экран игрока, а не просмотр пройденного
+  function frameHtml(fr, c) {
+    var n = Q.points.length, p = c.sec >= 0 && c.sec < n ? Q.points[c.sec] : null;
+    var now = c.sec === liveSec() && (fr.step == null || fr.step === S.k);
+    LETTER_CTX = now ? null : letterAt(c.sec, fr.end ? 1e9 : fr.step == null ? -1 : fr.step);
+    var hasGo = c.F.some(function (x) { return x.kind === 'go'; });
+    if (fr.kind === 'road') {
+      return pointHead(p) + '<section class="pl-card pl-road">' + distHtml(p) + (fr.lines.length ? '<div class="pl-lines">' + linesHtml(fr.lines) + '</div>' : '') + mapBtn(p) + '</section>' +
+        (hasGo ? '' : checkBlock(p, false));
+    }
+    if (fr.kind === 'go') {
+      return '<section class="pl-card pl-road pl-road--go"><span class="pl-label">Точка ' + p.n + ' · идём</span>' + (distHtml(p) || '<p class="pl-dist">' + esc(plain(p.place)) + '</p>') +
+        (fr.lines.length ? moreHtml('Как дойти', linesHtml(fr.lines)) : '') + mapBtn(p) +
+        '<p class="pl-small pl-road-note">Дойдёте — нажмите «Мы на месте».</p></section>' + checkBlock(p, false);
+    }
+    if (fr.kind === 'arrive') return pointHead(p) + coverHtml(p) + kidsHtml(p.kids) + checkBlock(p, true);
+    if (fr.kind === 'wask') {
+      var mine = c.sec === liveSec();
+      return walkAskHtml(walkAsks(p)[fr.i], fr, mine ? ctxSlot('w:' + fr.i) : ((((S.hist || {})[c.sec] || {}).wa || [])[fr.i] || {}), mine && S.phase === 'walk');
+    }
+    if (fr.kind === 'task') return taskHtml(fr, c, p);
+    if (fr.kind === 'result') {
+      var cards = fr.res ? stepCards(p.steps[fr.step]) : [];
+      return '<section class="pl-result">' + (fr.res ? '<div class="pl-result-top">' + resultStamp(fr.res) + '</div>' : '') + voiceHtml(fr.lines) +
+        (fr.lines.length ? '<div class="pl-lines">' + linesHtml(fr.lines) + '</div>' : '') +
+        (cards.length ? '<aside class="pl-toboard"><span class="pl-label">Легло на доску улик</span><ul>' + cards.map(function (id) { return '<li>' + inline(CARDS[id].title) + '</li>'; }).join('') + '</ul></aside>' : '') + '</section>';
+    }
+    if (fr.kind === 'done') {
+      var h = '<div class="pl-result-top"><span class="pl-stamp">Точка ' + p.n + ' пройдена</span></div>';
+      var clues = S.board.filter(function (x) { return x.n === p.n; });
+      if (p.clue && clues.length) h += '<div><span class="pl-label">Улика № ' + (S.board.indexOf(clues[0]) + 1) + ' — на вашей доске</span>' + clueCard(p.clue, c.live) + '</div>';
+      var got = S.cards.filter(function (x) { return x.n === p.n; });
+      if (got.length) h += '<div><span class="pl-label">На доску улик ' + (got.length === 1 ? 'легла карточка' : 'легли карточки') + '</span>' +
+        '<div class="pl-cards">' + got.map(function (x) { return cardHtml(x.id, { isNew: c.live }); }).join('') + '</div></div>';
+      return h + kidsHtml(p.kids);
+    }
+    if (fr.kind === 'closed') return closedHtml();
+    if (fr.kind === 'facts') {
+      return '<section class="pl-facts">' + factsHtml() + '</section>' +
+        '<div class="pl-actions"><button class="pl-btn pl-btn--ghost pl-btn--sm" type="button" data-act="back">К карточке дела и оценке</button>' +
+        '<button class="pl-btn pl-btn--ghost pl-btn--sm" type="button" data-act="restart">Начать заново</button></div>';
+    }
+    // реплики
+    var top = (fr.tag && fr.tag.tag) || fr.title ? '<div class="pl-task-top">' + (fr.tag ? tagHtml(fr.tag) : '') + (fr.title ? '<span class="pl-beat-title">' + esc(plain(fr.title)) + '</span>' : '') + '</div>' : '';
+    return top + voiceHtml(fr.lines, fr.audio) + '<section class="pl-lines pl-beat">' + linesHtml(fr.lines) + '</section>' + (fr.board ? '<div class="pl-beat-board">' + boardLetters(false) + '</div>' : '');
+  }
+  // Строка над экраном: «назад», где мы, линия мини-шагов точки; нажатие — оглавление
+  function crumbHtml(pos, F, fr) {
+    var live = liveSec(), seen = pos.sec === live && S.phase !== 'done' ? S.f : F.length - 1;
+    var segs = F.map(function (x, i) { return '<i class="' + (i === pos.f ? 'cur' : i <= seen ? 'done' : '') + '"></i>'; }).join('');
+    var open = pos.sec === live && (S.phase === 'walk' || S.phase === 'step');
+    var name = fr.kind === 'road' ? 'Точка ' + Q.points[pos.sec].n + ' · дорога' : fr.kind === 'arrive' ? 'Точка ' + Q.points[pos.sec].n + ' · на месте' : secName(pos.sec);
+    var canBack = !(pos.sec < 0 && pos.f === 0);
+    return '<div class="pl-crumb">' +
+      '<button type="button" class="pl-back" data-act="back" aria-label="Назад, к предыдущему шагу"' + (canBack ? '' : ' hidden') + '>' + ico('back') + '</button>' +
+      '<button type="button" class="pl-crumb-btn" data-act="toc" aria-label="Оглавление. ' + esc(secName(pos.sec)) + ', шаг ' + (pos.f + 1) + '">' +
+      '<span class="pl-crumb-t">' + esc(name) + '</span>' +
+      '<span class="pl-minis" aria-hidden="true">' + segs + (open ? '<i class="more"></i>' : '') + '</span></button>' +
+      '<button type="button" class="pl-toc-btn" data-act="toc" aria-label="Оглавление">' + ico('list') + '</button></div>';
+  }
+  function barHtml(fr, c) {
+    var btn = function (act, label, ghost) { return '<button class="pl-btn' + (ghost ? ' pl-btn--ghost' : '') + '" type="button" data-act="' + act + '">' + esc(label) + '</button>'; };
+    if (c.live && fr.kind === 'closed') return c.F.length > 1 ? '<div class="pl-actions pl-bar pl-bar--flow">' + btn('fwd', 'Что здесь правда, а что мы придумали', true) + '</div>' : '';
+    if (!c.live) return '<div class="pl-actions pl-stick pl-bar pl-bar--review">' + btn('fwd', 'Дальше', true) + btn('current', 'К текущему шагу') + '</div>';
+    var last = c.f === c.F.length - 1, h = '';
+    if (fr.kind === 'task') return '';
+    if (fr.kind === 'wask' && S.phase === 'walk' && !(S.wa[fr.i] && S.wa[fr.i].res)) return '';
+    if (!last) h = btn('fwd', 'Дальше');
+    else if (S.phase === 'intro') h = btn('go', 'К точке 1');
+    else if (S.phase === 'walk') h = btn('here', 'Мы на месте');
+    else if (S.phase === 'step') h = fr.gate ? btn('next', fr.button || 'Дальше') : '';
+    else if (S.phase === 'point_done') h = btn('nextpoint', S.p + 1 >= Q.points.length ? 'К финалу' : 'К точке ' + (S.p + 2));
+    return h ? '<div class="pl-actions pl-stick pl-bar">' + h + '</div>' : '';
+  }
+  function modeSeg() {
+    return '<div class="pl-seg pl-mode" role="group" aria-label="Как проходить">' +
+      '<button type="button" data-act="mode" data-mode="listen" aria-pressed="' + (MODE === 'listen') + '">Слушаю и читаю</button>' +
+      '<button type="button" data-act="mode" data-mode="read" aria-pressed="' + (MODE === 'read') + '">Читаю</button></div>';
+  }
   function pointView() {
-    var n = Q.points.length, h = '';
+    var n = Q.points.length;
     if (S.paused) {
-      h = head('Пауза', 'Дело отложено', 'Прогресс сохранён на этом телефоне' + (S.phase === 'done' ? '' : ': точка ' + pt().n + ' из ' + n) + '.', 2) +
+      return head('Пауза', 'Дело отложено', 'Прогресс сохранён на этом телефоне' + (S.phase === 'done' ? '' : ': точка ' + pt().n + ' из ' + n) + '.', 2) +
         '<div class="pl-actions"><button class="pl-btn" type="button" data-act="resume">Продолжить</button>' +
         (S.field ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт</button>' : '') +
         '<button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>';
-    } else if (S.phase === 'idle') {
-      h = head((Q.district ? Q.district + ' · ' : '') + caseName(), Q.title, Q.summary || '', 0) +
+    }
+    if (S.phase === 'idle') {
+      return head((Q.district ? Q.district + ' · ' : '') + caseName(), Q.title, Q.summary || '', 0) +
         (S.field ? '<section class="pl-field"><span class="pl-label">Режим полевого теста</span><p class="pl-small">На каждой точке — список «что проверить». Время, ошибки, подсказки и заметки сохраняются сами. В конце, а при желании и раньше (меню → «Отправить отчёт»), отправьте отчёт одним сообщением в Telegram.</p></section>' : '') +
+        '<section class="pl-how"><span class="pl-label">Как пойдём</span>' + modeSeg() +
+        '</section>' +
         '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="start">Открыть дело</button></div>' +
         '<p class="pl-small">Прогресс сохраняется на этом телефоне: можно закрыть страницу и вернуться.</p>';
-    } else if (S.phase === 'intro') {
-      h = '<h1 class="visually-hidden" id="top">Вступление</h1>' + (Q.intro || []).map(function (m, i) {
-        if (Array.isArray(m)) return '<section class="pl-card pl-lines">' + linesHtml(m) + '</section>';
-        return '<section class="pl-card' + (i === Q.intro.length - 1 ? ' pl-card--paper' : '') + '"><div class="pl-prose">' + prose(m) + '</div></section>';
-      }).join('') +
-        '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="go">К точке 1</button></div>';
-    } else if (S.phase === 'walk') {
-      var p = pt();
-      h = pointHead(p, 'дорога') +
-        '<section class="pl-card">' + (p.walk_m ? '<p class="pl-dist">≈ ' + p.walk_m + ' м <span>пешком</span></p>' : '') +
-        (p.walk_audio ? audioBtn(p.walk_audio) : '') + linesHtml(p.walk) +
-        '<a class="pl-btn pl-btn--ghost pl-btn--sm pl-maplink" href="' + esc(mapLink(p)) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + p.n + '">' + ico('out') + 'Открыть в Яндекс Картах</a></section>' +
-        walkAsks(p).map(walkAskHtml).join('') +
-        checkBlock(p, false) +
-        '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="here">Мы на месте</button></div>' + issueBtn();
-    } else if (S.phase === 'step') {
-      var p2 = pt();
-      h = pointHead(p2, 'на месте') + (p2.scene || p2.audio ? '<section class="pl-scene' + (Array.isArray(p2.scene) ? ' pl-lines' : '') + '">' + (p2.audio ? audioBtn(p2.audio) : '') + linesHtml(p2.scene) + '</section>' : '');
-      for (var k = 0; k < S.k; k++) h += doneStep(p2.steps[k], S.res[k], k);
-      h += activeStep(p2.steps[S.k]);
-      h += kidsHtml(p2.kids);
-      h += checkBlock(p2, true);
-      h += issueBtn();
-    } else if (S.phase === 'point_done') {
-      var p3 = pt();
-      var last = S.p + 1 >= n;
-      h = pointHead(p3, 'пройдена');
-      if (p3.clue) h += '<div id="active" style="scroll-margin-top:96px"><span class="pl-label">Улика № ' + S.board.length + ' — на вашей доске</span>' + clueCard(p3.clue, true) + '</div>';
-      var fresh3 = S.cards.filter(function (c) { return c.n === p3.n; });
-      if (fresh3.length) {
-        h += '<div' + (p3.clue ? '' : ' id="active"') + ' style="scroll-margin-top:96px"><span class="pl-label">На доску улик ' + (fresh3.length === 1 ? 'легла карточка' : 'легли карточки') + '</span>' +
-          '<div class="pl-cards">' + fresh3.map(function (c) { return cardHtml(c.id, { isNew: true }); }).join('') + '</div></div>';
-      }
-      if (p3.outro) h += '<section class="pl-scene' + (Array.isArray(p3.outro) ? ' pl-lines' : '') + '"' + (p3.clue || fresh3.length ? '' : ' id="active"') + '>' + linesHtml(p3.outro) + '</section>';
-      h += '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="nextpoint">' + (last ? 'К финалу' : 'К точке ' + (S.p + 2)) + '</button></div>' + issueBtn();
-    } else if (S.phase === 'done') {
-      h = head('Финал', 'Дело закрыто', '', 1) +
-        (Q.finale || []).map(function (m) { return '<section class="pl-card' + (Array.isArray(m) ? ' pl-lines' : '') + '">' + linesHtml(m) + '</section>'; }).join('') +
-        '<section class="pl-card"><span class="pl-label">Время прохождения</span><p class="pl-dist" style="font-size:28px;margin:0">' + dur((S.t_end || Date.now()) - S.t_start) + '</p></section>' +
-        (S.field ? '<section class="pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
-          '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="note">Заметка</button><button class="pl-btn" type="button" data-act="report">Отправить отчёт</button></div></section>' : '') +
-        '<section class="pl-card"><span class="pl-label">Как вам дело?</span><p class="pl-small">Минута в Telegram: оценка и пара слов. Честный отзыв помогает нам больше всего — особенно если где-то было непонятно.</p>' +
-          '<div class="pl-actions"><a class="pl-btn" href="' + esc(botLink('done_' + QID)) + '" target="_blank" rel="noopener" data-track="review_click" data-track-quest="' + esc(QID) + '">Оценить квест</a></div></section>' +
-        '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>' + issueBtn();
     }
+    var pos = shownPos(), F = framesOf(pos.sec);
+    if (pos.f >= F.length) { pos.f = F.length - 1; }
+    var fr = F[pos.f], c = { sec: pos.sec, f: pos.f, F: F, live: !peek };
+    var headed = fr.kind === 'road' || fr.kind === 'arrive' || fr.kind === 'closed';
+    return crumbHtml(pos, F, fr) +
+      (peek ? '<p class="pl-review"><span class="pl-stamp pl-stamp--ans">Пройденное</span> Это вы уже видели: ' + esc(secName(pos.sec)) + '.</p>' : '') +
+      '<div class="pl-step" id="frame" tabindex="-1" data-sec="' + pos.sec + '" data-f="' + pos.f + '" data-frame="' + esc(fr.id) + '" data-kind="' + esc(fr.kind) + '" data-dir="' + moveDir + '">' +
+      (headed ? '' : '<h1 class="visually-hidden">' + esc(secName(pos.sec)) + '</h1>') + frameHtml(fr, c) + '</div>' +
+      (/^(road|go|arrive|task|wask|done)$/.test(fr.kind) ? issueBtn() : '') + barHtml(fr, c);
+  }
+  // Оглавление: всё пройденное по точкам и мини-шагам; того, что впереди, в нём нет — только число точек
+  function tocHtml() {
+    var n = Q.points.length, live = liveSec(), pos = shownPos(), h = '';
+    for (var sec = -1; sec <= Math.min(live, n); sec++) {
+      var F = framesOf(sec), seen = sec === live && S.phase !== 'done' ? S.f : F.length - 1, items = '', lastStep = null;
+      for (var i = 0; i <= seen && i < F.length; i++) {
+        var fr = F[i];
+        if (fr.step != null && fr.step !== lastStep) {
+          var st = Q.points[sec].steps[fr.step];
+          items += '<li class="pl-toc-h">Шаг ' + (fr.step + 1) + (st.title ? ' · ' + esc(plain(st.title)) : '') + '</li>';
+          lastStep = fr.step;
+        }
+        var here = sec === live && i === S.f;
+        items += '<li><button type="button" data-act="jump" data-sec="' + sec + '" data-f="' + i + '"' + (sec === pos.sec && i === pos.f ? ' aria-current="step"' : '') + '>' +
+          '<span>' + esc(frameLabel(fr, sec)) + '</span>' + (here ? '<small>вы здесь</small>' : '') + '</button></li>';
+      }
+      h += moreHtml('<b>' + esc(secName(sec)) + '</b><small>' + (sec < live ? 'пройдено' : S.phase === 'done' ? 'финал' : 'сейчас') + '</small>', '<ol class="pl-toc">' + items + '</ol>', 'pl-toc-sec', sec === pos.sec);
+    }
+    var ahead = n - 1 - live;
+    if (ahead > 0) h += '<p class="pl-small pl-toc-ahead">Впереди ещё ' + ahead + ' ' + (ahead % 10 === 1 && ahead !== 11 ? 'точка' : ahead % 10 >= 2 && ahead % 10 <= 4 && (ahead < 10 || ahead > 20) ? 'точки' : 'точек') + ' — откроются по ходу дела.</p>';
     return h;
   }
 
@@ -961,7 +1315,7 @@
   function render() {
     var n = Q.points.length;
     var playing = S.phase !== 'idle' && !S.paused;
-    if (!playing) view = 'point';
+    if (!playing) { view = 'point'; peek = null; }
     // шапка дела и прогресс по точкам
     var shown = (S.phase === 'walk' || S.phase === 'step' || S.phase === 'point_done') ? pt().n : (S.phase === 'done' ? n : 0);
     var where = document.getElementById('where');
@@ -989,60 +1343,100 @@
     if (bn > lastBadge && lastKey !== null) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
     lastBadge = bn;
     document.getElementById('side').innerHTML = playing ? sideHtml() : '';
-    // «живые» детали играют один раз — когда игрок продвинулся, а не при каждой перерисовке
-    var key = [S.phase, S.p, S.k, S.paused].join(':');
+    // «живые» детали и переход экрана играют один раз — когда экран сменился, а не при каждой перерисовке
+    var pos = playing ? shownPos() : { sec: -2, f: 0 };
+    var key = [S.phase, S.p, S.k, S.paused, pos.sec, pos.f].join(':');
     app.classList.toggle('pl-fresh', key !== lastKey && view === 'point');
     lastKey = key;
+    if (voiceBox && !document.contains(voiceBox)) stopVoice();
     app.innerHTML = view === 'board' ? boardView() : view === 'map' ? mapView() : pointView();
-    if (view === 'point') placeArrows(key); else [].forEach.call(app.querySelectorAll('.pl-arrow'), function (a) { a.remove(); });
-    floatSoon();
+    kbGone();
+    var fr = document.getElementById('frame');
+    if (view === 'point' && fr) placeArrows(fr.dataset.sec + ':' + fr.dataset.frame); else [].forEach.call(app.querySelectorAll('.pl-arrow'), function (a) { a.remove(); });
   }
   // После перерисовки вернуть фокус на ту же кнопку (выбор карточек, варианты) — клавиатура и чтение с экрана не теряют место
-  function refocus(sel) { var el = app.querySelector(sel); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } } }
-  // Кнопка «К заданию»: только на телефоне и только пока главная кнопка задания вне экрана
-  var floatEl = document.getElementById('float'), floatRaf = 0;
-  function updateFloat() {
-    floatRaf = 0;
-    var btn = view === 'point' && !S.paused ? app.querySelector('.pl-stick .pl-btn') : null;
-    var show = false, up = false;
-    if (btn && window.innerWidth < 1024) {
-      var r = btn.getBoundingClientRect();
-      var nav = document.getElementById('tabs');
-      var bottom = nav && !nav.hidden ? nav.getBoundingClientRect().top : window.innerHeight;
-      var top = document.querySelector('.pl-top').getBoundingClientRect().bottom;
-      show = r.top > bottom - 8 || r.bottom < top + 8;
-      up = r.bottom < top + 8;
-    }
-    floatEl.hidden = !show;
-    floatEl.classList.toggle('is-up', up);
-  }
-  function floatSoon() { if (!floatRaf) floatRaf = requestAnimationFrame(updateFloat); }
-  window.addEventListener('scroll', function () { if (S) floatSoon(); }, { passive: true });
-  window.addEventListener('resize', function () { if (S) floatSoon(); });
+  function refocus(sel) { var el = document.querySelector(sel); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } } }
 
   function smooth() {
     try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'; } catch (e) { return 'auto'; }
   }
-  function commit(focus) {
+  // Новый экран всегда начинается сверху: игроку не нужно искать, что появилось
+  function toTop() {
+    window.scrollTo(0, 0);
+    var fr = document.getElementById('frame') || app;
+    try { fr.focus({ preventScroll: true }); } catch (e) { /* без фокуса */ }
+  }
+  // focus: 'top' — новый экран (сверху); иначе экран тот же, прокрутка не трогается; sel — что должно остаться на виду
+  function commit(focus, sel) {
     view = 'point';
+    if (focus === 'top') peek = null;
     save();
     render();
     if (focus === 'top') {
-      window.scrollTo(0, 0);
-    } else if (focus === 'active') {
-      var el = document.getElementById('active');
-      if (el) el.scrollIntoView({ block: 'start', behavior: smooth() });
-    } else if (focus === 'input') {
-      var inp = document.getElementById('ans');
-      if (inp) { inp.focus(); inp.select(); }
-    } else if (/^input:w:\d+$/.test(focus || '')) {
-      var wi = document.getElementById('ans-w' + focus.split(':')[2]);
-      if (wi) { wi.focus(); wi.select(); }
-    } else if (/^walk:\d+$/.test(focus || '')) {
-      var wc = document.getElementById('walk-' + focus.split(':')[1]);
-      if (wc) wc.scrollIntoView({ block: 'start', behavior: smooth() });
+      toTop();
+      if (MODE === 'listen') { var v = app.querySelector('.pl-voice[data-srcs]'); if (v) playVoice(v, true); }
+      return;
     }
+    var el = sel && app.querySelector(sel);
+    if (el) el.scrollIntoView({ block: 'nearest', behavior: smooth() });
   }
+  // Показать экран (sec, f): текущий — как есть, пройденный — в режиме просмотра
+  function show(sec, f, dir) {
+    stopVoice();
+    moveDir = dir || 'fwd';
+    if (sec === liveSec() && S.phase === 'done') { S.f = f; peek = null; save(); }
+    else peek = sec === liveSec() && f === S.f ? null : { sec: sec, f: f };
+    view = 'point';
+    render();
+    toTop();
+  }
+  function back() {
+    var pos = shownPos();
+    if (pos.f > 0) return show(pos.sec, pos.f - 1, 'back');
+    if (pos.sec < 0) return;
+    show(pos.sec - 1, framesOf(pos.sec - 1).length - 1, 'back');
+  }
+  function fwd() {
+    moveDir = 'fwd';
+    if (peek) {
+      if (peek.f < framesOf(peek.sec).length - 1) return show(peek.sec, peek.f + 1, 'fwd');
+      return show(peek.sec + 1, 0, 'fwd');
+    }
+    if (S.f < framesOf(liveSec()).length - 1) { stopVoice(); S.f += 1; commit('top'); }
+  }
+
+  // ---------- клавиатура телефона: экран не ездит ----------
+  // Поле ответа стоит в потоке страницы (не прилипает и не position: fixed), поэтому открытая клавиатура ничего не двигает.
+  // Пока поле в фокусе, нижняя навигация и прилипшие кнопки убраны (класс pl-kb) — на iOS они «всплывают» поверх текста.
+  // Если клавиатура закрыла поле — прокручиваем один раз и ровно настолько, чтобы поле и кнопка «Ответить» были видны.
+  var kbEl = null, kbTm = 0, vv = window.visualViewport || null;
+  function kbFit() {
+    if (!kbEl || !document.contains(kbEl)) return;
+    var box = kbEl.closest('.pl-form') || kbEl, r = box.getBoundingClientRect();
+    var top = vv ? vv.offsetTop : 0, h = vv ? vv.height : window.innerHeight;
+    var need = r.bottom + 12 - (top + h);
+    if (need <= 0) return;
+    var headB = document.querySelector('.pl-top').getBoundingClientRect().bottom;
+    var room = r.top - Math.max(headB, top) - 8;
+    if (room > 0) window.scrollBy(0, Math.min(need, room));
+  }
+  // поле ушло вместе с экраном (верный ответ) — focusout не приходит, режим клавиатуры снимаем сами
+  function kbGone() { if (kbEl && !document.contains(kbEl)) { kbEl = null; document.documentElement.classList.remove('pl-kb'); } }
+  document.addEventListener('focusin', function (e) {
+    var t = e.target;
+    if (!t || !t.matches || !t.matches('#app .pl-input')) return;
+    kbEl = t;
+    document.documentElement.classList.add('pl-kb');
+    clearTimeout(kbTm); kbTm = setTimeout(kbFit, 350);
+  });
+  document.addEventListener('focusout', function (e) {
+    if (e.target !== kbEl) return;
+    setTimeout(function () {
+      if (kbEl && document.activeElement === kbEl) return;
+      kbEl = null; document.documentElement.classList.remove('pl-kb');
+    }, 120);
+  });
+  if (vv) vv.addEventListener('resize', function () { if (kbEl) { clearTimeout(kbTm); kbTm = setTimeout(kbFit, 60); } });
 
   // ---------- шторки ----------
   function openSheet(kind) {
@@ -1058,6 +1452,9 @@
         '<div class="pl-actions"><button class="pl-btn" type="submit">Сохранить</button></div></form>' +
         (notes.length ? '<span class="pl-label" style="margin-top:20px">Уже записано' + (n ? ' к точке ' + n : '') + '</span><ul class="pl-notes">' +
           notes.map(function (e) { return '<li><time>' + hm(e.t) + '</time>' + esc(e.text) + '</li>'; }).join('') + '</ul>' : '');
+    } else if (kind === 'toc') {
+      title = 'Оглавление';
+      body = tocHtml();
     } else if (kind === 'menu') {
       title = 'Меню';
       var sun = document.documentElement.dataset.theme === 'sun';
@@ -1068,6 +1465,7 @@
       body = '<div class="pl-menu">' +
         (S.phase !== 'idle' ? row('note', 'note', 'Заметка', curN() ? 'сохранится к точке ' + curN() : 'для себя' + (S.field ? ' и для отчёта' : '')) : '') +
         row('theme', 'sun', 'Светлая тема', 'экран лучше читается на ярком солнце', ' role="switch" aria-checked="' + sun + '"') +
+        '<div class="pl-menu-mode"><span class="pl-label">Как проходить</span>' + modeSeg() + '</div>' +
         row('issue', 'alert', 'Сообщить об ошибке', 'квест не прервётся') +
         (S.field ? row('report', 'send', 'Отправить отчёт', 'полевой тест') : '') +
         (S.phase !== 'idle' && S.phase !== 'done' && !S.paused ? row('stop', 'pause', 'Закончить на сегодня', 'прогресс сохранится') : '') +
@@ -1116,6 +1514,8 @@
     }
     var ta = document.getElementById('note-text');
     if (ta) ta.focus();
+    var cur = kind === 'toc' && sheet.querySelector('[aria-current="step"]');
+    if (cur) cur.scrollIntoView({ block: 'center' });
   }
 
   // ---------- «Что-то не так?» ----------
@@ -1282,7 +1682,28 @@
     start: start,
     go: showWalk,
     here: arrive,
-    next: function () { resolve({ st: 'info' }); },
+    next: function () {
+      if (peek || S.phase !== 'step') return fwd();
+      var F = framesOf(S.p);
+      if (S.f < F.length - 1) return fwd();
+      if (F[S.f].gate) resolve({ st: 'info' });
+    },
+    fwd: fwd,
+    back: back,
+    current: function () { show(liveSec(), S.f, 'fwd'); },
+    toc: function () { openSheet('toc'); },
+    jump: function (el) { closeSheet(); show(parseInt(el.dataset.sec, 10), parseInt(el.dataset.f, 10), 'fwd'); },
+    mode: function (el) {
+      MODE = el.dataset.mode === 'read' ? 'read' : 'listen';
+      store.set(MODE_KEY, MODE);
+      if (MODE === 'read') stopVoice();
+      render();
+      if (sheetKind === 'menu') openSheet('menu');
+      refocus((sheetKind === 'menu' ? '#sheet ' : '#app ') + '[data-act="mode"][data-mode="' + MODE + '"]');
+    },
+    rate: function (el) { rate(parseInt(el.dataset.v, 10)); },
+    sharecase: shareCase,
+    voice: function (el) { playVoice(el); },
     hint: function (el) { hint(parseInt(el.dataset.level, 10), ctxOf(el)); },
     reveal: function (el) { reveal(ctxOf(el)); },
     skip: function (el) { skip(ctxOf(el)); },
@@ -1298,26 +1719,15 @@
       [].forEach.call(el.querySelectorAll('.pl-dots i'), function (d, j) { d.classList.toggle('on', j === i); });
       el.setAttribute('aria-label', el.getAttribute('aria-label').replace(/Слой \d+ из/, 'Слой ' + (i + 1) + ' из'));
     },
-    audio: function (el) { playAudio(el); },
     nextpoint: nextPoint,
-    totask: function () {
-      var t = document.getElementById('active');
-      if (!t) return;
-      t.scrollIntoView({ block: 'start', behavior: smooth() });
-      var inp = document.getElementById('ans');
-      if (inp) { try { inp.focus({ preventScroll: true }); } catch (e) { /* без фокуса */ } }
-    },
     view: function (el) {
       var v = el.dataset.view;
       if (v === view && v !== 'point') return;
       var same = v === view;
       view = v; render();
       if (!same) { window.scrollTo(0, 0); return; }
-      // повторное нажатие «Точка» — вернуться к текущему заданию
-      var t = document.getElementById('active') || document.getElementById('top');
-      if (!t) return;
-      t.scrollIntoView({ block: 'start', behavior: smooth() });
-      t.classList.remove('pulse'); void t.offsetWidth; t.classList.add('pulse');
+      // повторное нажатие «Точка» — вернуться к текущему шагу
+      show(liveSec(), S.f, 'fwd');
     },
     note: function () { openSheet('note'); },
     menu: function () { openSheet('menu'); },
@@ -1401,21 +1811,64 @@
   sheet.addEventListener('close', function () { sheetKind = null; });
 
   // ---------- звук: один плеер на страницу; файла нет — понятный тост, квест не ломается ----------
-  var voice = null, voiceBtn = null;
-  function playAudio(el) {
-    if (el.getAttribute('aria-disabled') === 'true') { toast('Озвучка появится позже — пока читаем глазами'); return; }
-    var src = el.dataset.src;
-    if (!src) return;
-    if (voice && voiceBtn === el && !voice.paused) { voice.pause(); return; }
-    if (voice) { voice.pause(); }
-    voice = new Audio(src); voiceBtn = el;
-    var setOn = function (on) { if (voiceBtn) { voiceBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); var t = voiceBtn.querySelector('span'); if (t) t.textContent = on ? 'Пауза' : 'Слушать'; } };
-    voice.addEventListener('play', function () { setOn(true); });
-    voice.addEventListener('pause', function () { setOn(false); });
-    voice.addEventListener('ended', function () { setOn(false); });
-    voice.addEventListener('error', function () { setOn(false); toast('Озвучка ещё не готова — читаем глазами'); });
-    var pr = voice.play();
-    if (pr && pr.catch) pr.catch(function () { /* ошибку покажет событие error */ });
+  var voice = null, voiceBox = null, voiceList = [], voiceAt = 0;
+  function stopVoice() { if (voice) { try { voice.pause(); } catch (e) { /* уже остановлен */ } } voice = null; voiceBox = null; }
+  function clock(s) { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+  function playVoice(el, quiet) {
+    var box = el.closest('.pl-voice');
+    if (!box) return;
+    if (!box.dataset.srcs) { if (!quiet) toast('Озвучка появится позже — пока читаем глазами'); return; }
+    if (voice && voiceBox === box) { if (voice.paused) { var p0 = voice.play(); if (p0 && p0.catch) p0.catch(function () {}); } else voice.pause(); return; }
+    stopVoice();
+    voiceBox = box; voiceList = box.dataset.srcs.split('|'); voiceAt = 0;
+    playNext(quiet);
+  }
+  function playNext(quiet) {
+    var box = voiceBox, a = new Audio(voiceList[voiceAt]);
+    voice = a;
+    var btn = box.querySelector('.pl-voice-btn'), note = box.querySelector('.pl-voice-note'), bars = box.querySelectorAll('.pl-voice-wave i');
+    var set = function (on) {
+      if (voice !== a) return;
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false'); btn.setAttribute('aria-label', on ? 'Пауза' : 'Слушать');
+      box.classList.toggle('is-on', on);
+    };
+    a.addEventListener('play', function () { set(true); });
+    a.addEventListener('pause', function () { set(false); });
+    a.addEventListener('timeupdate', function () {
+      if (voice !== a || !a.duration) return;
+      var part = (voiceAt + a.currentTime / a.duration) / voiceList.length, k = Math.round(part * bars.length);
+      [].forEach.call(bars, function (b, i) { b.classList.toggle('on', i < k); });
+      note.textContent = clock(a.currentTime);
+    });
+    a.addEventListener('ended', function () {
+      if (voice !== a) return;
+      if (voiceAt + 1 < voiceList.length) { voiceAt += 1; playNext(quiet); } else set(false);
+    });
+    a.addEventListener('error', function () { if (voice !== a) return; set(false); if (!quiet) toast('Озвучка ещё не готова — читаем глазами'); });
+    var pr = a.play();
+    if (pr && pr.catch) pr.catch(function () { /* автозапуск запрещён или файла нет — остаётся кнопка */ });
+  }
+  // Оценка дела. TODO(сервер): приёма оценок пока нет. Когда появится — отправлять отсюда (sendBeacon/fetch на свой адрес);
+  // до тех пор оценка хранится только на телефоне игрока (RATE_KEY), а отзыв уходит через бота (done_<дело>).
+  function sendRating(value) { void value; return false; }
+  function rate(v) {
+    v = Math.max(1, Math.min(5, v | 0));
+    store.set(RATE_KEY, String(v));
+    sendRating(v);
+    log('rate', { value: v }); save();
+    var box = document.getElementById('rate');
+    if (!box) return;
+    box.querySelector('.pl-stars').innerHTML = starsHtml(v);
+    document.getElementById('rate-note').textContent = rateNote(v);
+    refocus('#app .pl-star[data-v="' + v + '"]');
+  }
+  function shareCase() {
+    var url = '';
+    try { url = new URL(document.body.dataset.caseUrl || '../../', location.href).href; } catch (e) { url = location.href; }
+    var text = 'Мы раскрыли «' + plain(Q.title) + '» — городской квест «Дворами».';
+    track('final_share', { quest: QID });
+    if (navigator.share) { navigator.share({ title: plain(Q.title), text: text, url: url }).catch(function () { /* передумали */ }); return; }
+    copyText(text + ' ' + url).then(function (ok) { toast(ok ? 'Ссылка скопирована — отправьте друзьям' : 'Не получилось скопировать'); });
   }
   // Картинка не загрузилась — остаётся заглушка с подписью, раскладка не прыгает
   document.addEventListener('error', function (e) {
@@ -1554,11 +2007,10 @@
     Q = prepare(q);
     indexCards(q);
     S = load();
+    fixCursor();
     if (S.phase !== 'idle') { log('reload'); save(); }
     themeColor();
     render();
-    var el = document.getElementById('active');
-    if (el && S.phase === 'step') el.scrollIntoView({ block: 'start' });
   }
   function getJSON(url) {
     return fetch(url, { cache: 'no-cache' }).then(function (r) {
@@ -1588,7 +2040,10 @@
 
   // Для проверок: функции сверки ответов и состояние
   window.__dvorami = { norm: norm, matches: matches, state: function () { return S; }, quest: function () { return Q; }, report: function () { return report(); },
-    flags: function () { return FLAGS; }, cards: function () { return CARDS; } };
+    flags: function () { return FLAGS; }, cards: function () { return CARDS; },
+    // мини-шаги: где игрок (live), что на экране (shown), сколько экранов в разделе, режим чтения
+    pos: function () { var p = shownPos(), F = framesOf(p.sec), x = F[p.f] || {}; return { sec: p.sec, f: p.f, live: liveSec(), cur: S.f, peek: !!peek, total: F.length, mode: MODE, id: x.id, kind: x.kind, step: x.step == null ? null : x.step }; },
+    frames: function (sec) { return framesOf(sec).map(function (x) { return { id: x.id, kind: x.kind, step: x.step == null ? null : x.step }; }); } };
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
     navigator.serviceWorker.register('../sw.js').catch(function () { /* без офлайна */ });

@@ -1,5 +1,5 @@
 /* Дворами — плеер квеста: ЕДИНЫЙ КАРКАС экрана прохождения (решение A-30, вариант А).
-   Каркас один для всех дел: шапка дела → прогресс по точкам → задание → ответ → подсказки → артефакт → навигация.
+   Каркас один для всех дел: шапка дела → прогресс по точкам → строка мини-шагов → один экран (реплика, загадка, разбор) → «Дальше» → навигация.
    Дело меняет только значения переменных ниже (файл site/play/<id>/theme.css) и вид артефакта.
    Здесь значения по умолчанию — платформа «Синий час». Описание: platform/design/player-frame.md.
    Правила каркаса: без opacity у неактивных элементов, текст ≥ 4,5:1, элементы ≥ 3:1, подписи ≥ 15 px. */
@@ -109,7 +109,7 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 /* ---------- 2. Основной поток ---------- */
 .pl-main {
   max-width: var(--col); margin: 0 auto;
-  padding: 20px 16px calc(var(--nav-h) + 40px + env(safe-area-inset-bottom));
+  padding: 12px 16px calc(var(--nav-h) + 40px + env(safe-area-inset-bottom));
   outline: none;
 }
 .pl-main > * + * { margin-top: 16px; }
@@ -172,10 +172,7 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-task.pulse { animation: pl-pulse .9s ease 2; }
 @keyframes pl-pulse { 50% { border-color: var(--accent-text); } }
 
-/* Пройденные шаги точки: без плашек, тише основного */
-.pl-past { padding: 0 0 16px; border-bottom: 1px solid var(--line); }
-.pl-past .pl-tag { margin-bottom: 10px; }
-.pl-past .pl-prose, .pl-past .pl-ok { color: var(--text-2); font-size: 16px; }
+/* Штамп результата: «Верно», «Ответ», «Точка пройдена» */
 .pl-stamp {
   display: inline-block; margin: 12px 0 6px; padding: 5px 10px 4px; transform: rotate(-2deg); transform-origin: left center;
   font: var(--tag-font); text-transform: uppercase; letter-spacing: var(--tag-track);
@@ -185,7 +182,9 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-ok { margin-top: 4px; }
 
 /* ---------- 5. Ввод ответа ---------- */
-.pl-form { margin-top: 16px; display: grid; gap: 10px; }
+/* Поле и кнопка — в одну строку и в потоке страницы: обе видны над клавиатурой, открытая клавиатура их не двигает */
+.pl-form { margin-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.pl-form .pl-btn { width: auto; padding-left: 16px; padding-right: 16px; }
 .pl-input {
   width: 100%; min-height: 56px; padding: 12px 16px; border: 2px solid var(--control); border-radius: min(var(--radius), 12px);
   background: var(--surface-2); font-size: 19px; -webkit-appearance: none; appearance: none;
@@ -193,6 +192,8 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-input::placeholder { color: var(--text-3); opacity: 1; }
 .pl-input:focus { outline: none; border-color: var(--text); }
 .pl-wrong { margin-top: 12px; color: var(--text); font-size: 16px; padding-left: 12px; border-left: 4px solid var(--accent-text); }
+.pl-wrong, .pl-hint, .pl-task .pl-stamp { scroll-margin: calc(var(--top-h) + 24px) 0 calc(var(--nav-h) + 110px); }
+.pl-wrong + .pl-opts, .pl-wrong + .pl-sel, .pl-wrong + .pl-fig { margin-top: 12px; }
 
 /* Экран кода доступа (docs/codes.md): одна карточка — подпись, поле, главная кнопка */
 .pl-code { display: grid; gap: 10px; }
@@ -203,19 +204,16 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-code-input::placeholder { letter-spacing: .12em; }
 .pl-code-input[aria-invalid="true"] { border-color: var(--accent-text); }
 
-/* Главная кнопка шага прилипает над навигацией (T-60): на телефоне видна без прокрутки на любом шаге.
-   Фон — цвет поверхности под кнопкой, сверху мягкий переход, чтобы текст уходил под кнопку без резкой границы */
+/* Главная кнопка экрана («Дальше», «Мы на месте», «Проверить») прилипает над навигацией: на телефоне видна без прокрутки.
+   Поле ответа не прилипает никогда. Пока открыта клавиатура (класс pl-kb ставит player.js), навигация и прилипание убраны:
+   на iOS элементы, привязанные к низу экрана, при клавиатуре «всплывают» поверх текста и дёргаются. */
 @media (max-width: 1023px) {
   .pl-stick { position: sticky; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); z-index: 4; padding: 16px 0 12px; margin-top: 0;
     background: linear-gradient(to bottom, transparent, var(--stick-bg, var(--bg)) 14px); }
   .pl-task .pl-stick, .pl-card .pl-stick { --stick-bg: var(--surface); }
-  .pl-form.pl-stick { margin-top: 0; }
-  .pl-float { position: fixed; z-index: 6; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
-    padding: 16px 16px 12px; background: linear-gradient(to bottom, transparent, var(--bg) 14px); }
-  .pl-float .pl-btn { max-width: calc(var(--col) - 32px); margin: 0 auto; }
-  .pl-float.is-up .pl-ico { transform: rotate(180deg); }
+  .pl-kb .pl-nav { display: none; }
+  .pl-kb .pl-stick { position: static; }
 }
-@media (min-width: 1024px) { .pl-float { display: none !important; } }
 
 /* ---------- 6. Подсказки: одна крупная кнопка-ступень вместо трёх мелких плиток ---------- */
 .pl-hints { margin-top: 14px; display: grid; gap: 8px; }
@@ -262,7 +260,7 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 @media (prefers-reduced-motion: no-preference) {
   .pl-fresh .pl-art.is-new { animation: pl-drop .5s cubic-bezier(.2, .9, .3, 1.15) both; }
   .pl-fresh .pl-art.is-new .pl-art-mark { animation: pl-stamp .32s .42s cubic-bezier(.3, 1.4, .5, 1) both; }
-  .pl-fresh .pl-past:last-of-type .pl-stamp { animation: pl-stamp .3s .1s cubic-bezier(.3, 1.4, .5, 1) both; }
+  .pl-fresh .pl-result-top .pl-stamp { animation: pl-stamp .3s .16s cubic-bezier(.3, 1.4, .5, 1) both; }
   .pl-fresh .pl-doc code i { animation: pl-type .01s steps(1) both; animation-delay: calc(var(--i) * 42ms + 350ms); }
   .pl-badge.bump { animation: pl-bump .5s ease; }
   .pl-map-cur { animation: pl-halo 2.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
@@ -307,8 +305,8 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-field .pl-label, details.pl-field summary { color: var(--accent-text); }
 .pl-field ul { padding-left: 20px; font-size: 16px; }
 .pl-field li + li { margin-top: 6px; }
-details.pl-field summary { cursor: pointer; font: 600 15px/1.6 var(--font-text); }
-details.pl-field[open] summary { margin-bottom: 10px; }
+details.pl-field > summary { font-size: 15px; }
+details.pl-field[open] > summary { margin-bottom: 4px; }
 
 /* ---------- 8. Навигация: три постоянных раздела, одинаковые во всех делах ---------- */
 .pl-nav {
@@ -418,7 +416,15 @@ details.pl-field[open] summary { margin-bottom: 10px; }
 /* Реплики: имя говорящего всегда подписано; герои различаются формой полосы слева, а не только цветом */
 .pl-line { position: relative; padding: 2px 0 2px 14px; border-left: 3px solid var(--accent); }
 .pl-line + .pl-line, .pl-line + .pl-prose, .pl-prose + .pl-line, .pl-fig + .pl-line, .pl-line + .pl-fig, .pl-letter + .pl-line, .pl-line + .pl-letter { margin-top: 14px; }
-.pl-who { display: block; font: 600 15px/1.3 var(--font-text); color: var(--accent-text); margin-bottom: 2px; letter-spacing: .01em; }
+.pl-who { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font: 600 15px/1.3 var(--font-text); color: var(--accent-text); margin-bottom: 4px; letter-spacing: .01em; }
+/* Место под портрет героя: пока портрета нет — плитка с фигурой роли (герой — круг, кот — треугольник, свидетель — ромб, радио — полосы) */
+.pl-ava { flex: none; width: 28px; height: 28px; display: grid; place-items: center; overflow: hidden; background: var(--surface-2); border-radius: min(var(--radius), 8px); }
+.pl-card .pl-ava { background: var(--bg); }
+.pl-ava img { width: 100%; height: 100%; object-fit: cover; }
+.pl-ava:empty::before { content: ''; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); }
+.pl-ava[data-style="cat"]:empty::before { border-radius: 0; background: var(--text); clip-path: polygon(50% 4%, 100% 100%, 0 100%); }
+.pl-ava[data-style="witness"]:empty::before { border-radius: 0; background: var(--control); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.pl-ava[data-style="radio"]:empty::before { border-radius: 0; background: repeating-linear-gradient(to right, var(--control) 0 2px, transparent 2px 5px); }
 .pl-who small { font-weight: 400; color: var(--text-3); font-size: 15px; }
 .pl-line--cat { border-left-style: dashed; border-left-color: var(--control); }
 .pl-line--cat .pl-who { color: var(--text); }
@@ -435,31 +441,39 @@ details.pl-field[open] summary { margin-bottom: 10px; }
 .pl-lines > * + * { margin-top: 14px; }
 .pl-scene.pl-lines { border-left: 0; padding-left: 0; }
 .pl-line + .pl-line--cont:not(.pl-line--paper) { margin-top: 10px; }
-.pl-past-more summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font: 600 16px/1.3 var(--font-text); color: var(--text-2); }
-.pl-past-more[open] summary { margin-bottom: 8px; }
-.pl-past .pl-line .pl-prose { color: var(--text-2); }
-.pl-past .pl-line--paper .pl-prose { color: var(--ink); }
 
 /* Картинка или заглушка: место держится всегда; не загрузилась — видна подпись */
 .pl-fig { margin: 0; }
 .pl-frame { position: relative; display: block; width: 100%; overflow: hidden; border-radius: min(var(--radius), 12px); background: var(--surface-2); border: 0; padding: 0; color: inherit; }
 .pl-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .pl-frame img.is-broken { display: none; }
-.pl-ph { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 16px; text-align: center;
-  border: 2px dashed var(--control); border-radius: inherit; color: var(--text-2); font-size: 15px; line-height: 1.35; }
-.pl-ph b { font: 600 15px/1.2 var(--font-text); color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+/* Место под иллюстрацию: нейтральная композиция из фигур темы и описание того, что здесь будет нарисовано (по нему решаются загадки) */
+.pl-ph { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; padding: 14px 16px; text-align: left;
+  border: 2px dashed var(--control); border-radius: inherit; color: var(--text-2); font-size: 15px; line-height: 1.35; overflow: hidden; }
+.pl-ph::before { content: ''; position: absolute; right: 14px; top: 14px; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); }
+.pl-ph::after { content: ''; position: absolute; right: 40px; top: 30px; width: 30px; height: 30px; background: var(--control); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.pl-ph b { font: 600 15px/1.2 var(--font-text); color: var(--text-3); }
+.pl-opt .pl-ph { padding: 10px; } .pl-opt .pl-ph::before { width: 20px; height: 20px; right: 10px; top: 10px; } .pl-opt .pl-ph::after { display: none; }
+.pl-opt .pl-ph b { display: none; }
 .pl-frame--layers { cursor: pointer; }
 .pl-dots { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 6px; }
 .pl-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--text); }
 .pl-dots i.on { background: var(--text); }
 .pl-fig figcaption { margin-top: 8px; font-size: 15px; color: var(--text-2); }
 
-/* Звук */
-.pl-audio { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 16px 8px 12px; margin: 0 0 12px;
-  border: 2px solid var(--control); border-radius: var(--radius-btn); background: transparent; cursor: pointer; font: 600 16px/1 var(--font-text); }
-.pl-audio[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
-.pl-audio[aria-disabled="true"] { border-style: dashed; color: var(--text-2); }
-.pl-line .pl-audio { margin: 8px 0 0; }
+/* Звук: плеер реплики. Записи ещё нет — то же место с плашкой «Аудио скоро» (пунктир, кнопка без заливки) */
+.pl-voice { display: flex; align-items: center; gap: 12px; padding: 6px 16px 6px 6px; border: 2px solid var(--control); border-radius: var(--radius-btn); background: var(--surface); }
+.pl-voice.is-soon { border-style: dashed; background: transparent; }
+.pl-voice-btn { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: var(--radius-btn); background: var(--text); color: var(--bg); cursor: pointer; }
+.pl-voice.is-soon .pl-voice-btn { background: transparent; color: var(--text-2); border: 2px solid var(--control); }
+.pl-voice-btn .pl-ico:first-child { fill: currentColor; }
+.pl-voice-btn .pl-ico:last-child, .pl-voice-btn[aria-pressed="true"] .pl-ico:first-child { display: none; }
+.pl-voice-btn[aria-pressed="true"] .pl-ico:last-child { display: block; }
+.pl-voice-wave { flex: 1; min-width: 0; display: flex; align-items: center; gap: 3px; height: 24px; overflow: hidden; }
+.pl-voice-wave i { flex: none; width: 3px; border-radius: 2px; background: var(--control); }
+.pl-voice-wave i.on { background: var(--accent); }
+.pl-voice-note { flex: none; font: 600 15px/1 var(--font-text); color: var(--text-2); }
+.pl-task .pl-voice { margin-bottom: 14px; background: transparent; }
 
 /* «Стрелка» — подсказка интерфейса у элемента: показывается один раз */
 .pl-arrow { position: relative; display: grid; gap: 2px; margin: 14px 0 0; padding: 10px 14px; border: 2px solid var(--accent-text); border-radius: min(var(--radius), 12px);
@@ -533,10 +547,10 @@ details.pl-field[open] summary { margin-bottom: 10px; }
 
 /* Задание для детей: по желанию, без влияния на прогресс */
 .pl-kids { border: 2px dashed var(--control); border-radius: var(--radius); padding: 0 16px; }
-.pl-kids > summary { cursor: pointer; min-height: 48px; display: flex; align-items: center; font: 600 16px/1.3 var(--font-text); color: var(--text-2); }
+.pl-kids > summary { min-height: 48px; }
 .pl-kids[open] { padding-bottom: 14px; }
 .pl-kids-item + .pl-kids-item { margin-top: 12px; }
-.pl-kids-ans summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-size: 15px; color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; }
+.pl-kids-ans > summary { font-size: 15px; font-weight: 400; text-decoration: underline; text-underline-offset: 3px; }
 
 /* «Стрелка» к доске улик: вкладка навигации мигает рамкой один раз */
 @media (prefers-reduced-motion: no-preference) {
@@ -555,3 +569,134 @@ details.pl-field[open] summary { margin-bottom: 10px; }
 .pl-cardx-x { white-space: normal; transform: none; text-transform: none; letter-spacing: 0; font: 600 15px/1.3 var(--font-text); }
 .pl-tip.has-note { width: 88px; position: relative; }
 .pl-tip-note { position: absolute; top: 6px; left: 0; right: 0; display: block; text-align: center; font: 600 13px/1.2 var(--font-doc); letter-spacing: .04em; color: var(--ink-hand); }
+
+/* ---------- 9. Мини-шаги (player-ui-v2): один экран — одна реплика, блок, загадка или разбор ---------- */
+/* Строка над экраном: «назад» · где мы и линия мини-шагов точки (нажатие — оглавление) */
+.pl-crumb { display: flex; align-items: center; gap: 2px; margin: 0 -8px; }
+.pl-back, .pl-toc-btn { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; color: var(--text); cursor: pointer; border-radius: var(--radius-btn); }
+.pl-back:active, .pl-toc-btn:active, .pl-crumb-btn:active { background: var(--surface-2); }
+.pl-crumb-btn { flex: 1; min-width: 0; min-height: 44px; display: grid; gap: 7px; align-content: center; padding: 4px 8px; border: 0; background: transparent; color: var(--text-2); text-align: left; cursor: pointer; }
+.pl-crumb-t { font: 600 15px/1.2 var(--font-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Линия мини-шагов — та же азбука, что у прогресса по точкам: пройденное толще и в цвет дела, текущее — светлое, впереди — тонкая линия */
+.pl-minis { display: flex; align-items: center; gap: 3px; height: 6px; }
+.pl-minis i { flex: 1; min-width: 2px; max-width: 28px; height: 2px; background: var(--control); }
+.pl-minis i.done { height: 4px; background: var(--accent); }
+.pl-minis i.cur { height: 6px; background: var(--text); }
+.pl-minis i.more { flex: none; width: 12px; height: 0; background: none; border-top: 2px dotted var(--control); }
+.pl-review { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; font-size: 15px; color: var(--text-2); }
+.pl-review .pl-stamp { margin: 0; }
+
+.pl-step { outline: none; }
+/* Главная кнопка экрана всегда на одном месте — внизу, над навигацией: листать можно, не глядя на палец */
+@media (max-width: 1023px) {
+  .pl-main { display: flex; flex-direction: column; min-height: calc(100vh - var(--top-h) - 9px - env(safe-area-inset-top)); min-height: calc(100dvh - var(--top-h) - 9px - env(safe-area-inset-top)); }
+  .pl-main > .pl-bar { margin-top: auto; }
+  .pl-main > .pl-issue { margin: 16px auto 0; }
+}
+.pl-step > * + * { margin-top: 16px; }
+.pl-beat-title { font: 600 16px/1.3 var(--font-text); color: var(--text-2); }
+.pl-step > .pl-task-top { margin-bottom: 0; justify-content: flex-start; }
+.pl-ask { font-weight: 600; }
+.pl-lines + .pl-ask { margin-top: 14px; }
+.pl-result-top { min-height: 40px; }
+.pl-result-top .pl-stamp { margin: 4px 0 0; padding: 8px 14px 6px; font: var(--btn-font); text-transform: uppercase; letter-spacing: var(--tag-track); max-width: 100%; overflow-wrap: anywhere; }
+.pl-result > * + * { margin-top: 16px; }
+.pl-toboard { padding: 12px 14px; background: var(--surface); border-left: 4px solid var(--accent); border-radius: min(var(--radius), 8px); }
+.pl-toboard ul { list-style: none; padding: 0; display: grid; gap: 4px; font-size: 16px; }
+.pl-road .pl-lines { margin-bottom: 4px; }
+.pl-road-note { margin-top: 12px; }
+.pl-bar--review { grid-template-columns: auto minmax(0, 1fr); }
+.pl-bar--review .pl-btn--ghost { width: auto; }
+.pl-how .pl-seg { margin-bottom: 10px; }
+.pl-menu-mode { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.pl-menu .pl-seg button { display: block; width: auto; min-height: 44px; padding: 0 8px; text-align: center; border-bottom: 0; }
+
+/* Раскрывашка: стандартный треугольник, закрыто — вправо, открыто — вниз. Одна на весь плеер: длинный текст, напоминание
+   условия, «Как дойти», задание для детей, полевой список, разделы оглавления, блоки «Что здесь правда» */
+.pl-more > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; min-height: 44px; font: 600 16px/1.3 var(--font-text); color: var(--text-2); }
+.pl-more > summary::-webkit-details-marker { display: none; }
+.pl-more > summary::before { content: ''; flex: none; width: 9px; height: 12px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); transition: transform .15s ease; }
+.pl-more[open] > summary::before { transform: rotate(90deg); }
+.pl-more-body { padding: 2px 0 10px 19px; }
+.pl-more--text > .pl-more-body { padding-left: 0; }
+.pl-more--text > summary { color: var(--accent-text); font-size: 15px; }
+.pl-recap { margin-top: 8px; }
+.pl-task .pl-recap .pl-more-body { padding-left: 0; }
+.pl-facts { display: grid; }
+.pl-facts-head { margin-bottom: 8px; }
+.pl-facts-head .pl-line--titr .pl-prose { font: 600 22px/1.2 var(--font-text); font-style: normal; color: var(--text); }
+.pl-fact { border-top: 1px solid var(--line); }
+.pl-fact > summary { min-height: 56px; font-size: 18px; color: var(--text); }
+.pl-fact .pl-more-body { font-size: 17px; color: var(--text-2); }
+.pl-fact-open { padding: 14px 0; border-top: 1px solid var(--line); }
+
+/* Место под иллюстрацию точки: плакат с номером в фигурах темы (появится картинка — встанет сюда же) */
+.pl-poster { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: var(--surface); border-radius: min(var(--radius), 12px); }
+.pl-poster b { position: absolute; left: 14px; bottom: 2px; font: var(--h1-weight) 104px/1 var(--font-display); letter-spacing: -.02em; color: var(--text); }
+.pl-poster i { position: absolute; display: block; }
+.pl-poster i:nth-child(1) { right: 9%; top: 12%; width: 32%; aspect-ratio: 1; border-radius: 50%; background: var(--accent); }
+.pl-poster i:nth-child(2) { right: 30%; bottom: -10%; width: 28%; aspect-ratio: 1; background: var(--paper); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.pl-poster i:nth-child(3) { left: -5%; right: -5%; top: 58%; height: 3px; background: var(--control); transform: rotate(-9deg); }
+.pl-poster[data-shape="1"] i:nth-child(1) { border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.pl-poster[data-shape="1"] i:nth-child(2) { right: 4%; bottom: 8%; width: 20%; border-radius: 50%; clip-path: none; }
+.pl-poster[data-shape="1"] i:nth-child(3) { transform: rotate(7deg); top: 30%; }
+.pl-poster[data-shape="2"] i:nth-child(1) { border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); top: 20%; }
+.pl-poster[data-shape="2"] i:nth-child(2) { right: 42%; bottom: auto; top: 8%; width: 14%; border-radius: 50%; clip-path: none; }
+.pl-poster[data-shape="2"] i:nth-child(3) { transform: rotate(-24deg); top: 50%; }
+
+/* Финал: карточка раскрытого дела — для снимка экрана, без единого слова разгадки */
+.pl-closed { position: relative; padding: 16px 18px 14px; background: var(--paper); color: var(--ink); border-radius: var(--radius); }
+.pl-closed-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.pl-closed-no { font: 700 22px/1 var(--font-display); text-transform: uppercase; letter-spacing: .05em; }
+.pl-closed-where { font: 600 14px/1.2 var(--font-text); color: var(--ink-2); text-align: right; }
+.pl-closed-title { margin-top: 18px; font-family: var(--font-display); font-weight: var(--h1-weight); font-size: clamp(30px, 9vw, 40px); line-height: 1.02;
+  text-transform: var(--h1-case); letter-spacing: var(--h1-track); overflow-wrap: break-word; }
+.pl-closed-stamp { display: block; width: max-content; margin: 8px 2px -6px auto; padding: 8px 14px 5px; transform: rotate(-7deg);
+  border: 4px double var(--stamp); color: var(--stamp); font: 700 28px/1 var(--font-display); text-transform: uppercase; letter-spacing: .12em; }
+.pl-closed-facts { margin: 18px 0 0; padding-top: 12px; border-top: 2px dashed var(--ink-2); display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.pl-closed-facts dt { font: 600 14px/1.2 var(--font-text); color: var(--ink-2); }
+.pl-closed-facts dd { margin: 3px 0 0; font: 700 20px/1.15 var(--font-display); }
+.pl-closed-brand { margin-top: 12px; font: 600 14px/1.2 var(--font-text); color: var(--ink-2); }
+.pl-closed-row { display: flex; align-items: center; gap: 12px; }
+.pl-closed-row .pl-btn { flex: none; width: auto; }
+.pl-closed-row .pl-small { flex: 1; min-width: 0; line-height: 1.3; }
+.pl-step > .pl-closed-row { margin-top: 12px; }
+.pl-rate { padding-top: 16px; padding-bottom: 16px; }
+.pl-bar--flow .pl-btn { font: 600 17px/1.2 var(--font-text); text-transform: none; letter-spacing: 0; }
+.pl-rate-q { font: 600 20px/1.2 var(--font-text); }
+.pl-stars { display: flex; gap: 2px; margin: 8px 0 6px -8px; }
+.pl-star { width: 52px; height: 52px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; color: var(--control); }
+.pl-star svg { width: 38px; height: 38px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
+.pl-star[data-on="true"] { color: var(--accent-text); }
+.pl-star[data-on="true"] svg { fill: currentColor; }
+.pl-rate .pl-actions { margin-top: 12px; }
+
+/* Оглавление: пройденные точки и мини-шаги; того, что впереди, здесь нет */
+.pl-toc-sec { border-bottom: 1px solid var(--line); }
+.pl-sheet-body > .pl-toc-sec + .pl-toc-sec { margin-top: 0; }
+.pl-toc-sec > summary { min-height: 56px; font-size: 17px; color: var(--text); }
+.pl-toc-sec > summary b { flex: 1; min-width: 0; }
+.pl-toc-sec > summary small { flex: none; font-size: 15px; font-weight: 400; color: var(--text-3); }
+.pl-toc-sec > .pl-more-body { padding-left: 0; }
+.pl-toc { list-style: none; padding: 0; display: grid; }
+.pl-toc-h { padding: 12px 0 4px; font: 600 15px/1.3 var(--font-text); color: var(--text-3); }
+.pl-toc button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 8px 12px;
+  border: 0; border-left: 3px solid var(--line); background: transparent; text-align: left; font-size: 16px; line-height: 1.3; color: var(--text-2); cursor: pointer; }
+.pl-toc button[aria-current] { border-left-color: var(--accent); background: var(--surface); color: var(--text); font-weight: 600; }
+.pl-toc button small { flex: none; font-size: 15px; font-weight: 600; color: var(--accent-text); }
+
+/* Переходы: новый экран въезжает со стороны движения, штамп ставится, запись «дышит». Только transform и opacity, один раз (.pl-fresh) */
+@media (prefers-reduced-motion: no-preference) {
+  .pl-fresh .pl-step { animation: pl-in .24s cubic-bezier(.2, .8, .3, 1) both; }
+  .pl-fresh .pl-step[data-dir="back"] { animation-name: pl-in-back; }
+  .pl-fresh .pl-closed-stamp { animation: pl-stamp-big .36s .4s cubic-bezier(.3, 1.4, .5, 1) both; }
+  .pl-fresh .pl-poster i { animation: pl-pop .4s .1s cubic-bezier(.3, 1.3, .5, 1) both; }
+  .pl-voice.is-on .pl-voice-wave i:not(.on) { animation: pl-wave 1s ease-in-out infinite alternate; }
+  .pl-voice.is-on .pl-voice-wave i:nth-child(odd) { animation-delay: -.5s; }
+}
+@keyframes pl-in { from { opacity: 0; transform: translateX(20px); } }
+@keyframes pl-in-back { from { opacity: 0; transform: translateX(-20px); } }
+@keyframes pl-stamp-big { from { opacity: 0; transform: scale(2) rotate(-18deg); } }
+@keyframes pl-pop { from { opacity: 0; scale: .7; } }
+@keyframes pl-wave { to { transform: scaleY(.45); } }
+@media (prefers-reduced-motion: reduce) { .pl-more > summary::before { transition: none; } }
