@@ -41,3 +41,15 @@
 
 Рисунки мест `site/assets/ill/spots/zilart-*.svg` — свои (`scripts/make_case_art.py`), чужих исходников нет. 24.11 перерисованы пергола (по просмотренному кадру выше), арка и пресс (по описаниям из `research/facts.md`, натуру не видели).
 
+
+## Кастинг героев (fal), 2026-11-26 — черновики на выбор (A-60)
+
+Условия — как в разделе «Сгенерированное (fal)» выше: по условиям fal для модели, **подтвердить до публикации**. Промпты наши (`specs/02-casting.md`). Чужих исходников нет, кроме прежнего портрета Зили (`assets/test/zilya-portrait-nbpro.png`, наш).
+
+| Файл (`casting/…`) | Что | Модель |
+|---|---|---|
+| `zilya-1-poster.jpg` | Зиля, плакат: развитие прежнего портрета | `fal-ai/nano-banana-2/edit` |
+| `zilya-2…4-*.jpg`, `tyufel-1…4-*.jpg` | Зиля и Тюфель, по 4 стиля | `fal-ai/nano-banana-2` |
+| `duo-poster.jpg`, `duo-collage.jpg` | Оба героя вместе | `fal-ai/nano-banana-pro/edit` (из черновиков выше) |
+| `voices/tyufel-*.mp3`, `lyova-a-george.mp3`, `gosha-a-roger.mp3` | Пробы голосов | `elevenlabs/tts/eleven-v4`, библиотечные голоса Brian, Bill, Liam, George, Roger |
+| `voices/lyova-b-minimax.mp3` | Проба голоса Лёвы | `fal-ai/minimax/speech-2.8-hd`, голос Determined_Man |
