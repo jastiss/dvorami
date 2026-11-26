@@ -37,3 +37,13 @@ Reference images: image 1 is Zilya the pigeon, image 2 is Tyufel the ginger cat 
 - Лиза в сценарии v5 не говорит (только письмо) — не озвучивали.
 
 Параметры по вариантам — в `casting/README.md`.
+
+## Раунд 2 (A-65, 26.11): сцены 1 vs 4, Зиля без круга, голоса
+
+Основание: указание владельца 26.11 23:24, потолок $5. Траты — `state/MEDIA_SPEND.md`, результат — `casting/README.md`, «Раунд 2». Полные промпты — в fal (recipe каждого `request_id`); здесь — суть.
+
+- **Тюфель 1 «барин»:** `/edit` от `tyufel-1-poster.jpg`: «keep his face, eyes, smile, stripes, question-mark tail… make him lordly, languid and voluminous: broad round body, deep fluffy chest, round belly, fuller cheeks, slight double chin»; фон — красный клин и чёрная диагональ, **без круга**. Затем `nano-banana-pro/edit` 2K от лучшего: «both front paws planted together, chest puffed out, chin raised high, looking down his nose with sleepy, condescending eyes».
+- **Сцены** (референсы: Зиля + Тюфель своего стиля; одинаковый текст сцены для обоих стилей, меняется только блок стиля): «Встреча» (гл. 3: кот развалился на скамейке, Зиля на подлокотнике, блокнот рядом); «Мокрая лапа» (гл. 10: кот ведёт мокрой лапой по полоске бумаги, каракули наливаются лиловым — `absolutely no readable letters`); «Подвезти до метро» (эпилог: Зиля несёт Тюфеля над крышами, держит лапами за загривок; крыши и бульвар условные, `no recognisable landmarks` — перголу и реальные дома без фото-референса не рисуем).
+- **Зиля без «флага Японии»:** тот же кадр через `/edit`, «remove the red circle completely»: (а) красный клин из угла + две чёрные диагонали; (б) наклонная красная плоскость, линия земли, мелкие квадраты; (в, гуашь) один широкий красный мазок по диагонали.
+- **Анимация:** Kling 2.5 turbo pro, 5 с, от pro-кадра финала: «pigeon flaps both wings in a steady rhythm… cat slowly blinks, tail sways… city drifts backward. Camera steady. Keep the style unchanged; no new objects, no text», negative: «morphing, extra limbs, extra tail, extra wings, hands, text».
+- **Голоса:** реплики дословно из `story/v5/screenplay-5.3.md` (Тюфель — гл. 3 «Мр-р-да. Кино. Послушайте лучше…», Лёва — гл. 4, Гоша — гл. 8); разметка — по правилу `docs/fal-guide.md`, «Ударения и интонация».

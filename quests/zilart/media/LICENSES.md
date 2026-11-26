@@ -53,3 +53,16 @@
 | `duo-poster.jpg`, `duo-collage.jpg` | Оба героя вместе | `fal-ai/nano-banana-pro/edit` (из черновиков выше) |
 | `voices/tyufel-*.mp3`, `lyova-a-george.mp3`, `gosha-a-roger.mp3` | Пробы голосов | `elevenlabs/tts/eleven-v4`, библиотечные голоса Brian, Bill, Liam, George, Roger |
 | `voices/lyova-b-minimax.mp3` | Проба голоса Лёвы | `fal-ai/minimax/speech-2.8-hd`, голос Determined_Man |
+
+## Кастинг, раунд 2, 2026-11-26 — сцены и голоса на выбор (A-65)
+
+Условия — как выше: по условиям fal для модели, **подтвердить до публикации**. Промпты — `specs/02-casting.md`, раздел «Раунд 2». Исходники — только наши черновики раунда 1.
+
+| Файл (`casting/…`) | Что | Модель |
+|---|---|---|
+| `round2-tyufel-1-barsky.jpg`, `round2-scene-fly-1.jpg`, `round2-scene-fly-4.jpg` | Тюфель 1 «барин», финальная сцена в двух стилях | `fal-ai/nano-banana-pro/edit` |
+| `round2-zilya-*.jpg`, `round2-scene-meet-*.jpg`, `round2-scene-paw-*.jpg` | Зиля без круга, сцены «Встреча» и «Мокрая лапа» | `fal-ai/nano-banana-2/edit` |
+| `round2-scene-fly-1.mp4`, `round2-scene-fly-4.mp4` | Анимация 5 с | `fal-ai/kling-video/v2.5-turbo/pro/image-to-video` |
+| `voices/tyufel-d-eric.mp3`, `lyova-c-george.mp3`, `lyova-d-daniel.mp3`, `gosha-b-roger.mp3`, `gosha-c-bill.mp3` | Пробы голосов | `elevenlabs/tts/eleven-v4`, библиотечные голоса Eric, George, Daniel, Roger, Bill |
+| `voices/tyufel-e-design.mp3` | Голос по текстовому описанию | `fal-ai/qwen-3-tts/voice-design/1.7b` (открытая модель Qwen3-TTS; лицензию модели сверить до публикации) |
+| `voices/tyufel-f-minimax.mp3` | Проба голоса | `fal-ai/minimax/speech-2.8-hd`, голос Elegant_Man |
