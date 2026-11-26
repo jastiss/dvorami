@@ -1,17 +1,5 @@
 {
- "dialogs": {
-  "e66e33384f83b6ad": {
-   "data": {
-    "confirmed": true,
-    "quest": "zilart"
-   },
-   "flow": "review",
-   "sid": 6,
-   "step": "rating",
-   "ts": 1795567815.7460866,
-   "user": "e66e33384f83b6ad"
-  }
- },
+ "dialogs": {},
  "reminders": [],
  "seq": 6
 }
