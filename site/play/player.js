@@ -107,14 +107,52 @@
     if (a == null || b == null || a === b) return true;
     return a < b ? (min >= a && min < b) : (min >= a || min < b);
   }
-  // Значение ветки «по часам» для точки: выбор, сделанный на подходе (по часам или рукой), запоминается — экран не меняется на ходу
+  // Значение ветки «по часам» для точки: выбор, сделанный на подходе (по часам или рукой), запоминается — экран не меняется на ходу.
+  // Чистая функция: запись делает fixClock() в событии показа дороги (T-99), отрисовка состояние не меняет
   function clockVal(k, sec) {
     if (URL_FLAGS[k]) return URL_FLAGS[k];
     var rec = S && S.clk && S.clk[sec] && S.clk[sec][k];
     if (rec) return rec.v;
-    var v = openAt(CLOCK[k], mskMinutes()) ? 'open' : 'closed';
-    if (S && S.clk && sec === liveSec() && sec >= 0 && sec < Q.points.length) { (S.clk[sec] = S.clk[sec] || {})[k] = { v: v, by: 'time' }; }
-    return v;
+    return openAt(CLOCK[k], mskMinutes()) ? 'open' : 'closed';
+  }
+  // T-99: ветка «по часам» фиксируется, когда игрок впервые видит дорогу к точке (showWalk), и при загрузке сохранения без записи
+  function fixClock(sec) {
+    var p = Q && Q.points[sec];
+    if (!p || !S || !S.clk) return;
+    pointClockKeys(p).forEach(function (k) {
+      if (URL_FLAGS[k]) return;
+      var c = S.clk[sec] = S.clk[sec] || {};
+      if (!c[k]) c[k] = { v: openAt(CLOCK[k], mskMinutes()) ? 'open' : 'closed', by: 'time' };
+    });
+  }
+  // Строка «о свете» (5.4): реплика с "sun": N остаётся, только если до захода солнца меньше N минут (или он уже был);
+  // {время} — заход по дате для координат первой точки, московское время. Без зависимостей: формула NOAA, точность ±2 мин
+  function sunsetMsk(lat, lon) {
+    var now = new Date(Date.now() + 3 * 3600e3);
+    var n = Math.floor((now - Date.UTC(now.getUTCFullYear(), 0, 1)) / 864e5) + 1;
+    var g = 2 * Math.PI / 365 * (n - 1), r = Math.PI / 180;
+    var eq = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+    var d = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+    var c = Math.cos(90.833 * r) / (Math.cos(lat * r) * Math.cos(d)) - Math.tan(lat * r) * Math.tan(d);
+    if (!(c >= -1 && c <= 1)) return null;
+    return Math.round(720 - 4 * (lon - Math.acos(c) / r) - eq + 180);
+  }
+  // Строки «о свете» из вступления повторяются на обложке: решать, идти ли сейчас, нужно до «Открыть дело»
+  function sunNote() {
+    var out = [];
+    (function walk(x) { if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object' && typeof x.sun === 'number' && x.text) out.push(x.text); })(Q.intro);
+    return out.map(function (t) { return '<p class="pl-small pl-sun">' + esc(plain(t)) + '</p>'; }).join('');
+  }
+  function hhmm(min) { min = ((min % 1440) + 1440) % 1440; return Math.floor(min / 60) + ':' + String(min % 60).padStart(2, '0'); }
+  function sunLines(x, set) {
+    if (Array.isArray(x)) return x.filter(function (e) { return !(e && typeof e === 'object' && typeof e.sun === 'number' && (set == null || set - mskMinutes() >= e.sun)); })
+      .map(function (e) { return sunLines(e, set); });
+    if (x && typeof x === 'object') {
+      var o = {}; for (var k in x) if (Object.prototype.hasOwnProperty.call(x, k)) o[k] = sunLines(x[k], set);
+      if (typeof x.sun === 'number' && typeof o.text === 'string') o.text = o.text.replace(/\{время\}/g, hhmm(set));
+      return o;
+    }
+    return x;
   }
   function flag(k) { return CLOCK[k] ? (CLOCK_SEC < 0 ? (URL_FLAGS[k] || 'open') : clockVal(k, CLOCK_SEC)) : (FLAGS[k] || 'A'); }
   function condKeys(cond) {
@@ -208,6 +246,8 @@
     FLAGS = readFlags(q);
     clockWarn(q);
     var p = prune(q);
+    var p0 = (p.points || [])[0] || {};
+    p = sunLines(p, sunsetMsk(+p0.lat || 55.75, +p0.lon || 37.62));
     p.flags = FLAGS;
     return p;
   }
@@ -370,6 +410,7 @@
   function clearSlot(o) { o.hint = 0; o.wrong = null; o.last = ''; o.reply = ''; o.sel = []; }
   function showWalk() {
     S.phase = 'walk'; S.k = 0; S.res = []; S.wa = []; S.f = 0; clearSlot(S);
+    fixClock(S.p);
     log('walk');
     commit('top');
   }
@@ -1332,7 +1373,7 @@
         '<button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>';
     }
     if (S.phase === 'idle') {
-      return head((Q.district ? Q.district + ' · ' : '') + caseName(), Q.title, Q.summary || '', 0) +
+      return head((Q.district ? Q.district + ' · ' : '') + caseName(), Q.title, Q.summary || '', 0) + sunNote() +
         (S.field ? '<section class="pl-field"><span class="pl-label">Режим полевого теста</span><p class="pl-small">На каждой точке — список «что проверить». Время, ошибки, подсказки и заметки сохраняются сами. В конце, а при желании и раньше (меню → «Отправить отчёт»), отправьте отчёт одним сообщением в Telegram.</p></section>' : '') +
         '<section class="pl-how"><span class="pl-label">Как пойдём</span>' + modeSeg() +
         '</section>' +
@@ -2231,6 +2272,7 @@
     Q = prepare(q);
     indexCards(q);
     S = load();
+    if (S.phase === 'walk' || S.phase === 'step' || S.phase === 'point_done') fixClock(S.p);
     fixCursor();
     if (S.phase !== 'idle') { log('reload'); save(); }
     themeColor();
@@ -2266,7 +2308,7 @@
   window.__dvorami = { norm: ANS.norm, matches: ANS.matches, shareLink: function () { return shareLink(); }, state: function () { return S; }, quest: function () { return Q; }, report: function () { return report(); },
     flags: function () { return FLAGS; }, cards: function () { return CARDS; },
     postcardLines: function () { return postcardLines(); }, postcard: function () { return postcard().then(function (b) { return b ? b.size : 0; }); },
-    clockOpenAt: function (def, min) { return openAt(def, min); }, mskMinutes: function () { return mskMinutes(); },
+    clockOpenAt: function (def, min) { return openAt(def, min); }, mskMinutes: function () { return mskMinutes(); }, sunsetMsk: function (lat, lon) { return sunsetMsk(lat, lon); },
     // мини-шаги: где игрок (live), что на экране (shown), сколько экранов в разделе, режим чтения
     pos: function () { var p = shownPos(), F = framesOf(p.sec), x = F[p.f] || {}; return { sec: p.sec, f: p.f, live: liveSec(), cur: S.f, peek: !!peek, total: F.length, mode: MODE, id: x.id, kind: x.kind, step: x.step == null ? null : x.step }; },
     frames: function (sec) { return framesOf(sec).map(function (x) { return { id: x.id, kind: x.kind, step: x.step == null ? null : x.step }; }); } };

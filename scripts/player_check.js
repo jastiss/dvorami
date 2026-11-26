@@ -281,8 +281,10 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       const solve = async (sel, st, sat, wrong) => {
         if (st.type === 'choice') {
           const f = st.answer_flag && FLAGS[st.answer_flag];
-        const right = f && (st.options || []).some(o => o.id === f) ? f : [].concat(st.answer || st.answers)[0];
-          const bad = (st.options || []).find(o => o.id !== right);
+          const rights = f && (st.options || []).some(o => o.id === f) ? [f] : [].concat(st.answer || st.answers).map(String);
+          const right = rights[0];
+          // вариант «по натуре» до полевого теста (засчитывается любой) — неверного нет, проверять нечего
+          const bad = (st.options || []).find(o => !rights.includes(String(o.id)));
           if (wrong && bad) {
             await click(`${sel} [data-act="choose"][data-id="${bad.id}"]`);
             if (!(await page.$(`${sel} .pl-wrong`))) err(tag, `${sat}: нет сообщения о неверном варианте`);
@@ -360,7 +362,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           const box = document.querySelector('#frame .pl-clock[data-clock="' + key + '"]'), dist = document.querySelector('#frame .pl-dist');
           return { v: box && box.dataset.clockV, btn: !!(box && box.querySelector('[data-act="clock"]')), text: (document.getElementById('frame') || {}).textContent || '', dist: dist ? dist.textContent : '' };
         }, k);
-        const lineOf = v => (rp.walk || []).filter(e => e && typeof e === 'object' && e.if === `${k}=${v}` && e.text).map(e => e.text);
+        const lineOf = v => (rp.walk || []).filter(e => e && typeof e === 'object' && e.if === `${k}=${v}` && e.text && !e.who).map(e => e.text);   // абзацы дороги (экран дороги); реплики героев — на следующих экранах
         const mOf = v => ((rp.walk_m || []).find(e => e && e.if === `${k}=${v}`) || {}).m;
         const verify = async (v, why) => {
           const s0 = await seen();
@@ -372,6 +374,9 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           if (mOf(v) && !s0.dist.includes(String(mOf(v)))) err(tag, `${at}: ${why}: расстояние «${s0.dist}», ожидалось ${mOf(v)} м`);
         };
         await verify(expectNow, 'по часам');
+        // T-99: ветка зафиксирована событием показа дороги (showWalk), с меткой «по часам»
+        const st0 = await state();
+        if (!(st0.clk && st0.clk[pi] && st0.clk[pi][k] && st0.clk[pi][k].by === 'time' && st0.clk[pi][k].v === expectNow)) err(tag, `${at}: ветка по часам не зафиксирована при показе дороги`);
         const flipTo = expectNow === 'open' ? 'closed' : 'open';
         await click(`#frame [data-act="clock"][data-k="${k}"]`);
         await verify(flipTo, 'после кнопки');
@@ -384,6 +389,16 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       };
 
       await check('обложка');
+      // Строка «о свете» (5.4): реплика с "sun": N на обложке — только если до захода меньше N минут; {время} подставлено
+      const sunLine = [].concat(...[].concat(RAW.intro || []).map(x => [].concat(x))).find(l => l && typeof l === 'object' && typeof l.sun === 'number');
+      if (sunLine) {
+        const p0 = (RAW.points || [])[0] || {};
+        const sn = await page.evaluate(([la, lo]) => ({ set: window.__dvorami.sunsetMsk(la, lo), now: window.__dvorami.mskMinutes(), text: document.getElementById('app').textContent }), [+p0.lat, +p0.lon]);
+        if (!(sn.set > 14 * 60 + 30 && sn.set < 22 * 60 + 30)) err(tag, `обложка: заход солнца в Москве посчитан неправдоподобно (${sn.set} мин)`);
+        const want = sn.set - sn.now < sunLine.sun, head = sunLine.text.split('{')[0].trim();
+        if (want !== sn.text.includes(head)) err(tag, `обложка: строка о свете ${want ? 'не показана' : 'показана'} (до захода ${sn.set - sn.now} мин)`);
+        if (sn.text.includes('{время}')) err(tag, 'обложка: в строке о свете не подставлено время');
+      }
       // режим «читаю / слушаю и читаю»: по умолчанию плеер реплик есть; в одном прогоне переключаем на «Читаю» — плеера нет нигде
       const readMode = vp.width === 1024 && theme === 'sun';
       if ((await page.$$('#app [data-act="mode"]')).length !== 2) err(tag, 'обложка: нет выбора «Слушаю и читаю / Читаю»');
