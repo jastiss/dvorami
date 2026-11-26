@@ -375,8 +375,13 @@ async function mapTaps() {
       // T-62: на главной лента каталога не длиннее нужного — «Как это выглядит» начинается выше 1688 px (второй экран телефона)
       if (vp.width === 390 && rel === '') {
         const y = await page.evaluate(() => { const s = document.querySelector('.screens-sec'); return s ? Math.round(s.getBoundingClientRect().top + scrollY) : 0; });
-        if (y >= 1688) err(rel, vp.width, `блок «Как это выглядит» начинается на ${y} px (нужно выше 1688): лента каталога выросла`);
+        // порог поднят 26.11 (1688 → 1800): владелец вернул обложкам 4:3 — его указание важнее H-9
+        if (y >= 1800) err(rel, vp.width, `блок «Как это выглядит» начинается на ${y} px (нужно выше 1800): лента каталога выросла`);
       }
+      // владелец 25–26.11: обложки карточек не уменьшать — на любой ширине высота ≥ 0,74 ширины (4:3); и никаких «Новое дело»
+      (await page.evaluate(() => [...document.querySelectorAll('.qgrid .qcard .qc-cover')].map(c => { const b = c.getBoundingClientRect(); return b.width ? b.height / b.width : 1; })))
+        .forEach((k, i) => { if (k < 0.74) err(rel, vp.width, `обложка карточки ${i + 1} сплющена: высота/ширина ${k.toFixed(2)} (нужно 4:3)`); });
+      if (await page.evaluate(() => /Новое дело/.test(document.body.innerText))) err(rel, vp.width, 'на странице «Новое дело» — владелец 26.11: не показываем');
       r.anchorsMissing.forEach(a => err(rel, vp.width, `ссылка на несуществующий якорь #${a}`));
       for (const l of r.links) {
         if (!l.startsWith(BASE)) continue;

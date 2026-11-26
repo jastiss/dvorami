@@ -211,7 +211,7 @@
 
 /* Рейтинг дел: свежие настоящие оценки из assets/ratings.json (собирает scripts/build_ratings.py после новых
    отзывов в боте). Страница уже содержит рейтинг на момент сборки — это лишь обновление без пересборки.
-   Меньше порога оценок — «Новое дело». Тот же вид, что в build_cases.py (rating_html). */
+   Меньше порога оценок — пусто (владелец 26.11: без «Новое дело»). Тот же вид, что в build_cases.py (rating_html). */
 (function () {
   'use strict';
   var els = document.querySelectorAll('[data-rating]');
@@ -225,7 +225,7 @@
       var row = d.cases[el.getAttribute('data-rating')];
       if (!row) return;
       var n = row.count || 0;
-      if (n < min || n <= 0) { el.innerHTML = '<span class="rating-new">Новое дело</span>'; return; }
+      if (n < min || n <= 0) { el.innerHTML = ''; return; }
       var avg = row.sum / n, v = avg.toFixed(2).replace('.', ',');
       el.innerHTML = '<span class="stars" role="img" aria-label="Оценка ' + v + ' из 5" style="--w:' + (avg / 5 * 100).toFixed(1) + '%"></span>' +
         '<span class="rating-v" aria-hidden="true">' + v + '</span><span class="rating-n">·&nbsp;' + n + '&nbsp;' + plural(n, 'оценка', 'оценки', 'оценок') + '</span>';

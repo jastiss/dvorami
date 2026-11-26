@@ -1350,7 +1350,7 @@ img.is-broken { visibility: hidden; }
   /* T-62 (H-9): лента ниже — «Как это выглядит» начинается на втором экране телефона (выше 1688 px на 390; проверяет site_check) */
   .quests-sec { padding-top: 32px; padding-bottom: 20px; }
   .quests-head { margin-bottom: 16px; }
-  .qgrid .qcard .qc-cover { aspect-ratio: 5 / 2; margin-bottom: 4px; }
+  .qgrid .qcard .qc-cover { margin-bottom: 4px; } /* владелец 26.11: обложка 4:3, как было до T-62 (5:2 «уменьшила картинки») */
   .qgrid .qcard { gap: 8px; }
   /* статус — плашкой на обложке; строка под тизером остаётся только для цены */
   .qgrid .qcard .qc-foot { position: static; }
@@ -1498,3 +1498,6 @@ img.is-broken { visibility: hidden; }
 .c-rating .rating-v { color: inherit; }
 .c-rating .rating-new { color: inherit; border-color: currentColor; }
 .c-rating .rating-new::before { color: inherit; }
+
+/* Владелец 26.11: «Новое дело» не показываем — пустой блок рейтинга не занимает места */
+.qc-rating:empty, .c-rating:empty { display: none; }

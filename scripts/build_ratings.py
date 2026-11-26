@@ -19,7 +19,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FEEDBACK_DIR = ROOT / "feedback"
 OUT = ROOT / "site" / "assets" / "ratings.json"
-THRESHOLD = 5   # меньше оценок — на сайте и в боте «Новое дело», а не звёзды
+THRESHOLD = 5   # меньше оценок — на сайте пусто (только статус дела), а не звёзды
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from feedback_bot import CASES, find_case, load_moderation, review_id  # noqa: E402
@@ -71,7 +71,7 @@ def build(feedback_dir=None):
     return {
         "_about": "Настоящие оценки игроков 1–5: бот после финала дела и сайт, только одобренные владельцем (модерация). "
                   "Один игрок — одна оценка дела. "
-                  "Меньше threshold оценок — показываем «Новое дело». Собирает scripts/build_ratings.py; руками не править.",
+                  "Меньше threshold оценок — звёзд не показываем. Собирает scripts/build_ratings.py; руками не править.",
         "threshold": THRESHOLD,
         "updated": newest or None,
         "cases": cases,

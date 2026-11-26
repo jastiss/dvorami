@@ -80,7 +80,7 @@ def plural(n, one, few, many):
 
 
 def rating_of(slug, ratings):
-    """(среднее, количество) по настоящим оценкам или None, пока оценок меньше порога (тогда «Новое дело»)."""
+    """(среднее, количество) по настоящим оценкам или None, пока оценок меньше порога (тогда ничего не показываем)."""
     row = ratings.get('cases', {}).get(slug) or {}
     n = row.get('count', 0)
     if n < ratings.get('threshold', 5) or n <= 0:
@@ -92,7 +92,7 @@ def rating_html(slug, ratings):
     """Звёзды с сотыми: «4,86 · 37 оценок», заливка звёзд — доля от 5. Тот же вид рисует site.js из ratings.json."""
     got = rating_of(slug, ratings)
     if not got:
-        return '<span class="rating-new">Новое дело</span>'
+        return ''  # владелец 26.11: никаких «Новое дело» — до 5 одобренных оценок место пустое, статус «Скоро в продаже» остаётся
     avg, n = got
     v = f'{avg:.2f}'.replace('.', ',')
     return (f'<span class="stars" role="img" aria-label="Оценка {v} из 5" style="--w:{avg / 5 * 100:.1f}%"></span>'
