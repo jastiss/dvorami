@@ -29,7 +29,10 @@
  *   - финал: карточка «Дело № N · РАСКРЫТО» без слов-ответов, пять звёзд (оценка сохраняется на телефоне), отзыв в Telegram (done_<дело>);
  *   - формат 5 (docs/quest-format.md): реплики, варианты (choice), выбор карточек доски (pick), «вычеркни лишнее» (strike),
  *     ответ из частей (all) и «почти» (replies), вопросы на ходу (walk_ask), письмо-улика в шторке, задание для детей,
- *     «стрелки» показываются один раз; ветки А/Б — прогон с ?flags= (--flags=st4:B).
+ *     «стрелки» показываются один раз; ветки А/Б — прогон с ?flags= (--flags=st4:B);
+ *   - T-105: варианты выбора перемешаны (постоянно для игрока, верный не всегда первый, без внутренних id на кнопках);
+ *     сохранение старой версии дела — экран «Вышла новая версия дела» (продолжить / заново); последняя подсказка поля с вводом
+ *     засчитывается как ответ (поля «любой вариант» — пропуск с пометкой); доля полей «с места» по пометке src (H-72, предупреждение).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
 'use strict';
@@ -69,6 +72,10 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 
 
 const errors = [];
 const err = (where, msg) => errors.push(`${where}: ${msg}`);
+// предупреждения — не красный тест: печатаются в конце, выкладку не блокируют
+const warns = [];
+const warn = (where, msg) => warns.push(`${where}: ${msg}`);
+const notes = [];
 
 // Проверка ответов без браузера (scripts/answer_check.js): нормализация, «почти», каждая загадка принимает эталон и формы
 const ANS = require('../site/play/answer.js');
@@ -105,6 +112,59 @@ let nearSeen = false;
   walk(q, 'дело');
   for (const [id, where] of refs) if (!defs.has(id)) err('данные', `${where}: карточка «${id}» нигде не определена`);
 })(RAW);
+
+// Поля дела (шаги и вопросы на ходу с заданием) — с местом для сообщений; обе ветки А/Б (RAW) или только текущая (Q)
+const fieldsOf = q => {
+  const out = [];
+  (q.points || []).forEach(p => {
+    (p.steps || []).forEach((st, i) => { if (st && st.type && !['info', 'say', 'board'].includes(st.type)) out.push([st, `точка ${p.n} шаг ${i + 1}${st.if ? ` (${typeof st.if === 'string' ? st.if : JSON.stringify(st.if)})` : ''}`]); });
+    [].concat(p.walk_ask || []).forEach((w, i) => { if (w) out.push([w, `точка ${p.n} на ходу ${i + 1}`]); });
+  });
+  return out;
+};
+const optIds = st => (st.options || []).map(o => String(o.id));
+const anyChoice = st => st.type === 'choice' && optIds(st).length > 0 && optIds(st).every(id => [].concat(st.answer || st.answers || []).map(String).includes(id));
+
+// T-105 (в): третья подсказка поля с вводом — это ответ, и он засчитывается: игрок, перепечатавший её в поле, проходит дальше.
+// Исключения — «любой вариант» (any_answer: true у ask, choice с засчитанным любым вариантом) — пропускаются явно, с пометкой.
+// В сообщениях — только место поля, без текста подсказки (журнал Actions публичный, team/std/spoilers.md).
+(function lastHints(q) {
+  for (const [st, where] of fieldsOf(q)) {
+    const hints = st.hints || [];
+    if (hints.length < 3) continue;
+    if (st.any_answer || anyChoice(st)) { notes.push(`${where}: третья подсказка не проверяется — засчитывается любой вариант`); continue; }
+    if (st.type === 'choice' || st.type === 'pick' || st.type === 'strike' || st.type === 'free') continue;   // без поля ввода
+    if (!(st.answers || []).length && !(st.all || []).length) continue;
+    const r = ANS.checkText(st, String(hints[hints.length - 1]).replace(/<[^>]+>/g, ''));
+    if (!r.ok) err('данные', `${where}: последняя подсказка (ответ) не засчитывается как ответ — впишите в неё эталон из answers или добавьте форму из неё в answers`);
+  }
+})(RAW);
+
+// H-73: длина вариантов — верный не должен выдаваться длиной (предупреждение: правит автор, не движок)
+(function optionLength(q) {
+  for (const [st, where] of fieldsOf(q)) {
+    if (st.type !== 'choice' || anyChoice(st)) continue;
+    const right = [].concat(st.answer || []).map(String);
+    const len = o => String(o.label || o.id).replace(/<[^>]+>/g, '').length;
+    const r = (st.options || []).filter(o => right.includes(String(o.id))), w = (st.options || []).filter(o => !right.includes(String(o.id)));
+    if (r.length === 1 && w.length && len(r[0]) > 1.4 * Math.max(...w.map(len)) && len(r[0]) - Math.max(...w.map(len)) >= 12) warn('данные', `${where}: верный вариант заметно длиннее остальных (${len(r[0])} знаков против ${Math.max(...w.map(len))}) — угадывается по длине (H-73)`);
+  }
+})(RAW);
+
+// H-72: доля полей «с места». Пометка у поля: "src": "place" — ответ можно получить только на месте; "text" — из текста дела,
+// доски или письма; "both" — нужны оба. Считается по ветке, которую проходит тест (флаги по умолчанию / --flags).
+// Ниже ⅔ — предупреждение (красным станет, когда разметка пройдёт по всем делам).
+const SRC = (function srcShare(q) {
+  const all = fieldsOf(q).filter(([st]) => !st.optional && st.type !== 'free' && !anyChoice(st));
+  const marked = all.filter(([st]) => st.src);
+  for (const [st, where] of marked) if (!['place', 'text', 'both'].includes(st.src)) err('данные', `${where}: "src": "${st.src}" — допустимо place, text, both`);
+  if (!marked.length) return `доля полей «с места»: разметки src нет (полей ${all.length})`;
+  const place = marked.filter(([st]) => st.src === 'place').length;
+  const share = place / marked.length;
+  const line = `доля полей «с места»: ${place} из ${marked.length} размеченных (${Math.round(share * 100)}%)` + (marked.length < all.length ? `, без разметки ${all.length - marked.length}` : '');
+  if (share < 2 / 3) warn('данные', `${line} — меньше ⅔ (H-72)`);
+  return line;
+})(Q);
 
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
@@ -220,6 +280,8 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
 (async () => {
   await new Promise(r => server.listen(PORT, '127.0.0.1', r));
   const browser = await chromium.launch();
+  const ALL_SHUF = {}, ALL_FIRST = [];
+  let shufReload = false;
   const firstAnswer = st => st.answers && st.answers.length ? String(st.answers[0]).replace(/^~/, '')
     : (st.all || []).map(g => String((Array.isArray(g) ? g : g.answers)[0]).replace(/^~/, '')).join(' ');
   let screens = 0;
@@ -227,6 +289,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
   for (const vp of [{ width: 390, height: 844 }, { width: 1024, height: 768 }, { width: 1440, height: 900 }]) {
     for (const theme of ['dark', 'sun']) {
       const tag = `${vp.width}/${theme}`;
+      const SHUF = {}, SHUF_FIRST = [];
       const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' });
       const page = await ctx.newPage();
       await page.route('**/*', route => {
@@ -277,6 +340,26 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         }
         err(tag, `${where}: «Дальше» не кончается`); return false;
       };
+      // H-73: порядок вариантов. Перемешиваемые — постоянный порядок для игрока (переживает перезагрузку), верный не всегда первый
+      // (считается по всему прогону); нумерованные (А–Г, 1–3), «любой вариант» и "shuffle": false — порядок как в данных.
+      // Метки на кнопках — буквы или свой знак варианта, а не внутренний id (press, water).
+      const orderCheck = async (sel, st, sat, rights) => {
+        const seen = () => page.$$eval(`${sel} [data-act="choose"]`, bs => bs.map(b => ({ id: b.dataset.id, mark: (b.querySelector('.pl-opt-label b') || {}).textContent || '' })));
+        const got = await seen(), ids = optIds(st);
+        if (got.map(x => x.id).sort().join('|') !== ids.slice().sort().join('|')) err(tag, `${sat}: на экране не те варианты`);
+        for (const x of got) if (x.mark.length > 2) err(tag, `${sat}: на кнопке варианта виден внутренний id «${x.mark}»`);
+        const fixed = st.shuffle === false || ids.length < 2 || ids.every(id => /^[0-9A-Za-zА-Яа-яЁё]$/.test(id)) || anyChoice(st);
+        if (fixed) { if (got.map(x => x.id).join('|') !== ids.join('|')) err(tag, `${sat}: варианты, которые не перемешиваются, стоят не по порядку данных`); return; }
+        const key = sat + sel;
+        (SHUF[key] = SHUF[key] || new Set()).add(got.map(x => x.id).join('|'));
+        if (rights.length === 1) SHUF_FIRST.push(got[0].id === rights[0]);
+        if (!shufReload && sel === '#active') {
+          shufReload = true;
+          await page.reload({ waitUntil: 'load' }); await page.waitForSelector(`${sel} [data-act="choose"]`);
+          const again = await seen();
+          if (again.map(x => x.id).join('|') !== got.map(x => x.id).join('|')) err(tag, `${sat}: порядок вариантов изменился после перезагрузки`);
+        }
+      };
       // Ответить на задание формата 5 в контексте sel («#active» — шаг, «#walk-0» — вопрос на ходу); wrong — сначала неверно
       const solve = async (sel, st, sat, wrong) => {
         if (st.type === 'choice') {
@@ -285,6 +368,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           const right = rights[0];
           // вариант «по натуре» до полевого теста (засчитывается любой) — неверного нет, проверять нечего
           const bad = (st.options || []).find(o => !rights.includes(String(o.id)));
+          await orderCheck(sel, st, sat, rights);
           if (wrong && bad) {
             await click(`${sel} [data-act="choose"][data-id="${bad.id}"]`);
             if (!(await page.$(`${sel} .pl-wrong`))) err(tag, `${sat}: нет сообщения о неверном варианте`);
@@ -389,6 +473,33 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       };
 
       await check('обложка');
+      // H-74: сохранение старой версии дела (5.2 на 5.4) — экран «Вышла новая версия дела»: «Продолжить» оставляет место,
+      // «Начать заново» — обложку; выбор не повторяется после перезагрузки. На 390, в тёмной теме — «Продолжить», в светлой — «Начать заново».
+      if (vp.width === 390 && RAW.version != null && Q.points.length > 1) {
+        const qid = await page.evaluate(() => document.body.dataset.quest);
+        const old = String(RAW.version) === '5.2' ? '5.1' : '5.2';
+        const put = v => page.evaluate(([k, s]) => { if (s) localStorage.setItem(k, s); else localStorage.removeItem(k); }, ['dvorami:play:' + qid, v]);
+        await put(JSON.stringify({ v: 1, quest: qid, version: old, phase: 'walk', p: 1, k: 0, f: 0, t_start: Date.now() - 3600e3, res: [], board: [], events: [] }));
+        await page.reload({ waitUntil: 'load' });
+        const shown = await page.waitForSelector('[data-act="verkeep"]', { timeout: 15000 }).then(() => true, () => false);
+        if (!shown) err(tag, `сохранение версии ${old}: нет экрана «Вышла новая версия дела»`);
+        else {
+          if (!(await page.$('[data-act="vernew"]'))) err(tag, 'новая версия: нет кнопки «Начать заново»');
+          if (!(await page.$eval('#tabs', n => n.hidden).catch(() => true))) err(tag, 'новая версия: навигация видна до выбора');
+          await fresh('новая версия дела');
+          const keep = theme === 'dark';
+          await click(keep ? '[data-act="verkeep"]' : '[data-act="vernew"]');
+          const sv = await state();
+          if (sv.ver_from != null || String(sv.version) !== String(RAW.version)) err(tag, `новая версия: после выбора в сохранении версия ${sv.version}`);
+          if (keep && !(sv.p === 1 && sv.phase === 'walk')) err(tag, `новая версия: «Продолжить» не оставил место (${sv.phase}, точка ${sv.p + 1})`);
+          if (!keep && sv.phase !== 'idle') err(tag, `новая версия: «Начать заново» не открыл обложку (${sv.phase})`);
+          if (!(sv.events || []).some(e => e.kind === 'version')) err(tag, 'новая версия: выбор не записан в события (отчёт полевого теста)');
+          await page.reload({ waitUntil: 'load' }); await page.waitForSelector(keep ? '#frame' : '[data-act="start"]');
+          if (await page.$('[data-act="verkeep"]')) err(tag, 'новая версия: экран выбора вернулся после перезагрузки');
+        }
+        await put(null);
+        await page.reload({ waitUntil: 'load' }); await page.waitForSelector('[data-act="start"]');
+      }
       // Строка «о свете» (5.4): реплика с "sun": N на обложке — только если до захода меньше N минут; {время} подставлено
       const sunLine = [].concat(...[].concat(RAW.intro || []).map(x => [].concat(x))).find(l => l && typeof l === 'object' && typeof l.sun === 'number');
       if (sunLine) {
@@ -579,6 +690,8 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         }
         await click('[data-act="nextpoint"]');
       }
+      ALL_FIRST.push(...SHUF_FIRST);
+      for (const [k, v] of Object.entries(SHUF)) (ALL_SHUF[k] = ALL_SHUF[k] || new Set()).add([...v][0]);
       const end = await state();
       const clues = Q.points.filter(p => p.clue).length;
       if (end.phase !== 'done') err(tag, `финал не достигнут: ${end.phase}, точка ${end.p + 1}`);
@@ -658,6 +771,15 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
   }
   await browser.close();
   server.close();
+  // у разных игроков (новое сохранение в каждом из 6 прогонов) порядок разный хотя бы у одного выбора
+  const sk = Object.values(ALL_SHUF);
+  const firsts = ALL_FIRST.filter(Boolean).length;   // по всем прогонам: случайно «всегда первый» в 20+ выборах не выпадает
+  if (ALL_FIRST.length >= 6 && firsts === ALL_FIRST.length) err('варианты', `верный вариант первым во всех ${firsts} перемешиваемых выборах`);
+  if (sk.length && sk.every(v => v.size === 1)) err('варианты', 'порядок вариантов одинаков во всех прогонах — перемешивание не зависит от игрока');
+  [...new Set(notes)].forEach(n => console.log(' · ' + n));
+  console.log(' · ' + SRC);
+  if (ALL_FIRST.length) console.log(` · варианты перемешаны: верный первым в ${firsts} из ${ALL_FIRST.length} выборов`);
+  [...new Set(warns)].forEach(w => console.log(' ! ' + w));
   const uniq = [...new Set(errors)];
   if (uniq.length) {
     console.log(`player_check: ${uniq.length} ошибок\n`);

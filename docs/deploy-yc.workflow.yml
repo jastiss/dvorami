@@ -1,0 +1,159 @@
+# ЧЕРНОВИК workflow деплоя в Yandex Cloud (docs/yandex-cloud.md, раздел 5).
+# Лежит в docs/, потому что правку .github/workflows команде блокирует автопроверка.
+# Владелец: скопировать в .github/workflows/deploy-yc.yml (GitHub → Add file → Create new file), когда сделаны шаги раздела 6.
+# Секретов в файле нет — только имена. Заводятся в Settings → Secrets and variables → Actions:
+#   Secrets:   YC_SA_KEY_ID, YC_SA_SECRET (статический ключ сервисного аккаунта dvorami-deploy), QUEST_MASTER_CODE (уже есть),
+#              YC_STAND_BUCKET (секретное имя бакета стенда — секретом, чтобы GitHub скрывал его в журналах)
+#   Variables: YC_PROD_BUCKET (dvorami.ru), YC_SLEDAMI_BUCKET (sledami.ru),
+#              OPEN_INDEXING (пусто; "yes" — только по решению владельца открыть сайт поисковикам)
+name: Сайт — деплой в Yandex Cloud
+
+on:
+  push:
+    branches: [main, production]
+    paths:
+      - "site/**"
+      - "quests/**/quest.json"
+      - "quests/**/codes.json"
+      - "scripts/codes.py"
+      - "scripts/player_check.js"
+      - "scripts/answer_check.js"
+      - ".github/workflows/deploy-yc.yml"
+  workflow_dispatch:
+    inputs:
+      preview:
+        description: "Предпросмотр ветки: имя папки на стенде (латиница, например t105). Пусто — обычный деплой"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# Стенд: новый пуш отменяет недоделанный старый (экономим минуты). Боевой: никогда не прерываем.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: ${{ github.ref_name != 'production' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      play_changed: ${{ steps.diff.outputs.play }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - name: Что поменялось (плеер и дела проверяем браузером только при их правке на стенде)
+        id: diff
+        env:
+          REF: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$REF" = "production" ] || [ "$EVENT" = "workflow_dispatch" ] \
+             || git diff --name-only HEAD~1 HEAD | grep -qE '^(site/play/|quests/.*/quest\.json|scripts/(player|answer)_check\.js)'; then
+            echo "play=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "play=no" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --quiet cryptography
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Кэш браузера Playwright (экономит ~1 мин на каждом запуске)
+        if: steps.diff.outputs.play == 'yes'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-1.63.0-${{ runner.os }}
+      - name: Автотест плеера — красный блокирует выкладку
+        if: steps.diff.outputs.play == 'yes'
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+          for d in site/play/*/; do
+            id=$(basename "$d")
+            if [ -f "quests/$id/quest.json" ]; then node scripts/player_check.js --quest="$id"; fi
+          done
+      - name: Дела для плеера — зашифрованы кодом доступа (как в pages.yml)
+        env:
+          QUEST_MASTER_CODE: ${{ secrets.QUEST_MASTER_CODE }}
+        run: |
+          for d in site/play/*/; do
+            id=$(basename "$d")
+            rm -f "$d/quest.json"
+            if [ -f "quests/$id/quest.json" ]; then
+              python scripts/codes.py seal --quest "$id" --out "$d/quest.locked.json"
+            else
+              echo "::warning::нет quests/$id/quest.json — плеер $id не загрузится"
+            fi
+          done
+      - name: Проверка — открытого текста дел в сайте нет
+        run: python scripts/codes.py leakcheck site
+      - name: Боевая сборка — индексация только по решению владельца
+        if: github.ref_name == 'production' && vars.OPEN_INDEXING == 'yes'
+        run: |
+          # снимает noindex со страниц витрины (плеер /play/ остаётся закрытым) и ставит боевой robots.txt, если он есть
+          find site -name '*.html' -not -path 'site/play/*' -exec sed -i '/<meta name="robots" content="noindex, nofollow">/d' {} +
+          if [ -f site/robots.prod.txt ]; then mv site/robots.prod.txt site/robots.txt; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: site
+          retention-days: 3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: site
+      - name: Выложить в бакеты Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_SA_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SA_SECRET }}
+          AWS_DEFAULT_REGION: ru-central1
+          # новые версии AWS CLI по умолчанию шлют контрольные суммы, которые S3-совместимые хранилища понимают не всегда
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          EP: https://storage.yandexcloud.net
+          REF: ${{ github.ref_name }}
+          PREVIEW: ${{ github.event.inputs.preview }}
+          STAND: ${{ secrets.YC_STAND_BUCKET }}
+          PROD: ${{ vars.YC_PROD_BUCKET }}
+          SLEDAMI: ${{ vars.YC_SLEDAMI_BUCKET }}
+        run: |
+          set -eu
+          # HTML и данные дела — всегда свежие; остальное браузер может держать час (service worker плеера и так версионирует кэш)
+          put() {  # put <папка> <s3://бакет/путь> [--exclude 'что не трогать' …]
+            src="$1"; dst="$2"; shift 2
+            aws s3 sync "$src" "$dst" --endpoint-url "$EP" --delete --only-show-errors "$@" \
+              --exclude '*.html' --exclude '*.json' --exclude 'sw.js' --cache-control 'public, max-age=3600'
+            aws s3 sync "$src" "$dst" --endpoint-url "$EP" --delete --only-show-errors \
+              --exclude '*' --include '*.html' --include '*.json' --include 'sw.js' "$@" --cache-control 'no-cache'
+          }
+          if [ -n "$PREVIEW" ]; then
+            case "$PREVIEW" in *[!a-z0-9-]*) echo "имя предпросмотра — только латиница, цифры, дефис"; exit 1;; esac
+            put site "s3://$STAND/_preview/$PREVIEW"
+            echo "Предпросмотр выложен в папку _preview/$PREVIEW/ стенда (адрес стенда — у владельца и команды)"
+          elif [ "$REF" = "production" ]; then
+            put site "s3://$PROD" --exclude 'sledami/*'
+            # sledami.ru: витрина site/sledami/ в корне и общий плеер /play/ (свои дела у него появятся позже)
+            # страницы sledami и плеер ссылаются на ../assets/ и ../legal/ — кладём их рядом, иначе шрифты, скрипты и «Политика» не откроются
+            put site/sledami "s3://$SLEDAMI" --exclude 'play/*' --exclude 'assets/*' --exclude 'legal/*'
+            put site/play "s3://$SLEDAMI/play"
+            put site/assets "s3://$SLEDAMI/assets"
+            if [ -d site/legal ]; then put site/legal "s3://$SLEDAMI/legal"; fi
+            echo "Боевые сайты обновлены: https://dvorami.ru/ и https://sledami.ru/"
+          elif [ "$REF" = "main" ]; then
+            put site "s3://$STAND" --exclude '_preview/*'
+            echo "Стенд обновлён (адрес — у владельца и команды)"
+          else
+            echo "Ветка $REF без имени предпросмотра: на стенд выкладывается только main"; exit 1
+          fi

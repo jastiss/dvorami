@@ -12,6 +12,13 @@
 
 **Тюфель:** Tyufel, an original cartoon character: a large, well-fed ginger tabby cat with orange-and-cream stripes, a big fluffy tail curled into a question mark, half-closed amber eyes and a dry, ironic, slightly offended smile; lazy and dignified, like an old aristocrat who has seen everything. No clothes. Exactly four paws and one tail. Full body, sitting upright in three-quarter view, chin raised.
 
+**Канон пропорций (правка владельца 27.11).** Ориентир — живые звери: сизый голубь ≈ 32–35 см от клюва до хвоста, крупный толстый кот ≈ 45–50 см без хвоста; Тюфель «барский и объёмный», значит:
+- **длина Зили = 0,6–0,7 длины Тюфеля** (кот — от носа до крестца, без хвоста); стоящий Зиля ≈ 0,6 высоты сидящего Тюфеля (глаз Зили — на уровне подбородка или рта кота, если стоят на одной опоре);
+- **голова Зили ≈ 0,8–0,9 головы Тюфеля** (мультяшная условность: голова голубя крупнее, чем в жизни);
+- в полёте крылья могут быть шире кота, но **туловище Зили явно меньше туловища Тюфеля**: маленький упрямый голубь тащит большого тяжёлого кота.
+Проверка — на каждом кадре с обоими героями (прикинуть по пикселям). Эталон пропорций — `casting/duo-poster.jpg` и `casting/round2-scene-meet-4.jpg`.
+**Фраза в каждый промпт с обоими героями:** `SIZE CANON: Zilya the pigeon is 0.6–0.7 of Tyufel's body length (cat nose to rump, tail excluded); Zilya's head is about 0.8–0.9 the size of Tyufel's head; the cat is always the bigger, heavier character, even in flight.` + референс-кадр с обоими героями (`duo-poster.jpg` или принятая сцена) с пометкой «only a reference for the size ratio». Опыт 27.11: `/edit` держит композицию исходника и меняет размеры неохотно — указывать ещё и «в N раз больше/меньше, чем сейчас» и править того героя, кого надо увеличить; если сцена рисуется заново — пропорции задавать сразу, это дешевле.
+
 **Концовка всех промптов:** Single character alone in the frame, clear readable silhouette for a mobile quest app. No text, no letters, no numbers, no logos, no watermark. Vertical 4:5.
 
 ### Стили

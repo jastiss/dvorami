@@ -350,8 +350,11 @@
       // формат 5: карточки доски [{id, n}], вычеркнутые {id: true}, состояние письма, увиденные «стрелки», вопросы на ходу
       cards: [], struck: {}, letter: null, arrows: {}, wa: [], reply: '', sel: [],
       // мини-шаги: f — экран, на котором игрок сейчас (в пределах точки); hist — ответы пройденных точек, чтобы их можно было пересмотреть
-      f: 0, hist: {}, clk: {} };
+      f: 0, hist: {}, clk: {},
+      // seed — порядок вариантов выбора для этого игрока (H-73): постоянный, переживает перезагрузку
+      seed: newSeed() };
   }
+  function newSeed() { return Math.floor(Math.random() * 4294967296) >>> 0; }
   function fill(s) {
     s.res = s.res || []; s.board = s.board || []; s.events = s.events || [];
     s.cards = s.cards || []; s.struck = s.struck || {}; s.arrows = s.arrows || {}; s.wa = s.wa || []; s.sel = s.sel || [];
@@ -360,6 +363,7 @@
     s.hist = s.hist || {};
     s.clk = s.clk || {};   // ветки «по часам»: {номер раздела: {ключ: {v: "open"|"closed", by: "time"|"hand"}}}
     if (typeof s.f !== 'number') s.f = -1;   // сохранение до мини-шагов: место подберёт fixCursor()
+    if (typeof s.seed !== 'number') s.seed = newSeed();   // сохранение до перемешивания вариантов
     return s;
   }
   function load() {
@@ -374,6 +378,8 @@
           if (s.phase === 'step' && s.k >= Q.points[s.p].steps.length) s.phase = 'point_done';
           fill(s);
           if (FIELD) s.field = true;
+          // H-74: дело обновилось, а игрок в середине старой версии — спросить: начать заново или продолжить (pointView)
+          if (s.phase !== 'idle' && Q.version != null && String(s.version) !== String(Q.version) && s.ver_from == null) s.ver_from = s.version == null ? '' : String(s.version);
           return s;
         }
       } catch (e) { /* испорченное сохранение — начинаем заново */ }
@@ -532,6 +538,39 @@
     try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); }
     inp.select();
     box.querySelector('.pl-wrong').scrollIntoView({ block: 'nearest', behavior: smooth() });
+  }
+  // Порядок вариантов (H-73): перемешан, чтобы верный не угадывался по месту; для игрока постоянный — от id дела, точки, шага
+  // и его seed в сохранении. Не перемешиваются: "shuffle": false; нумерованные варианты (id из одного знака: А–Г, 1–3 —
+  // на них ссылаются рисунки и подписи); вопросы, где засчитывается любой вариант (порядок там — смысловой: 38, 138, 238…).
+  function isMarked(ops) { return ops.every(function (x) { return /^[0-9A-Za-zА-Яа-яЁё]$/.test(String(x.id)); }); }
+  function fixedOrder(st) {
+    var ops = st.options || [], ids = [].concat(st.answer || st.answers || []).map(String);
+    return st.shuffle === false || ops.length < 2 || isMarked(ops) || ops.every(function (x) { return ids.indexOf(String(x.id)) !== -1; });
+  }
+  function seeded(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return function () {   // mulberry32
+      h = (h + 0x6D2B79F5) | 0;
+      var t = Math.imul(h ^ (h >>> 15), 1 | h);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function optOrder(st, ctx) {
+    var ops = (st.options || []).slice();
+    if (fixedOrder(st)) return ops;
+    var p = pt() || {}, where = ctx === 'step' ? 's' + (p.steps || []).indexOf(st) : String(ctx);
+    var rnd = seeded([QID, p.id || p.n, where, S.seed >>> 0].join('|'));
+    for (var i = ops.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)), t = ops[i]; ops[i] = ops[j]; ops[j] = t; }
+    return ops;
+  }
+  // Метка варианта: у нумерованных — свой знак (если подпись не начинается с него), у остальных — буква по месту на экране;
+  // внутренний id (press, water) игрок не видит
+  function optMark(x, i, marked) {
+    if (!marked) return 'АБВГДЕЖЗИК'.charAt(i) || String(i + 1);
+    var id = String(x.id), lb = plain(x.label || '');
+    return lb.indexOf(id + ' ') === 0 || lb.indexOf(id + ' —') === 0 || lb === id ? '' : id;
   }
   // Выбор варианта (choice): option.reply — ответ на неверный выбор
   function choose(id, ctx) {
@@ -837,11 +876,15 @@
     if (!revealed) {
       if (st.type === 'choice') {
         h += recap + wrong + '<div class="pl-opts' + ((st.options || []).some(function (x) { return x.img !== undefined; }) ? ' pl-opts--img' : '') + '" role="group" aria-label="Варианты ответа">' +
-          (st.options || []).map(function (x) {
-            return '<button type="button" class="pl-opt" data-act="choose" data-id="' + esc(x.id) + '">' +
-              (x.img !== undefined ? figureHtml({ img: x.img, alt: x.alt || x.label || x.id, ratio: x.ratio || '1 / 1' }) : '') +
-              '<span class="pl-opt-label"><b>' + esc(x.id) + '</b>' + (x.label ? inline(x.label) : '') + '</span></button>';
-          }).join('') + '</div>';
+          (function () {
+            var ops = optOrder(st, ctx), marked = isMarked(st.options || []);
+            return ops.map(function (x, i) {
+              var mk = optMark(x, i, marked);
+              return '<button type="button" class="pl-opt" data-act="choose" data-id="' + esc(x.id) + '">' +
+                (x.img !== undefined ? figureHtml({ img: x.img, alt: x.alt || x.label || x.id, ratio: x.ratio || '1 / 1' }) : '') +
+                '<span class="pl-opt-label">' + (mk ? '<b>' + esc(mk) + '</b>' : '') + (x.label ? inline(x.label) : esc(x.id)) + '</span></button>';
+            }).join('');
+          })() + '</div>';
       } else if (st.type === 'pick' || st.type === 'strike') {
         var list = st.type === 'pick'
           ? S.cards.filter(function (c) { return !(CARDS[c.id] && CARDS[c.id].kind === 'version'); }).map(function (c) { return { id: c.id, label: CARDS[c.id] ? CARDS[c.id].title : c.id, sub: CARDS[c.id] && CARDS[c.id].n ? 'Остановка ' + CARDS[c.id].n : '', struck: !!S.struck[c.id] }; })
@@ -1366,6 +1409,16 @@
   }
   function pointView() {
     var n = Q.points.length;
+    if (S.ver_from != null) {
+      var whereNow = S.phase === 'done' ? 'дело уже раскрыто' : S.phase === 'intro' ? 'вступление' : 'точка ' + pt().n + ' из ' + n;
+      return head('Обновление', 'Вышла новая версия дела', '', 1) +
+        '<section class="pl-card pl-ver"><p>Вы начали дело' + (S.ver_from ? ' в версии ' + esc(S.ver_from) : '') + ', сейчас — версия ' + esc(String(Q.version)) + '. ' +
+        'Тексты, загадки или маршрут могли измениться.</p>' +
+        '<p class="pl-small">Начать заново — с обложки, улики и записи на этом телефоне сотрутся. Продолжить — с того же места (' + esc(whereNow) + '), но кое-что может не совпасть с тем, что вы уже видели.</p></section>' +
+        '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="vernew">Начать заново</button>' +
+        '<button class="pl-btn pl-btn--ghost" type="button" data-act="verkeep">Продолжить</button>' +
+        (S.field ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт старой версии</button>' : '') + '</div>';
+    }
     if (S.paused) {
       return head('Пауза', 'Дело отложено', 'Прогресс сохранён на этом телефоне' + (S.phase === 'done' ? '' : ': точка ' + pt().n + ' из ' + n) + '.', 2) +
         '<div class="pl-actions"><button class="pl-btn" type="button" data-act="resume">Продолжить</button>' +
@@ -1416,7 +1469,7 @@
   var lastKey = null, lastBadge = 0;
   function render() {
     var n = Q.points.length;
-    var playing = S.phase !== 'idle' && !S.paused;
+    var playing = S.phase !== 'idle' && !S.paused && S.ver_from == null;
     if (!playing) { view = 'point'; peek = null; }
     // шапка дела и прогресс по точкам
     var shown = (S.phase === 'walk' || S.phase === 'step' || S.phase === 'point_done') ? pt().n : (S.phase === 'done' ? n : 0);
@@ -1868,6 +1921,14 @@
       log('stop'); S.paused = true; closeSheet(); commit('top');
     },
     resume: function () { S.paused = false; log('resume'); commit('top'); },
+    // H-74: новая версия дела поверх старого сохранения
+    vernew: function () { var from = S.ver_from; S = fresh(); log('version', { from: from, to: Q.version, choice: 'new' }); commit('top'); },
+    verkeep: function () {
+      var from = S.ver_from; delete S.ver_from; S.version = Q.version;
+      log('version', { from: from, to: Q.version, choice: 'keep' });
+      if (S.phase === 'walk' || S.phase === 'step' || S.phase === 'point_done') fixClock(S.p);
+      fixCursor(); commit('top');
+    },
     restart: function () {
       if (S.phase !== 'idle' && !window.confirm('Начать квест заново? Прогресс, улики и записи полевого теста будут стёрты.')) return;
       closeSheet(); start();
@@ -2305,7 +2366,7 @@
   }
 
   // Для проверок: функции сверки ответов и состояние
-  window.__dvorami = { norm: ANS.norm, matches: ANS.matches, shareLink: function () { return shareLink(); }, state: function () { return S; }, quest: function () { return Q; }, report: function () { return report(); },
+  window.__dvorami = { norm: ANS.norm, matches: ANS.matches, shareLink: function () { return shareLink(); }, state: function () { return S; }, quest: function () { return Q; }, optOrder: function (st) { return optOrder(st, 'step').map(function (x) { return String(x.id); }); }, report: function () { return report(); },
     flags: function () { return FLAGS; }, cards: function () { return CARDS; },
     postcardLines: function () { return postcardLines(); }, postcard: function () { return postcard().then(function (b) { return b ? b.size : 0; }); },
     clockOpenAt: function (def, min) { return openAt(def, min); }, mskMinutes: function () { return mskMinutes(); }, sunsetMsk: function (lat, lon) { return sunsetMsk(lat, lon); },

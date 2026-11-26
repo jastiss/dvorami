@@ -703,3 +703,5 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 @keyframes pl-pop { from { opacity: 0; scale: .7; } }
 @keyframes pl-wave { to { transform: scaleY(.45); } }
 @media (prefers-reduced-motion: reduce) { .pl-more > summary::before { transition: none; } }
+/* H-74: экран «Вышла новая версия дела» */
+.pl-ver p + p { margin-top: 10px; }
