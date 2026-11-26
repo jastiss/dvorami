@@ -23,6 +23,9 @@
 /test — только владельцу (TELEGRAM_CHAT_ID): меню, из которого проходится каждый флоу; его ответы
         не пишутся в feedback/, уведомления приходят с пометкой «ТЕСТ».
 /moderate — только владельцу: очередь оценок, которые ждут решения.
+Напоминание (H-65): если в очереди есть оценки старше MOD_STALE_DAYS дней, бот раз в сутки (днём по Москве)
+пишет владельцу «ждут решения: N» и /moderate — иначе звёзды на сайте застревают без оценок.
+Отметка последнего напоминания — в .telegram/feedback-state.json (mod_nag).
 
 Модерация (указание владельца 26.11, docs/rating.md → «Модерация»): каждая оценка, которая может пойти в рейтинг
 (финал подтверждён или пришла с сайта), приходит владельцу в чат с этим ботом карточкой с кнопками
@@ -76,6 +79,9 @@ EXPIRE = 24 * 3600   # незаконченный диалог живёт сут
 LOW = 3              # оценка не выше этой — сразу владельцу
 MOD_SHOW = 10        # /moderate показывает столько карточек за раз
 MOD_STATUS = ("approved", "rejected")   # нет записи в moderation.json — pending
+MOD_STALE_DAYS = 2   # напоминать владельцу, если оценка ждёт решения дольше
+MOD_NAG_EVERY = 24 * 3600   # не чаще раза в сутки
+MOD_NAG_HOURS = (10, 21)    # и только днём по Москве: с 10:00 до 21:00
 MAXLEN = 2000        # обрезаем слишком длинные ответы
 
 # Дела: id = папка quests/<id>, slug = страница site/moscow/<slug>/ (тест сверяет, что страница есть).
@@ -204,6 +210,8 @@ T = {
     "mod_queue": "<b>На модерации: {n}</b>{more}",
     "mod_queue_more": "\nПоказываю первые {k} — остальные после решения по этим: /moderate",
     "mod_empty": "На модерации пусто — все оценки разобраны.",
+    "mod_nag": "⏳ <b>Оценки ждут решения дольше {days} дней: {n}</b>\nСамая давняя — с {since}. Пока решения нет, "
+               "они не считаются в рейтинге на сайте. Разобрать: /moderate",
     "mod_nobuttons": "\n\nКнопки не дошли: откройте @dvorami_bot, нажмите «Запустить» и отправьте /moderate.",
     "test_code": "🧪 Пример: так придёт код после оплаты (код не настоящий)\n\n"
                  "Ваш код к делу «{title}»: <b>ZIL-TEST-0000</b>\nСтарт — {start}. Заложите 2,5–3 часа и возьмите "
@@ -395,6 +403,33 @@ def feedback_records(feedback_dir=None):
                 yield rec
 
 
+def pending_reviews(feedback_dir=None):
+    """Оценки без решения владельца (по одной на id), старые первыми."""
+    decided, seen, out = load_moderation(feedback_dir), set(), []
+    for rec in feedback_records(feedback_dir):
+        rid = review_id(rec)
+        if rid in seen or rid in decided or not moderatable(rec):
+            continue
+        seen.add(rid)
+        out.append(rec)
+    return out
+
+
+def rec_time(rec):
+    """Время записи (поле ts, «ГГГГ-ММ-ДД ЧЧ:ММ» по Москве) в секундах; не разобрать — None."""
+    try:
+        return datetime.datetime.strptime(str(rec.get("ts", "")), "%Y-%m-%d %H:%M").replace(tzinfo=MSK).timestamp()
+    except ValueError:
+        return None
+
+
+def stale_pending(feedback_dir=None, t=None, days=MOD_STALE_DAYS):
+    """Оценки, которые ждут решения дольше days дней, старые первыми."""
+    t = now() if t is None else t
+    return [r for r in pending_reviews(feedback_dir)
+            if rec_time(r) is not None and t - rec_time(r) >= days * 86400]
+
+
 def moderatable(rec):
     """Оценка, которая может пойти в рейтинг (её и модерируем): то же правило, что в build_ratings."""
     import build_ratings  # здесь: build_ratings сам импортирует этот модуль
@@ -402,6 +437,8 @@ def moderatable(rec):
 
 
 class Bot:
+    NAG = True   # напоминание про очередь модерации в цикле опроса (тесты выключают и зовут nag_moderation сами)
+
     def __init__(self, token, owner_token="", owner_chat=""):
         self.token = token
         self.owner_token = owner_token or token
@@ -411,6 +448,7 @@ class Bot:
         self.state = self._load_state()
         self.dirty = False          # менялось ли что-то с последнего коммита состояния
         self._toast = None          # текст ответа на нажатие кнопки (answerCallbackQuery)
+        self._nag_checked = 0       # когда последний раз смотрели очередь модерации (nag_moderation)
 
     # ---------- хранение ----------
 
@@ -819,19 +857,34 @@ class Bot:
 
     def moderate_queue(self, chat):
         """/moderate: оценки без решения, старые первыми."""
-        decided, seen, pending = load_moderation(), set(), []
-        for rec in feedback_records():
-            rid = review_id(rec)
-            if rid in seen or rid in decided or not moderatable(rec):
-                continue
-            seen.add(rid)
-            pending.append(rec)
+        pending = pending_reviews()
         if not pending:
             return self.send(chat, T["mod_empty"])
         more = T["mod_queue_more"].format(k=MOD_SHOW) if len(pending) > MOD_SHOW else ""
         self.send(chat, T["mod_queue"].format(n=len(pending), more=more))
         for rec in pending[:MOD_SHOW]:
             self.send(chat, self.owner_text(rec, moderation=True), self.mod_buttons(review_id(rec)))
+
+    def nag_moderation(self):
+        """Напомнить владельцу про очередь модерации (H-65): есть оценки старше MOD_STALE_DAYS дней —
+        раз в сутки, днём по Москве. Проверка не чаще раза в час (читает feedback/)."""
+        t = now()
+        if not self.owner_chat or t - self._nag_checked < 3600:
+            return
+        self._nag_checked = t
+        if not (MOD_NAG_HOURS[0] <= datetime.datetime.fromtimestamp(t, MSK).hour < MOD_NAG_HOURS[1]):
+            return
+        if t - float(self.state.get("mod_nag") or 0) < MOD_NAG_EVERY:
+            return
+        stale = stale_pending(t=t)
+        if not stale:
+            return
+        text = T["mod_nag"].format(days=MOD_STALE_DAYS, n=len(stale), since=esc(str(stale[0].get("ts"))))
+        r = self.send(self.owner_chat, text)   # игровой бот: /moderate из этого чата сразу работает
+        if not r.get("ok"):
+            self.notify_owner(text + T["mod_nobuttons"])
+        self.state["mod_nag"] = t
+        self.dirty = True
 
     # ---------- обработка ----------
 
@@ -1075,6 +1128,8 @@ class Bot:
         pause = 5
         try:
             while True:
+                if self.NAG:
+                    self.nag_moderation()
                 nxt = self.deliver()
                 left = deadline - now()
                 timeout = max(0, min(50, left, (nxt - now()) if nxt else 50))

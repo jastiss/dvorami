@@ -69,6 +69,7 @@ class FeedbackBotTest(unittest.TestCase):
             mock.patch.object(fb, "FEEDBACK_DIR", root / "feedback"),
             mock.patch.object(fb, "STATE_FILE", root / ".telegram" / "feedback-state.json"),
             mock.patch.object(fb, "OFFSET_FILE", root / ".telegram" / "feedback-offset"),
+            mock.patch.object(fb.Bot, "NAG", False),   # напоминание о модерации зависит от часов — тесты ниже
         ]
         for p in self.patches:
             p.start()
@@ -750,6 +751,71 @@ class FeedbackBotTest(unittest.TestCase):
         [note] = self.tg.owner_msgs()
         self.assertIn("/moderate", note["text"])
         self.assertIn("5/5", note["text"])
+
+    # ---------- напоминание о модерации (H-65) ----------
+
+    def put_ratings(self, *ts_list):
+        f = self.root / "feedback"
+        f.mkdir(exist_ok=True)
+        rows = [json.dumps({"ts": ts, "kind": "review", "user": f"u{i}", "quest": "zilart", "confirmed": True,
+                            "rating": 5}) for i, ts in enumerate(ts_list)]
+        (f / "2026-11.jsonl").write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def msk(s):
+        return fb.datetime.datetime.strptime(s, "%Y-%m-%d %H:%M").replace(tzinfo=fb.MSK).timestamp()
+
+    def nags(self):
+        return [p for p in self.tg.sent(PLAYER, OWNER_CHAT) if "ждут решения" in p["text"]]
+
+    def test_nag_when_queue_older_than_two_days(self):
+        self.put_ratings("2026-11-20 10:00", "2026-11-25 12:00")
+        with mock.patch.object(fb, "now", return_value=self.msk("2026-11-26 12:00")):
+            fb.Bot(PLAYER, OWNER, OWNER_CHAT).nag_moderation()
+        [nag] = self.nags()
+        self.assertIn("ждут решения дольше 2 дней: 1", nag["text"])       # свежая (сутки) не считается
+        self.assertIn("2026-11-20 10:00", nag["text"])
+        self.assertIn("/moderate", nag["text"])
+        self.assertNotIn("u0", nag["text"])                                 # без псевдонимов игроков
+
+    def test_nag_once_a_day_and_survives_restart(self):
+        self.put_ratings("2026-11-20 10:00")
+        for t in ("2026-11-26 12:00", "2026-11-26 14:00", "2026-11-26 20:59"):
+            with mock.patch.object(fb, "now", return_value=self.msk(t)):
+                bot = fb.Bot(PLAYER, OWNER, OWNER_CHAT)          # новый запуск workflow — состояние с диска
+                bot.nag_moderation()
+                bot.save()
+        self.assertEqual(len(self.nags()), 1)
+        with mock.patch.object(fb, "now", return_value=self.msk("2026-11-27 12:01")):
+            fb.Bot(PLAYER, OWNER, OWNER_CHAT).nag_moderation()
+        self.assertEqual(len(self.nags()), 2)
+
+    def test_nag_quiet_at_night_and_when_decided(self):
+        self.put_ratings("2026-11-20 10:00")
+        with mock.patch.object(fb, "now", return_value=self.msk("2026-11-26 23:30")):
+            fb.Bot(PLAYER, OWNER, OWNER_CHAT).nag_moderation()             # ночь — молчим
+        self.assertEqual(self.nags(), [])
+        bot = fb.Bot(PLAYER, OWNER, OWNER_CHAT)
+        for r in fb.pending_reviews():
+            bot.set_moderation(fb.review_id(r), "rejected", r)
+        with mock.patch.object(fb, "now", return_value=self.msk("2026-11-27 12:00")):
+            fb.Bot(PLAYER, OWNER, OWNER_CHAT).nag_moderation()             # всё разобрано — молчим
+        self.assertEqual(self.nags(), [])
+
+    def test_nag_falls_back_to_team_bot(self):
+        self.put_ratings("2026-11-20 10:00")
+        real = self.tg.call
+
+        def call(token, method, params, timeout=None):
+            if token == PLAYER and method == "sendMessage" and str(params["chat_id"]) == OWNER_CHAT:
+                return {"ok": False, "description": "Forbidden: bot can't initiate conversation"}
+            return real(token, method, params, timeout)
+        with mock.patch.object(fb.tg, "call", call), \
+                mock.patch.object(fb, "now", return_value=self.msk("2026-11-26 12:00")):
+            fb.Bot(PLAYER, OWNER, OWNER_CHAT).nag_moderation()
+        [note] = self.tg.owner_msgs()
+        self.assertIn("ждут решения", note["text"])
+        self.assertIn("Запустить", note["text"])
 
     def test_old_records_without_moderation_not_counted(self):
         """Записи до модерации тоже получают id и ждут решения — в рейтинг сами не попадают."""

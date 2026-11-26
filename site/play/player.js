@@ -282,36 +282,9 @@
     return { tag: tag, cls: tag ? cls : '', text: rest };
   }
 
-  // ---------- проверка ответа: как matches() в scripts/quest_bot.py ----------
-  function norm(s) {
-    s = String(s || '').toLowerCase().replace(/ё/g, 'е');
-    s = s.replace(/→/g, ' ').replace(/->/g, ' ').replace(/-/g, ' ');
-    s = s.replace(/[^\p{L}\p{N}\p{M}_\s]/gu, ' ');
-    return s.replace(/\s+/g, ' ').trim();
-  }
-  function matches(text, answers) {
-    var t = norm(text);
-    if (!t) return false;
-    var tokens = t.split(' ');
-    for (var i = 0; i < (answers || []).length; i++) {
-      var a = String(answers[i]);
-      if (a.charAt(0) === '~') {
-        var na0 = norm(a.slice(1));
-        if (na0 && t.indexOf(na0) !== -1) return true;
-        continue;
-      }
-      var na = norm(a);
-      if (!na) continue;
-      if (t === na) return true;
-      var at = na.split(' ');
-      for (var j = 0; j + at.length <= tokens.length; j++) {
-        var same = true;
-        for (var x = 0; x < at.length; x++) if (tokens[j + x] !== at[x]) { same = false; break; }
-        if (same && (na.length > 1 || tokens.length <= 2)) return true;
-      }
-    }
-    return false;
-  }
+  // ---------- проверка ответа: site/play/answer.js (window.DvAnswer, подключается до player.js) ----------
+  // Нормализация, числа словом и цифрой, «почти» — там же; тесты — scripts/answer_check.js.
+  var ANS = window.DvAnswer || { norm: function (s) { return String(s || "").trim().toLowerCase(); }, checkText: function () { return { ok: false }; }, matches: function () { return false; } }; // answer.js не загрузился — плеер не падает
 
   // ---------- время ----------
   function hms(ms) {
@@ -482,17 +455,8 @@
     commit('same', '#walk-' + ctxIndex(ctx) + ' .pl-stamp');
   }
   // Проверка текстового ответа: ответы (answers) → ответ из частей (all) → «почти» (replies) → «половина верна» (all.missing)
-  function checkText(st, text) {
-    if (st.answers && matches(text, st.answers)) return { ok: true };
-    var hits = (st.all || []).map(function (g) { return matches(text, Array.isArray(g) ? g : g.answers); });
-    if (hits.length && hits.every(Boolean)) return { ok: true };
-    var reps = st.replies || [];
-    for (var i = 0; i < reps.length; i++) if (matches(text, reps[i].answers)) return { ok: false, reply: reps[i].text };
-    if (hits.some(Boolean)) {
-      for (var j = 0; j < hits.length; j++) if (!hits[j]) return { ok: false, reply: (st.all[j] && st.all[j].missing) || 'Половина ответа верна. Чего не хватает?' };
-    }
-    return { ok: false };
-  }
+  // → опечатка («Почти! Проверьте написание», не засчитывается) — DvAnswer.checkText
+  function checkText(st, text) { return ANS.checkText(st, text); }
   // Верный вариант: answer, а если задан answer_flag и флаг совпадает с id варианта — по флагу (портрет «по натуре»)
   function rightOptions(st) {
     var f = st.answer_flag && FLAGS[st.answer_flag];
@@ -513,7 +477,7 @@
       log('correct', { step: lbl, text: text, hints: o.hint });
       return ctxDone(ctx, { st: 'ok', text: text });
     }
-    log('wrong', { step: lbl, text: text });
+    log('wrong', r.near ? { step: lbl, text: text, near: true } : { step: lbl, text: text });
     o.wrong = text; o.last = text; o.reply = r.reply || '';
     // неверный ответ: экран не перерисовываем — поле остаётся на месте, клавиатура не закрывается, под полем появляется сообщение
     save();
@@ -1985,6 +1949,11 @@
   function caseLink() {
     try { return new URL(document.body.dataset.caseUrl || '../../', location.href).href; } catch (e) { return location.href; }
   }
+  // Ссылка в «Поделиться» — с меткой ?from=card (H-63): переходы по открыткам видны в Метрике (site/assets/analytics.js).
+  // На самой картинке открытки адрес печатается без метки (caseLink).
+  function shareLink() {
+    try { var u = new URL(caseLink()); u.searchParams.set('from', 'card'); return u.href; } catch (e) { return caseLink(); }
+  }
   function shareText() { return 'Мы раскрыли «' + plain(Q.title) + '» — городской квест «Дворами».'; }
   function postcardFacts() {
     var n = Q.points.length;
@@ -2105,7 +2074,7 @@
     });
   }
   function shareCase() {
-    var url = caseLink(), text = shareText();
+    var url = shareLink(), text = shareText();
     track('final_share', { quest: QID });
     var go = function (blob) {
       var file = null;
@@ -2294,7 +2263,7 @@
   }
 
   // Для проверок: функции сверки ответов и состояние
-  window.__dvorami = { norm: norm, matches: matches, state: function () { return S; }, quest: function () { return Q; }, report: function () { return report(); },
+  window.__dvorami = { norm: ANS.norm, matches: ANS.matches, shareLink: function () { return shareLink(); }, state: function () { return S; }, quest: function () { return Q; }, report: function () { return report(); },
     flags: function () { return FLAGS; }, cards: function () { return CARDS; },
     postcardLines: function () { return postcardLines(); }, postcard: function () { return postcard().then(function (b) { return b ? b.size : 0; }); },
     clockOpenAt: function (def, min) { return openAt(def, min); }, mskMinutes: function () { return mskMinutes(); },

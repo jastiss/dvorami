@@ -12,6 +12,7 @@ on:
       - "quests/**/codes.json"
       - "scripts/codes.py"
       - "scripts/player_check.js"
+      - "scripts/answer_check.js"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 

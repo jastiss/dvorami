@@ -92,6 +92,14 @@
   }
   window.dvoramiTrack = track;
 
+  // Откуда пришёл посетитель по нашей ссылке: ?from=card — открытка «Дело раскрыто» из плеера (H-63).
+  // Метка живёт до конца сессии вкладки (согласие на cookie могут дать на следующей странице) и уходит в Метрику
+  // параметром визита { from: … } — отчёт «Параметры визитов», цель заводить не нужно. Только [a-z0-9_-], до 32 знаков.
+  var FROM_KEY = 'dvorami:from';
+  var FROM = (location.search.match(/[?&]from=([a-z0-9_-]{1,32})(?:&|$)/) || [])[1] || '';
+  try { if (FROM) window.sessionStorage.setItem(FROM_KEY, FROM); else FROM = window.sessionStorage.getItem(FROM_KEY) || ''; } catch (e) { /* без хранилища */ }
+  if (!/^[a-z0-9_-]{1,32}$/.test(FROM)) FROM = '';
+
   function load() {
     if (loaded || !YM_ID || LOCAL) return;
     loaded = true;
@@ -113,6 +121,10 @@
       trackLinks: true
     });
     if (DEBUG && window.console) console.log('[analytics] счётчик', YM_ID, 'host', HOST, 'webvisor', WEBVISOR);
+    if (FROM) {
+      if (DEBUG && window.console) console.log('[analytics] params', { from: FROM });
+      try { window.ym(Number(YM_ID), 'params', { from: FROM }); } catch (e) { /* без аналитики */ }
+    }
     var q = queue; queue = [];
     q.forEach(function (e) { track(e[0], e[1]); });
   }

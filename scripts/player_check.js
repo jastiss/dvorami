@@ -11,6 +11,8 @@
  *   - навигация — ровно три раздела «Точка · Улики · Карта», области касания ≥ 44 px;
  *   - текст ≥ 13 px (подписи подсказок ≥ 15 px), контраст текста ≥ 4,5:1 (крупного ≥ 3:1), рамок полей и кнопок ≥ 3:1;
  *   - у кнопок и подсказок нет opacity < 1; в интерфейсе нет эмодзи;
+ *   - ответы (scripts/answer_check.js): нормализация, числа словом и цифрой, «почти»; каждая загадка принимает эталон и формы;
+ *     в браузере опечатка даёт «Почти! Проверьте написание» и не засчитывается;
  *   - верный ответ принимается, неверный — нет, подсказки открываются по одной, улики копятся, прогресс переживает перезагрузку;
  *   - код доступа (docs/codes.md): дело шифруется на лету тестовыми кодами (scripts/codes.py selftest-bundle, в репозиторий
  *     не попадают); экран кода проходит аудит, неверный и отозванный код — понятная ошибка, верный (мастер, выпущенный,
@@ -67,6 +69,22 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 
 
 const errors = [];
 const err = (where, msg) => errors.push(`${where}: ${msg}`);
+
+// Проверка ответов без браузера (scripts/answer_check.js): нормализация, «почти», каждая загадка принимает эталон и формы
+const ANS = require('../site/play/answer.js');
+(function answers() {
+  const r = require('./answer_check.js').run({ data: QUEST });
+  r.errors.forEach(e => err('ответы', e));
+})();
+// Опечатка в ответе, которую плеер должен назвать «почти» (проверяется в браузере один раз на прогон)
+const nearTypo = st => {
+  const a = (st.answers || []).find(x => typeof x === 'string' && x.charAt(0) !== '~' && !/\d/.test(x) && x.length >= 6);
+  if (!a) return null;
+  const k = Math.floor(a.length / 2), t = a.slice(0, k) + (a[k] === 'ы' ? 'и' : 'ы') + a.slice(k + 1);
+  const r = ANS.checkText(st, t);
+  return !r.ok && r.near ? t : null;
+};
+let nearSeen = false;
 
 // Формат 5: данные сходятся до прогона — карточки по id определены, ответы pick/choice существуют, состояния письма есть
 (function validate(q) {
@@ -503,6 +521,15 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
             if (!(await page.$('.pl-wrong'))) err(tag, `${sat}: нет сообщения о неверном ответе`);
             if (!(await page.evaluate(() => { const i = document.getElementById('ans'); const r = i && i.getBoundingClientRect(), w = document.querySelector('#active .pl-wrong').getBoundingClientRect(); return i && i.dataset.same === '1' && document.activeElement === i && r.top >= 56 && w.bottom <= innerHeight; }))) err(tag, `${sat}: неверный ответ перерисовал поле (фокус потерян) или поле с сообщением ушли с экрана`);
             await check(sat + ' · неверный ответ');
+            // опечатка — «Почти! Проверьте написание», шаг не засчитан
+            const typo = !nearSeen && nearTypo(st);
+            if (typo) {
+              nearSeen = true;
+              await page.fill('#ans', typo); await click('#active button[type="submit"]');
+              if ((await state()).k !== si) err(tag, `${sat}: опечатка засчитана как верный ответ`);
+              const msg = await page.$eval('#active .pl-wrong', el => el.textContent).catch(() => '');
+              if (msg.indexOf(ANS.NEAR_TEXT) === -1) err(tag, `${sat}: на опечатку нет подсказки «${ANS.NEAR_TEXT}»`);
+            }
           }
           const hints = st.hints || [];
           if (pi % 4 === 2 && si === p.steps.findIndex(x => x.type === 'ask') && hints.length) {
@@ -573,6 +600,9 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
             if (pleak.length) err(tag, `финал: на открытке есть слова-ответы: ${pleak.slice(0, 5).join(', ')}`);
             if (!/дело раскрыто/i.test(pc.join(' '))) err(tag, 'финал: на открытке нет «Дело раскрыто»');
             if (!pc.some(x => /moscow\//.test(x))) err(tag, 'финал: на открытке нет ссылки на страницу дела');
+            if (pc.some(x => /from=/.test(x))) err(tag, 'финал: на картинке открытки адрес с меткой from= (метка — только в ссылке)');
+            const sl = await page.evaluate(() => window.__dvorami.shareLink()).catch(() => '');
+            if (!/\/moscow\/[^?#]+\?(?:.*&)?from=card(?:&|$)/.test(sl)) err(tag, `финал: ссылка «Поделиться» без метки ?from=card («${sl}»)`);
             const size = await page.evaluate(() => window.__dvorami.postcard()).catch(() => 0);
             if (!(size > 10000)) err(tag, `финал: открытка не нарисовалась (${size} байт)`);
             const hasShare = await page.evaluate(() => typeof navigator.share === 'function');
@@ -619,6 +649,6 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
     uniq.slice(0, 80).forEach(e => console.log(' ✗ ' + e));
     process.exit(1);
   }
-  console.log(`player_check: OK — «${Q.title}»: ${Q.points.length} точек пройдено от обложки до финала × 3 ширины × 2 темы, проверено экранов: ${screens}`);
+  console.log(`player_check: OK — «${Q.title}»: ${Q.points.length} точек пройдено от обложки до финала × 3 ширины × 2 темы, проверено экранов: ${screens}; «почти» на опечатку в браузере: ${nearSeen ? 'проверено' : 'нет подходящей загадки'}`);
   process.exit(0);
 })().catch(e => { console.error(e); process.exit(2); });
