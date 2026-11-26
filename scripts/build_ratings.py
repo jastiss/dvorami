@@ -4,7 +4,9 @@
 Источники (только они — выдуманных и «стартовых» оценок нет, см. docs/rating.md):
   * бот — feedback/ГГГГ-ММ.jsonl, записи kind=review с оценкой и confirmed=true (пришли из финала дела);
   * сайт — те же файлы, записи kind=rating, source=site (приём оценок с сайта — docs/rating.md, пока не подключён).
-Один игрок (псевдоним user) — одна оценка дела: считается последняя.
+Модерация (docs/rating.md → «Модерация»): считаются только оценки, которые владелец отметил «✅ В рейтинг»
+в игровом боте (feedback/moderation.json, status: approved). Ждущие решения и «🚫 Не учитывать» — не считаются.
+Один игрок (псевдоним user) — одна оценка дела: считается последняя из одобренных.
 В публичный файл попадают только суммы и количества по делам — ни псевдонимов, ни текстов.
 
 Запуск: python3 scripts/build_ratings.py   (его же вызывает scripts/feedback_bot_commit.sh после новых отзывов)
@@ -20,7 +22,7 @@ OUT = ROOT / "site" / "assets" / "ratings.json"
 THRESHOLD = 5   # меньше оценок — на сайте и в боте «Новое дело», а не звёзды
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from feedback_bot import CASES, find_case  # noqa: E402
+from feedback_bot import CASES, find_case, load_moderation, review_id  # noqa: E402
 
 
 def counted(rec):
@@ -42,6 +44,7 @@ def aggregate(feedback_dir=None):
     """{slug: {quest, sum, count, bot, site}} по всем делам из CASES (дела без оценок — нули)."""
     last = {}   # (user, quest) → (оценка, источник); файлы и строки по времени — побеждает последняя
     newest = ""
+    approved = {k for k, v in load_moderation(feedback_dir or FEEDBACK_DIR).items() if v == "approved"}
     for f in sorted(pathlib.Path(feedback_dir or FEEDBACK_DIR).glob("*.jsonl")):
         for line in f.read_text(encoding="utf-8").splitlines():
             try:
@@ -49,7 +52,7 @@ def aggregate(feedback_dir=None):
             except ValueError:
                 continue
             got = counted(rec) if isinstance(rec, dict) else None
-            if got:
+            if got and review_id(rec) in approved:
                 case, r, src = got
                 last[(rec["user"], case["id"])] = (r, src)
                 newest = max(newest, str(rec.get("ts", ""))[:10])
@@ -66,7 +69,8 @@ def aggregate(feedback_dir=None):
 def build(feedback_dir=None):
     cases, newest = aggregate(feedback_dir)
     return {
-        "_about": "Настоящие оценки игроков 1–5: бот после финала дела и сайт. Один игрок — одна оценка дела. "
+        "_about": "Настоящие оценки игроков 1–5: бот после финала дела и сайт, только одобренные владельцем (модерация). "
+                  "Один игрок — одна оценка дела. "
                   "Меньше threshold оценок — показываем «Новое дело». Собирает scripts/build_ratings.py; руками не править.",
         "threshold": THRESHOLD,
         "updated": newest or None,

@@ -1257,6 +1257,7 @@
   // H-47: оценка со звёзд финала едет в ссылку бота (done_<дело>_<1–5>) — бот не спрашивает её второй раз
   function reviewLink(v) { return botLink('done_' + QID + (v >= 1 && v <= 5 ? '_' + v : '')); }
   function closedHtml() {
+    warmPostcard();
     var hints = S.events.filter(function (e) { return e.kind === 'hint' || e.kind === 'reveal'; }).length;
     var rated = Math.max(0, Math.min(5, parseInt(store.get(RATE_KEY), 10) || 0));
     var n = Q.points.length, where = [Q.city, Q.district].filter(Boolean).join(' · ');
@@ -1271,7 +1272,7 @@
       cell('Точек', n + ' из ' + n) + cell('Подсказок', hints ? String(hints) : 'ни одной') + '</dl>' +
       '<figcaption class="pl-closed-brand">Дворами · городские квесты-расследования</figcaption></figure>' +
       '<div class="pl-closed-row"><button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="sharecase">' + ico('send') + 'Поделиться</button>' +
-      '<p class="pl-small">Без разгадки — снимок можно показать друзьям.</p></div>' +
+      '<p class="pl-small">Открытка без разгадки — можно отправить друзьям.</p></div>' +
       '<section class="pl-card pl-rate" id="rate"><h2 class="pl-rate-q">Как вам дело?</h2>' +
       '<div class="pl-stars" role="radiogroup" aria-label="Оценка дела, от 1 до 5">' + starsHtml(rated) + '</div>' +
       '<p class="pl-small" id="rate-note" role="status">' + rateNote(rated) + '</p>' +
@@ -1976,13 +1977,153 @@
     document.getElementById('rate-note').textContent = rateNote(v);
     refocus('#app .pl-star[data-v="' + v + '"]');
   }
+  // ---------- открытка «Дело раскрыто» (H-54) ----------
+  // Картинка для соцсетей и мессенджеров: номер и название дела, штамп, время в пути, ссылка на страницу дела.
+  // Без единого слова разгадки: только то, что есть на карточке финала (player_check сверяет строки со словами-ответами).
+  // Рисуется заранее, когда открылся финал: в Safari navigator.share работает только сразу после нажатия.
+  var POSTCARD = null;   // { key, blob }
+  function caseLink() {
+    try { return new URL(document.body.dataset.caseUrl || '../../', location.href).href; } catch (e) { return location.href; }
+  }
+  function shareText() { return 'Мы раскрыли «' + plain(Q.title) + '» — городской квест «Дворами».'; }
+  function postcardFacts() {
+    var n = Q.points.length;
+    return [['В пути', dur((S.t_end || Date.now()) - S.t_start)], ['Точек', n + ' из ' + n], ['Дата', day(S.t_end || Date.now())]];
+  }
+  function postcardLines() {
+    var where = [Q.city, Q.district].filter(Boolean).join(' · ');
+    return [caseName(), where, plain(Q.title), 'Дело раскрыто'].concat(postcardFacts().map(function (f) { return f[0] + ' ' + f[1]; }))
+      .concat(['Дворами', 'городские квесты-расследования', caseLink().replace(/^https?:\/\//, '').replace(/\/$/, '')]).filter(Boolean);
+  }
+  function cssVar(name, dflt) {
+    var v = '';
+    try { v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); } catch (e) { /* старый браузер */ }
+    return v || dflt;
+  }
+  function wrapText(ctx, text, maxW) {
+    var words = String(text).split(/\s+/), lines = [], cur = '';
+    words.forEach(function (w) {
+      var t = cur ? cur + ' ' + w : w;
+      if (cur && ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t;
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function postcardKey() { return QID + '|' + (S.t_end || 0) + '|' + cssVar('--paper', '') + '|' + cssVar('--bg', ''); }
+  function postcard() {
+    var key = postcardKey();
+    if (POSTCARD && POSTCARD.key === key) return Promise.resolve(POSTCARD.blob);
+    var W = 1080, H = 1350, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext && cv.getContext('2d');
+    if (!ctx || !cv.toBlob) return Promise.resolve(null);
+    var c = { bg: cssVar('--bg', '#141414'), paper: cssVar('--paper', '#F2EFE8'), ink: cssVar('--ink', '#141414'), ink2: cssVar('--ink-2', '#3A3833'),
+      accent: cssVar('--accent', '#E1251B'), stamp: cssVar('--stamp', '#B3261E'), text: cssVar('--text', '#F2EFE8'), text2: cssVar('--text-2', '#C9C5BC'),
+      fd: cssVar('--font-display', 'sans-serif'), ft: cssVar('--font-text', 'sans-serif'), up: cssVar('--h1-case', 'none') === 'uppercase' };
+    var F = function (w, px, fam) { return w + ' ' + px + 'px ' + fam; };
+    var lines = postcardLines(), title = plain(Q.title), where = [Q.city, Q.district].filter(Boolean).join(' · ');
+    var fonts = document.fonts && document.fonts.load ? Promise.all([F(700, 96, c.fd), F(600, 30, c.ft)].map(function (f) {
+      return document.fonts.load(f, lines.join(' ')).catch(function () { return null; });
+    })) : Promise.resolve();
+    var wait = new Promise(function (ok) { setTimeout(ok, 1500); });   // шрифт не пришёл — рисуем запасным
+    return Promise.race([fonts, wait]).then(function () {
+      var X = 80, Y = 200, CW = W - 2 * X, PAD = 64, inner = CW - 2 * PAD;
+      ctx.fillStyle = c.bg; ctx.fillRect(0, 0, W, H);
+      // фигуры, как у заголовка точки: круг и наклонная полоса (декор, за карточкой)
+      ctx.fillStyle = c.accent;
+      ctx.beginPath(); ctx.arc(W - 150, 170, 200, 0, Math.PI * 2); ctx.fill();
+      ctx.save(); ctx.translate(0, H - 30); ctx.rotate(-0.06); ctx.fillRect(-40, 0, W + 80, 10); ctx.restore();   // ниже подписи, не под текстом
+      // заголовок: размер подбираем, чтобы название встало в 4 строки
+      var size = 104, tl;
+      do { size -= 8; ctx.font = F(700, size, c.fd); tl = wrapText(ctx, c.up ? title.toUpperCase() : title, inner); } while (tl.length > 4 && size > 56);
+      var CH = PAD + 48 + 56 + tl.length * size * 1.04 + 40 + 120 + 56 + 150 + PAD;
+      ctx.fillStyle = c.accent; ctx.fillRect(X + 16, Y + 16, CW, CH);
+      ctx.fillStyle = c.paper; ctx.fillRect(X, Y, CW, CH);
+      var y = Y + PAD + 40;
+      ctx.fillStyle = c.ink; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+      ctx.font = F(700, 44, c.fd); ctx.fillText(caseName().toUpperCase(), X + PAD, y);
+      if (where) { ctx.fillStyle = c.ink2; ctx.font = F(600, 30, c.ft); ctx.textAlign = 'right'; ctx.fillText(where, X + CW - PAD, y); ctx.textAlign = 'left'; }
+      y += 56 + size * 0.9;
+      ctx.fillStyle = c.ink; ctx.font = F(700, size, c.fd);
+      tl.forEach(function (ln, i) { ctx.fillText(ln, X + PAD, y + i * size * 1.04); });
+      y += (tl.length - 1) * size * 1.04 + 40;
+      // штамп «Дело раскрыто» — двойная рамка, наклон как на карточке финала
+      ctx.save();
+      ctx.font = F(700, 60, c.fd);
+      var st = 'ДЕЛО РАСКРЫТО', sw = ctx.measureText(st).width + 56, sh = 96;
+      ctx.translate(X + CW - PAD - sw / 2, y + sh / 2 + 6); ctx.rotate(-7 * Math.PI / 180);
+      ctx.strokeStyle = c.stamp; ctx.fillStyle = c.stamp;
+      ctx.lineWidth = 5; ctx.strokeRect(-sw / 2, -sh / 2, sw, sh);
+      ctx.lineWidth = 3; ctx.strokeRect(-sw / 2 + 11, -sh / 2 + 11, sw - 22, sh - 22);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(st, 0, 4);
+      ctx.restore();
+      y += 120 + 24;
+      // цифры прохождения под пунктиром
+      ctx.strokeStyle = c.ink2; ctx.lineWidth = 3;
+      if (ctx.setLineDash) ctx.setLineDash([12, 10]);
+      ctx.beginPath(); ctx.moveTo(X + PAD, y); ctx.lineTo(X + CW - PAD, y); ctx.stroke();
+      if (ctx.setLineDash) ctx.setLineDash([]);
+      var col = inner / 3;
+      postcardFacts().forEach(function (f, i) {
+        var fx = X + PAD + i * col;
+        ctx.fillStyle = c.ink2; ctx.font = F(600, 28, c.ft); ctx.fillText(f[0], fx, y + 58);
+        var v = f[1], mw = col - 16, fs = 46;
+        ctx.fillStyle = c.ink; ctx.font = F(700, fs, c.fd);
+        while (ctx.measureText(v).width > mw && fs > 30) { fs -= 2; ctx.font = F(700, fs, c.fd); }
+        ctx.fillText(v, fx, y + 116);
+      });
+      // подпись и ссылка под карточкой
+      var by = Y + CH + 110;
+      ctx.fillStyle = c.text; ctx.font = F(700, 52, c.fd); ctx.fillText('ДВОРАМИ', X, by);
+      ctx.fillStyle = c.text2; ctx.font = F(600, 30, c.ft); ctx.fillText('городские квесты-расследования', X, by + 48);
+      var link = lines[lines.length - 1];
+      ctx.font = F(600, 30, c.ft);
+      while (ctx.measureText(link).width > CW && link.length > 12) link = link.slice(0, -2);
+      ctx.fillText(link, X, by + 100);
+      return new Promise(function (ok) { cv.toBlob(function (b) { ok(b); }, 'image/png'); });
+    }).then(function (blob) { if (blob) POSTCARD = { key: key, blob: blob }; return blob; }, function () { return null; });
+  }
+  function warmPostcard() {
+    if (POSTCARD || warmPostcard.tm) return;
+    warmPostcard.tm = setTimeout(function () { warmPostcard.tm = 0; if (document.getElementById('closed-card')) postcard(); }, 600);
+  }
+  function postcardName() { return 'dvorami-' + QID + '-raskryto.png'; }
+  function saveBlob(blob, name) {
+    try {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      return true;
+    } catch (e) { return false; }
+  }
+  // Запасной путь без Web Share с файлами: открытка скачивается, ссылка копируется
+  function sharePostcardFallback(blob, text, url) {
+    var saved = blob ? saveBlob(blob, postcardName()) : false;
+    copyText(text + ' ' + url).then(function (ok) {
+      toast(saved ? (ok ? 'Открытка сохранена, ссылка скопирована' : 'Открытка сохранена') : ok ? 'Ссылка скопирована — отправьте друзьям' : 'Не получилось — сделайте снимок экрана');
+    });
+  }
   function shareCase() {
-    var url = '';
-    try { url = new URL(document.body.dataset.caseUrl || '../../', location.href).href; } catch (e) { url = location.href; }
-    var text = 'Мы раскрыли «' + plain(Q.title) + '» — городской квест «Дворами».';
+    var url = caseLink(), text = shareText();
     track('final_share', { quest: QID });
-    if (navigator.share) { navigator.share({ title: plain(Q.title), text: text, url: url }).catch(function () { /* передумали */ }); return; }
-    copyText(text + ' ' + url).then(function (ok) { toast(ok ? 'Ссылка скопирована — отправьте друзьям' : 'Не получилось скопировать'); });
+    var go = function (blob) {
+      var file = null;
+      try { if (blob && typeof File === 'function') file = new File([blob], postcardName(), { type: 'image/png' }); } catch (e) { file = null; }
+      var canFiles = false;
+      try { canFiles = !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) { canFiles = false; }
+      if (canFiles) {
+        // ссылку кладём в текст: с файлом часть приложений поле url не показывает
+        return navigator.share({ files: [file], title: plain(Q.title), text: text + ' ' + url }).catch(function (err) {
+          if (!err || err.name !== 'AbortError') sharePostcardFallback(blob, text, url);
+        });
+      }
+      if (navigator.share) return navigator.share({ title: plain(Q.title), text: text, url: url }).catch(function () { /* передумали */ });
+      sharePostcardFallback(blob, text, url);
+    };
+    // открытка уже готова — делимся сразу, в том же нажатии (иначе Safari откажет)
+    if (POSTCARD && POSTCARD.key === postcardKey()) return go(POSTCARD.blob);
+    postcard().then(go);
   }
   // Картинка не загрузилась — остаётся заглушка с подписью, раскладка не прыгает
   document.addEventListener('error', function (e) {
@@ -2155,6 +2296,7 @@
   // Для проверок: функции сверки ответов и состояние
   window.__dvorami = { norm: norm, matches: matches, state: function () { return S; }, quest: function () { return Q; }, report: function () { return report(); },
     flags: function () { return FLAGS; }, cards: function () { return CARDS; },
+    postcardLines: function () { return postcardLines(); }, postcard: function () { return postcard().then(function (b) { return b ? b.size : 0; }); },
     clockOpenAt: function (def, min) { return openAt(def, min); }, mskMinutes: function () { return mskMinutes(); },
     // мини-шаги: где игрок (live), что на экране (shown), сколько экранов в разделе, режим чтения
     pos: function () { var p = shownPos(), F = framesOf(p.sec), x = F[p.f] || {}; return { sec: p.sec, f: p.f, live: liveSec(), cur: S.f, peek: !!peek, total: F.length, mode: MODE, id: x.id, kind: x.kind, step: x.step == null ? null : x.step }; },

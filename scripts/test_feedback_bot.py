@@ -362,8 +362,10 @@ class FeedbackBotTest(unittest.TestCase):
         recs = self.records()
         self.assertEqual([(r["quest"], r["rating"], r["confirmed"], r.get("liked")) for r in recs],
                          [("zilart", n, True, "Понравился кот-обманщик") for n in (4, 2, 5)])
-        low = [m["text"] for m in self.tg.owner_msgs() if "Низкая оценка: 2/5" in m["text"]]
-        self.assertEqual(len(low), 1)   # низкая оценка из плеера тоже сразу владельцу
+        low = [m["text"] for m in self.mod_cards() if "Низкая оценка: 2/5" in m["text"]]
+        self.assertEqual(len(low), 1)   # низкая оценка из плеера тоже сразу владельцу — карточкой модерации
+        self.assertEqual(len(self.mod_cards()), 3)   # каждая оценка с финала — на модерацию
+        self.assertEqual(self.tg.owner_msgs(), [])    # и не дублируется через бота команды
 
     def test_rating_in_link_out_of_range_falls_back_to_question(self):
         """Оценка вне 1–5 в ссылке не принимается — бот спрашивает оценку как обычно."""
@@ -386,10 +388,12 @@ class FeedbackBotTest(unittest.TestCase):
             for i, r in enumerate((4, 5, 5, 4)):
                 fh.write(json.dumps({"ts": "2026-11-25 10:00", "kind": "review", "user": f"u{i}", "quest": "zilart",
                                      "confirmed": True, "rating": r}) + "\n")
+            fh.write(json.dumps({"kind": "review", "user": "u0", "quest": "zilart", "confirmed": True, "rating": 5}) + "\n")
             # не идут в рейтинг: без финала, повтор того же игрока (считается последняя), неизвестное дело
             fh.write(json.dumps({"kind": "review", "user": "x", "quest": "zilart", "confirmed": False, "rating": 1}) + "\n")
-            fh.write(json.dumps({"kind": "review", "user": "u0", "quest": "zilart", "confirmed": True, "rating": 5}) + "\n")
             fh.write(json.dumps({"kind": "review", "user": "y", "quest": "nope", "confirmed": True, "rating": 1}) + "\n")
+        self.assertEqual(build_ratings.build(self.root / "feedback")["cases"]["zilart-sinyaya-ptica"]["count"], 0)
+        self.approve_all()   # без решения владельца — ни одной оценки в рейтинге
         data = build_ratings.build(self.root / "feedback")
         row = data["cases"]["zilart-sinyaya-ptica"]
         self.assertEqual((row["count"], row["sum"]), (5, 24))
@@ -596,7 +600,14 @@ class FeedbackBotTest(unittest.TestCase):
             self.tg.press(data, user=int(OWNER_CHAT))
             self.step()
         self.assertEqual(self.records(), [])
-        self.assertTrue(any("ТЕСТ" in m["text"] and "1/5" in m["text"] for m in self.tg.owner_msgs()))
+        [card] = self.mod_cards()
+        self.assertIn("ТЕСТ", card["text"])
+        self.assertIn("1/5", card["text"])
+        # кнопка тестовой карточки отвечает, но ничего не пишет
+        self.tg.press(self.card_buttons(card)[0], user=int(OWNER_CHAT))
+        self.step()
+        self.assertIn("ТЕСТ", self.toasts()[-1])
+        self.assertFalse(fb.moderation_path().exists())
 
     def test_owner_reminder_in_one_minute(self):
         self.tg.press("t|remind|0", user=int(OWNER_CHAT))
@@ -606,6 +617,155 @@ class FeedbackBotTest(unittest.TestCase):
         with mock.patch.object(fb, "now", return_value=fb.time.time() + 61):
             self.step()
         self.assertIn("Напоминаем", self.tg.sent(chat=OWNER_CHAT)[-1]["text"])
+
+    # ---------- модерация оценок ----------
+
+    def mod_cards(self):
+        """Карточки модерации: их шлёт игровой бот в чат владельца (нажатие должно прийти ему же)."""
+        return [p for p in self.tg.sent(PLAYER, OWNER_CHAT)
+                if any(b.get("callback_data", "").startswith("mod|") for row in p.get("reply_markup", {}).get("inline_keyboard", []) for b in row)]
+
+    @staticmethod
+    def card_buttons(p):
+        return [b["callback_data"] for row in p["reply_markup"]["inline_keyboard"] for b in row]
+
+    def toasts(self):
+        return [p.get("text", "") for t, m, p in self.tg.calls if m == "answerCallbackQuery"]
+
+    def markups(self):
+        return [[b["callback_data"] for row in p["reply_markup"]["inline_keyboard"] for b in row]
+                for t, m, p in self.tg.calls if m == "editMessageReplyMarkup" and str(p["chat_id"]) == OWNER_CHAT]
+
+    def approve_all(self):
+        import build_ratings
+        bot = fb.Bot(PLAYER, OWNER, OWNER_CHAT)
+        for r in fb.feedback_records():
+            if build_ratings.counted(r):
+                bot.set_moderation(fb.review_id(r), "approved", r)
+
+    def rate_from_player(self, n=5, user=USER):
+        self.tg.text(f"/start done_zilart_{n}", user=user)
+        self.step()
+        for prefix in ("skip|liked|", "skip|unclear|", "q|0|"):
+            data = next(b for b in reversed([b for p in self.tg.sent(chat=user) if "reply_markup" in p
+                                             for row in p["reply_markup"]["inline_keyboard"] for b in
+                                             [x.get("callback_data", "") for x in row]]) if b.startswith(prefix))
+            self.tg.press(data, user=user)
+            self.step()
+
+    def zilart(self):
+        import build_ratings
+        return build_ratings.build(self.root / "feedback")["cases"]["zilart-sinyaya-ptica"]
+
+    def test_moderation_card_approve_and_reject(self):
+        """Указание 26.11: каждая оценка с финала — владельцу с кнопками; в рейтинг идёт только «✅ В рейтинг»."""
+        self.rate_from_player(4)
+        [card] = self.mod_cards()
+        self.assertIn("Оценка 4/5", card["text"])
+        self.assertIn("финал подтверждён", card["text"])
+        yes, no = self.card_buttons(card)
+        self.assertTrue(yes.startswith("mod|a.") and no.startswith("mod|x."))
+        self.assertEqual(self.zilart()["count"], 0)            # pending — не считается
+        self.tg.press(yes, user=int(OWNER_CHAT))
+        self.step()
+        self.assertEqual((self.zilart()["count"], self.zilart()["sum"]), (1, 4))
+        self.assertIn("Учтено", self.toasts()[-1])
+        self.assertEqual(self.markups()[-1], [no])               # кнопка «убрать» на месте двух
+        mod = json.loads(fb.moderation_path().read_text(encoding="utf-8"))
+        self.assertEqual([v["status"] for v in mod["reviews"].values()], ["approved"])
+        self.assertNotIn(str(USER), json.dumps(mod))             # в публичном файле нет id игрока
+        self.tg.press(no, user=int(OWNER_CHAT))                  # передумал — убрал
+        self.step()
+        self.assertEqual(self.zilart()["count"], 0)
+        self.assertEqual(self.markups()[-1], [yes])
+
+    def test_moderation_repeat_press_changes_nothing(self):
+        self.rate_from_player(5)
+        yes = self.card_buttons(self.mod_cards()[0])[0]
+        self.tg.press(yes, user=int(OWNER_CHAT))
+        self.step()
+        before = fb.moderation_path().read_text(encoding="utf-8")
+        with mock.patch.object(fb, "now", return_value=fb.time.time() + 3600):
+            self.tg.press(yes, user=int(OWNER_CHAT))
+            self.step()
+        self.assertIn("Уже отмечено", self.toasts()[-1])
+        self.assertEqual(fb.moderation_path().read_text(encoding="utf-8"), before)   # не перезаписан
+        self.assertEqual(self.zilart()["count"], 1)
+
+    def test_moderation_only_owner(self):
+        """Чужой пользователь (в т. ч. подделав callback_data) модерировать не может."""
+        self.rate_from_player(1)
+        yes = self.card_buttons(self.mod_cards()[0])[0]
+        self.tg.press(yes)                                        # игрок, не владелец
+        self.step()
+        self.assertIn("для команды", self.toasts()[-1])
+        self.assertFalse(fb.moderation_path().exists())
+        self.assertEqual(self.zilart()["count"], 0)
+        self.tg.text("/moderate")                                 # и очередь ему не показывается
+        self.step()
+        self.assertFalse(any("модерации" in p["text"] for p in self.tg.sent()))
+        self.tg.press("mod|a.zzzzzzzzzz|0", user=int(OWNER_CHAT))   # мусор от владельца — тоже ничего
+        self.tg.press("mod|a.0123456789|0", user=int(OWNER_CHAT))   # несуществующий отзыв
+        self.step()
+        self.assertIn("не найден", self.toasts()[-1])
+        self.assertFalse(fb.moderation_path().exists())
+
+    def test_moderate_command_lists_pending_queue(self):
+        self.owner_text("/moderate")
+        self.step()
+        self.assertIn("пусто", self.tg.sent(chat=OWNER_CHAT)[-1]["text"])
+        self.rate_from_player(5)
+        self.rate_from_player(3, user=USER + 1)
+        self.tg.text("/start review-zilart")                      # без финала — не модерируется, в рейтинг не идёт
+        self.step()
+        self.press_button("r|2.")
+        self.step()
+        self.finish_review()
+        first = self.card_buttons(self.mod_cards()[0])[0]
+        self.tg.press(first, user=int(OWNER_CHAT))
+        self.step()
+        n = len(self.mod_cards())
+        self.owner_text("/moderate")
+        self.step()
+        sent = self.tg.sent(chat=OWNER_CHAT)
+        head = [p for p in sent if "На модерации" in p["text"]][-1]
+        self.assertIn("На модерации: 1", head["text"])
+        new = self.mod_cards()[n:]
+        self.assertEqual(len(new), 1)
+        self.assertIn("3/5", new[0]["text"])
+        self.assertEqual(fb.T["mod_empty"] in [p["text"] for p in sent], True)   # первая попытка — пустая очередь
+
+    def test_moderation_card_falls_back_without_buttons(self):
+        """Владелец ещё не открывал игрового бота — sendMessage не проходит; оценка не теряется:
+        текст приходит через бота команды с подсказкой про /moderate, а в очереди она остаётся."""
+        real = self.tg.call
+
+        def call(token, method, params, timeout=None):
+            if token == PLAYER and method == "sendMessage" and str(params["chat_id"]) == OWNER_CHAT:
+                self.tg.calls.append((token, method, json.loads(json.dumps(params))))
+                return {"ok": False, "description": "Forbidden: bot can't initiate conversation"}
+            return real(token, method, params, timeout)
+        with mock.patch.object(fb.tg, "call", call):
+            self.rate_from_player(5)
+        [note] = self.tg.owner_msgs()
+        self.assertIn("/moderate", note["text"])
+        self.assertIn("5/5", note["text"])
+
+    def test_old_records_without_moderation_not_counted(self):
+        """Записи до модерации тоже получают id и ждут решения — в рейтинг сами не попадают."""
+        f = self.root / "feedback"
+        f.mkdir()
+        (f / "2026-11.jsonl").write_text(json.dumps({"ts": "2026-11-20 10:00", "kind": "review", "user": "aa",
+                                                     "quest": "zilart", "confirmed": True, "rating": 5}) + "\n" +
+                                         json.dumps({"ts": "2026-11-20 11:00", "kind": "rating", "source": "site",
+                                                     "user": "bb", "quest": "zilart", "rating": 4}) + "\n", encoding="utf-8")
+        self.assertEqual(self.zilart()["count"], 0)
+        self.owner_text("/moderate")
+        self.step()
+        self.assertEqual(len(self.mod_cards()), 2)
+        self.assertTrue(any("с сайта" in c["text"] for c in self.mod_cards()))
+        self.approve_all()
+        self.assertEqual((self.zilart()["count"], self.zilart()["bot"], self.zilart()["site"]), (2, 1, 1))
 
     def last_owner_buttons(self):
         for p in reversed(self.tg.sent(chat=OWNER_CHAT)):

@@ -564,6 +564,27 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           collect(Q.points);
           const leak = [...answers].filter(w => (' ' + nrm(card) + ' ').includes(' ' + w + ' '));
           if (leak.length) err(tag, `финал: на карточке для снимка есть слова-ответы: ${leak.slice(0, 5).join(', ')}`);
+          // H-54: открытка «Дело раскрыто» — те же правила: номер и название дела, штамп, ссылка, ни одного слова-ответа
+          const pc = await page.evaluate(() => window.__dvorami.postcardLines()).catch(() => null);
+          if (!pc) err(tag, 'финал: нет открытки для «Поделиться»');
+          else {
+            const all = ' ' + nrm(pc.join(' ')) + ' ';
+            const pleak = [...answers].filter(w => all.includes(' ' + w + ' '));
+            if (pleak.length) err(tag, `финал: на открытке есть слова-ответы: ${pleak.slice(0, 5).join(', ')}`);
+            if (!/дело раскрыто/i.test(pc.join(' '))) err(tag, 'финал: на открытке нет «Дело раскрыто»');
+            if (!pc.some(x => /moscow\//.test(x))) err(tag, 'финал: на открытке нет ссылки на страницу дела');
+            const size = await page.evaluate(() => window.__dvorami.postcard()).catch(() => 0);
+            if (!(size > 10000)) err(tag, `финал: открытка не нарисовалась (${size} байт)`);
+            const hasShare = await page.evaluate(() => typeof navigator.share === 'function');
+            if (!hasShare) {   // без Web Share: открытка скачивается файлом, ссылка копируется
+              const dl = page.waitForEvent('download', { timeout: 5000 }).catch(() => null);
+              await click('[data-act="sharecase"]');
+              const d = await dl;
+              if (!d || !/\.png$/.test(d.suggestedFilename())) err(tag, 'финал: «Поделиться» без Web Share не сохранил открытку');
+              else if (args.shots && theme === 'dark' && vp.width === 390) await d.saveAs(path.join(args.shots, 'player-postcard.png'));
+              await check('финал · поделиться');
+            }
+          }
         }
         if ((await page.$$('#rate .pl-star')).length !== 5) err(tag, 'финал: нет пяти звёзд оценки');
         else {

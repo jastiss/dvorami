@@ -22,6 +22,13 @@
   без параметра     — приветствие и меню
 /test — только владельцу (TELEGRAM_CHAT_ID): меню, из которого проходится каждый флоу; его ответы
         не пишутся в feedback/, уведомления приходят с пометкой «ТЕСТ».
+/moderate — только владельцу: очередь оценок, которые ждут решения.
+
+Модерация (указание владельца 26.11, docs/rating.md → «Модерация»): каждая оценка, которая может пойти в рейтинг
+(финал подтверждён или пришла с сайта), приходит владельцу в чат с этим ботом карточкой с кнопками
+«✅ В рейтинг» / «🚫 Не учитывать». Решение пишется в feedback/moderation.json (id отзыва → approved|rejected;
+нет записи — pending). build_ratings.py считает только approved. Нажимать может только владелец (TELEGRAM_CHAT_ID).
+Кнопки шлёт сам игровой бот: нажатие приходит ему же (через бота команды оно ушло бы в чужой опрос).
 
 Данные: feedback/ГГГГ-ММ.jsonl (репозиторий публичный — пишем минимум).
   * Telegram id не хранится: вместо него HMAC от id с ключом-токеном бота (обратно не восстановить).
@@ -67,6 +74,8 @@ CITY_URL = SITE + "moscow/"
 CHANNEL = "https://t.me/dvorami_quest"
 EXPIRE = 24 * 3600   # незаконченный диалог живёт сутки
 LOW = 3              # оценка не выше этой — сразу владельцу
+MOD_SHOW = 10        # /moderate показывает столько карточек за раз
+MOD_STATUS = ("approved", "rejected")   # нет записи в moderation.json — pending
 MAXLEN = 2000        # обрезаем слишком длинные ответы
 
 # Дела: id = папка quests/<id>, slug = страница site/moscow/<slug>/ (тест сверяет, что страница есть).
@@ -88,7 +97,8 @@ CASES = [
 STATUS_LABEL = {"soon": "скоро в продаже", "dev": "в разработке"}
 
 COMMANDS = [("start", "Меню"), ("cases", "Выбрать дело"), ("help", "Помощь"), ("cancel", "Прервать разговор")]
-OWNER_COMMANDS = COMMANDS + [("test", "Тест всех сценариев (только для владельца)")]
+OWNER_COMMANDS = COMMANDS + [("test", "Тест всех сценариев (только для владельца)"),
+                             ("moderate", "Оценки на модерации (только для владельца)")]
 
 # Категории «Что-то не так?» — те же ключи, что в site/play/player.js (ISSUE_CATS)
 REPORT_CATS = {
@@ -178,6 +188,23 @@ T = {
     "cancelled": "Хорошо, отменил.",
     "test": "🧪 <b>Тест бота</b> (видите только вы)\n\nКаждая кнопка запускает сценарий так, как его увидит игрок. "
             "Ваши ответы не пишутся в отзывы, уведомления приходят с пометкой «ТЕСТ». Оплата не нужна.",
+    "mod_title": "⭐ Оценка {n}/5 — учитывать в рейтинге?",
+    "mod_title_low": "⚠️ Низкая оценка: {n}/5 — учитывать в рейтинге?",
+    "mod_note": "<i>В рейтинг на сайте идёт только после «✅ В рейтинг». Решение можно поменять.</i>",
+    "mod_yes": "✅ В рейтинг",
+    "mod_no": "🚫 Не учитывать",
+    "mod_is_yes": "✅ В рейтинге · убрать",
+    "mod_is_no": "🚫 Не учитывается · вернуть",
+    "mod_done_yes": "Учтено в рейтинге дела",
+    "mod_done_no": "Не учитывается в рейтинге",
+    "mod_same": "Уже отмечено",
+    "mod_gone": "Отзыв не найден",
+    "mod_denied": "Эта кнопка — для команды",
+    "mod_test": "ТЕСТ: так сработает кнопка, в рейтинг ничего не записано",
+    "mod_queue": "<b>На модерации: {n}</b>{more}",
+    "mod_queue_more": "\nПоказываю первые {k} — остальные после решения по этим: /moderate",
+    "mod_empty": "На модерации пусто — все оценки разобраны.",
+    "mod_nobuttons": "\n\nКнопки не дошли: откройте @dvorami_bot, нажмите «Запустить» и отправьте /moderate.",
     "test_code": "🧪 Пример: так придёт код после оплаты (код не настоящий)\n\n"
                  "Ваш код к делу «{title}»: <b>ZIL-TEST-0000</b>\nСтарт — {start}. Заложите 2,5–3 часа и возьмите "
                  "заряженный телефон. Начать можно в любой день в течение года. Потеряли код — напишите сюда.",
@@ -194,6 +221,7 @@ TEST_ITEMS = [
     ("remind", "8. Напоминание перед прогулкой"),
     ("code", "9. Код после оплаты (пример)"),
     ("free", "10. Сообщение мимо меню — как работает"),
+    ("moderate", "11. Модерация оценок — очередь"),
 ]
 
 
@@ -331,6 +359,46 @@ def parse_report_tag(text):
     if m.group(4) in REPORT_CATS:
         data["category"] = m.group(4)
     return data, (text[:m.start()] + text[m.end():]).strip()
+
+
+def review_id(rec):
+    """Постоянный id отзыва для модерации: хэш его полей (новые поля в feedback/ не нужны, старые записи тоже
+    получают id). Один игрок, одно дело и одна минута — один отзыв, в рейтинге всё равно засчитывается последний."""
+    key = "|".join(str(rec.get(k, "")) for k in ("ts", "kind", "source", "user", "quest", "rating"))
+    return hashlib.sha256(key.encode()).hexdigest()[:10]
+
+
+def moderation_path(feedback_dir=None):
+    return pathlib.Path(feedback_dir or FEEDBACK_DIR) / "moderation.json"
+
+
+def load_moderation(feedback_dir=None):
+    """{id отзыва: approved|rejected}. Файла нет или он битый — всё pending (в рейтинг ничего не идёт)."""
+    try:
+        data = json.loads(moderation_path(feedback_dir).read_text(encoding="utf-8"))
+        rows = data.get("reviews", {}) if isinstance(data, dict) else {}
+        return {k: v["status"] for k, v in rows.items()
+                if isinstance(v, dict) and v.get("status") in MOD_STATUS}
+    except (FileNotFoundError, ValueError, AttributeError):
+        return {}
+
+
+def feedback_records(feedback_dir=None):
+    """Все записи feedback/*.jsonl по порядку (файлы по месяцам, строки по времени)."""
+    for f in sorted(pathlib.Path(feedback_dir or FEEDBACK_DIR).glob("*.jsonl")):
+        for line in f.read_text(encoding="utf-8").splitlines():
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(rec, dict):
+                yield rec
+
+
+def moderatable(rec):
+    """Оценка, которая может пойти в рейтинг (её и модерируем): то же правило, что в build_ratings."""
+    import build_ratings  # здесь: build_ratings сам импортирует этот модуль
+    return build_ratings.counted(rec) is not None
 
 
 class Bot:
@@ -506,6 +574,8 @@ class Bot:
             c = CASES[0]
             self.send(chat, T["test_code"].format(title=c["title"], start=c["start"]),
                       [[{"text": T["open_case"], "url": case_url(c)}]])
+        elif key == "moderate":
+            self.moderate_queue(chat)
         elif key == "free":
             self.send(chat, "🧪 Напишите боту любой текст вне разговора — он придёт вам как «Сообщение в игровой "
                             "бот», а игрок увидит «Спасибо, передали команде» и меню.")
@@ -636,7 +706,9 @@ class Bot:
         contact = d["data"].get("_contact")
         flow = d["flow"]
         if flow == "review":
-            if rec.get("rating") is not None and rec["rating"] <= LOW:
+            if moderatable(rec):   # пойдёт в рейтинг только после решения владельца — карточка с кнопками
+                self.mod_card(rec, test)
+            elif rec.get("rating") is not None and rec["rating"] <= LOW:
                 self.notify_owner(self.owner_text(rec), test)
             if chat is not None:
                 extra = ""
@@ -654,17 +726,22 @@ class Bot:
                 self.send(chat, T[f"{flow}_done"])
 
     @staticmethod
-    def owner_text(rec, contact=None):
+    def owner_text(rec, contact=None, moderation=False):
         k = rec["kind"]
         cat = REPORT_CATS.get(rec.get("category"), "без категории")
         title = {"review": f"⚠️ Низкая оценка: {rec.get('rating')}/5", "suggest": "🗺 Предложили квест",
                  "question": "✉️ Вопрос от игрока", "message": "💬 Сообщение в игровой бот",
-                 "report": f"🚩 Что-то не так: {cat}"}[k]
+                 "report": f"🚩 Что-то не так: {cat}", "rating": f"⭐ Оценка с сайта: {rec.get('rating')}/5"}.get(k, k)
+        if moderation:
+            r = rec.get("rating")
+            title = T["mod_title_low" if isinstance(r, int) and r <= LOW else "mod_title"].format(n=r)
         lines = [f"<b>{title}</b>" + ("" if rec.get("complete", True) else " (не дописан)")]
         if k == "review":
             lines.append("<i>финал подтверждён плеером</i>" if rec.get("confirmed") else "<i>без подтверждения финала</i>")
+        elif k == "rating":
+            lines.append("<i>оценка с сайта</i>")
         labels = [("quest", "Квест"), ("point", "Точка"), ("step", "Шаг"), ("liked", "Понравилось"), ("unclear", "Непонятно"),
-                  ("where", "Где"), ("why", "Почему"), ("text", "Текст")]
+                  ("where", "Где"), ("why", "Почему"), ("text", "Текст"), ("signature", "Подпись")]
         for key, label in labels:
             if rec.get(key):
                 lines.append(f"<b>{label}:</b> {esc(str(rec[key]))}")
@@ -672,8 +749,89 @@ class Bot:
             lines.append(f"<b>Цитировать:</b> {'да' if rec.get('quote') else 'нет'}")
         if contact:
             lines.append(f"<b>Контакт:</b> {esc(contact)}")
-        lines.append(f"<i>игрок {rec['user'][:6]} · {rec['ts']}</i>")
+        lines.append(f"<i>игрок {str(rec.get('user', ''))[:6]} · {rec.get('ts', '')}</i>")
+        if moderation:
+            lines.append(T["mod_note"])
         return "\n".join(lines)
+
+    # ---------- модерация оценок ----------
+
+    def mod_buttons(self, rid, status=None):
+        if status == "approved":
+            return [[self.btn(T["mod_is_yes"], "mod", "x." + rid, 0)]]
+        if status == "rejected":
+            return [[self.btn(T["mod_is_no"], "mod", "a." + rid, 0)]]
+        return [[self.btn(T["mod_yes"], "mod", "a." + rid, 0), self.btn(T["mod_no"], "mod", "x." + rid, 0)]]
+
+    def mod_card(self, rec, test=False):
+        """Карточка оценки владельцу с кнопками. Шлёт игровой бот (нажатие должно прийти ему); не дошло —
+        владелец ещё не открывал игрового бота — текст без кнопок через бота команды и подсказка про /moderate."""
+        if not self.owner_chat:
+            return
+        text = self.owner_text(rec, moderation=True)
+        rid = "test" if test else review_id(rec)
+        shown = ("🧪 <b>ТЕСТ</b> · " + text) if test else text
+        r = self.send(self.owner_chat, shown, self.mod_buttons(rid))
+        if not r.get("ok"):
+            self.notify_owner(text + T["mod_nobuttons"], test)
+
+    def set_moderation(self, rid, status, rec):
+        path = moderation_path()
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict) or not isinstance(data.get("reviews"), dict):
+                raise ValueError
+        except (FileNotFoundError, ValueError):
+            data = {"reviews": {}}
+        data["_about"] = ("Решения владельца по оценкам: id отзыва (scripts/feedback_bot.py: review_id) → approved | "
+                          "rejected. Нет записи — ждёт модерации. В рейтинг (build_ratings.py) идут только approved. "
+                          "Пишет игровой бот по кнопкам владельца; руками не править.")
+        data["reviews"][rid] = {"status": status, "quest": rec.get("quest"), "at": stamp(now())}
+        path.parent.mkdir(exist_ok=True)
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        self.dirty = True
+
+    def find_review(self, rid):
+        return next((r for r in feedback_records() if moderatable(r) and review_id(r) == rid), None)
+
+    def moderate_press(self, chat, msg, user, value):
+        if not self.is_test(user):
+            self._toast = T["mod_denied"]   # чужое (в т. ч. подделанное) нажатие ничего не меняет
+            return
+        op, _, rid = value.partition(".")
+        if op not in ("a", "x") or not re.fullmatch(r"[0-9a-f]{10}|test", rid):
+            return
+        status = "approved" if op == "a" else "rejected"
+        done = T["mod_done_yes" if op == "a" else "mod_done_no"]
+        if rid == "test":
+            self._toast = T["mod_test"]
+            return self._rebutton(chat, msg, self.mod_buttons(rid, status))
+        rec = self.find_review(rid)
+        if rec is None:
+            self._toast = T["mod_gone"]
+            return
+        if load_moderation().get(rid) == status:   # повторное нажатие: ничего не пишем
+            self._toast = T["mod_same"] + ": " + done.lower()
+        else:
+            self.set_moderation(rid, status, rec)
+            self._toast = done
+        self._rebutton(chat, msg, self.mod_buttons(rid, status))
+
+    def moderate_queue(self, chat):
+        """/moderate: оценки без решения, старые первыми."""
+        decided, seen, pending = load_moderation(), set(), []
+        for rec in feedback_records():
+            rid = review_id(rec)
+            if rid in seen or rid in decided or not moderatable(rec):
+                continue
+            seen.add(rid)
+            pending.append(rec)
+        if not pending:
+            return self.send(chat, T["mod_empty"])
+        more = T["mod_queue_more"].format(k=MOD_SHOW) if len(pending) > MOD_SHOW else ""
+        self.send(chat, T["mod_queue"].format(n=len(pending), more=more))
+        for rec in pending[:MOD_SHOW]:
+            self.send(chat, self.owner_text(rec, moderation=True), self.mod_buttons(review_id(rec)))
 
     # ---------- обработка ----------
 
@@ -728,6 +886,8 @@ class Bot:
                 return self.screen(chat, user, {"/menu": "menu", "/help": "help", "/cases": "cases"}[cmd])
             if cmd == "/test" and self.is_test(user):
                 return self.test_menu(chat)
+            if cmd == "/moderate" and self.is_test(user):
+                return self.moderate_queue(chat)
         if d is None or d["flow"] != "report":
             # Текст из плеера с меткой [report …] пришёл без /start (например, ссылка открыла канал,
             # а игрок потом написал боту) — это сообщение о проблеме, а не вопрос команде.
@@ -787,6 +947,8 @@ class Bot:
             if self.is_test(user):
                 self.test_item(chat, user, value)
             return
+        if action == "mod":
+            return self.moderate_press(chat, msg, user, value)
         if action == "r" and (not d or d["sid"] != sid):
             d = self._rating_dialog(user, d, value)   # оценка с более раннего сообщения — не теряем
             if d:
@@ -842,6 +1004,11 @@ class Bot:
             self.state["dialogs"][user] = d
             return d
         return None
+
+    def _rebutton(self, chat, msg, buttons):
+        if msg.get("message_id"):
+            tg.call(self.token, "editMessageReplyMarkup",
+                    {"chat_id": chat, "message_id": msg["message_id"], "reply_markup": {"inline_keyboard": buttons}})
 
     def _unbutton(self, chat, msg):
         if msg.get("message_id"):
