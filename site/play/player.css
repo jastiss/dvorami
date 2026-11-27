@@ -519,6 +519,11 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-voice-wave i { flex: none; width: 3px; border-radius: 2px; background: var(--control); }
 .pl-voice-wave i.on { background: var(--accent); }
 .pl-voice-note { flex: none; font: 600 15px/1 var(--font-text); color: var(--text-2); }
+/* H-62: субтитры. Звуковая улика без реплики — её текст под плеером; озвученная реплика, пока звучит, отмечена подложкой
+   (у реплики на бумаге — рамкой). Без перехода: при prefers-reduced-motion ничего не движется, и так тоже */
+.pl-sub { margin-top: 8px; font-size: 17px; line-height: 1.45; color: var(--text); }
+.pl-line.is-speaking:not(.pl-line--paper), .pl-prose.is-speaking { background: var(--surface-2); border-radius: 4px; box-shadow: 0 0 0 4px var(--surface-2); }
+.pl-line--paper.is-speaking { box-shadow: 0 0 0 2px var(--accent); }
 .pl-task .pl-voice { margin-bottom: 14px; background: transparent; }
 
 /* «Стрелка» — подсказка интерфейса у элемента: показывается один раз */

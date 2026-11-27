@@ -803,16 +803,21 @@
     if (l.doc === 'letter') return letterHtml(l.state || LETTER_CTX || S.letter, { reveal: l.reveal });
     if (l.doc === 'card') return CARDS[l.id] ? cardHtml(l.id, { full: true }) : '';
     if (l.img !== undefined || l.layers) return figureHtml(l);
-    if (l.audio && !l.text) return typeof l.audio === 'string' && mediaSrc(l.audio) ? voiceStrip([mediaSrc(l.audio)], true) : '';
+    // H-62: звуковая улика без реплики — под плеером её текст (transcript, иначе caption): на шумной улице и без звука смысл не теряется
+    // (запись ещё не готова — audio: true — текст всё равно на экране, а плашка «Аудио скоро» — по правилам T-93)
+    if (l.audio && !l.text) {
+      var sub = l.transcript || l.caption || '', src = typeof l.audio === 'string' ? mediaSrc(l.audio) : '';
+      return (src ? voiceStrip([src], true, sub ? 1 : 0) : sub ? voiceStrip([], false, 1) : '') + (sub ? '<p class="pl-sub" data-say="clue">' + inline(sub) + '</p>' : '');
+    }
     // реплика без говорящего — абзац рассказчика, без имени (не «zilya» по умолчанию)
-    if (!l.who) return '<div class="pl-prose">' + proseFold(l.text) + '</div>' + (typeof l.audio === 'string' && mediaSrc(l.audio) ? voiceStrip([mediaSrc(l.audio)], true) : '');
+    if (!l.who) return '<div class="pl-prose" data-say>' + proseFold(l.text) + '</div>' + (typeof l.audio === 'string' && mediaSrc(l.audio) ? voiceStrip([mediaSrc(l.audio)], true) : '');
     var sp = speaker(l.who);
     var paper = sp.style === 'note' || sp.style === 'letter' || sp.style === 'card';
     var body = (sp.style === 'letter' || l.mono) ? '<div class="pl-prose pl-hand">' + prose(l.text) + '</div>' : '<div class="pl-prose">' + proseFold(l.text) + '</div>';
     // место под портрет героя: пока портрета нет — плитка с фигурой его роли (speakers.<id>.img — путь к портрету)
     var ava = paper || sp.style === 'titr' ? '' : '<i class="pl-ava" data-style="' + esc(sp.style) + '" aria-hidden="true">' + (mediaSrc(sp.img) ? '<img src="' + esc(mediaSrc(sp.img)) + '" alt="" loading="lazy" decoding="async">' : '') + '</i>';
     var quiet = sp.style === 'titr' || (cont && !l.note);
-    return '<div class="pl-line pl-line--' + esc(sp.style) + (paper ? ' pl-line--paper' : '') + (cont ? ' pl-line--cont' : '') + '" data-who="' + esc(l.who || '') + '">' +
+    return '<div class="pl-line pl-line--' + esc(sp.style) + (paper ? ' pl-line--paper' : '') + (cont ? ' pl-line--cont' : '') + '" data-who="' + esc(l.who || '') + '" data-say>' +
       (quiet ? '<span class="visually-hidden">' + esc(sp.name) + ': </span>' : '<span class="pl-who">' + ava + esc(sp.name) + (l.note ? ' <small>' + esc(plain(l.note)) + '</small>' : '') + '</span>') +
       body + '</div>';
   }
@@ -848,10 +853,13 @@
   }
   function voiceOn() { return caseAudio() || FIELD || !!(S && S.field); }
   var WAVE = [5, 9, 14, 8, 12, 18, 10, 6, 13, 17, 9, 5, 11, 15, 8, 12, 6, 10, 16, 9, 7, 13, 5, 9];
-  function voiceStrip(srcs, force) {
+  // H-62: n — сколько реплик экрана (data-say) озвучивает плеер; whole — одна запись на все n. Пока звучит реплика, она отмечена
+  // на экране (is-speaking), а свёрнутый хвост («Подробнее») раскрывается, когда голос до него дошёл: звук без текста не играет
+  function voiceStrip(srcs, force, n, whole) {
     if ((MODE !== 'listen' || !voiceOn()) && !force) return '';
     var ready = srcs.length > 0;
-    return '<div class="pl-voice' + (ready ? '' : ' is-soon') + '" data-arrow-at="sound"' + (ready ? ' data-srcs="' + esc(srcs.join('|')) + '"' : '') + '>' +
+    return '<div class="pl-voice' + (ready ? '' : ' is-soon') + '" data-arrow-at="sound"' + (ready ? ' data-srcs="' + esc(srcs.join('|')) + '"' : '') +
+      (n ? ' data-n="' + n + '"' + (whole ? ' data-whole="1"' : '') : '') + '>' +
       '<button type="button" class="pl-voice-btn" data-act="voice" aria-label="' + (ready ? 'Слушать' : 'Слушать: аудио скоро') + '"' + (ready ? ' aria-pressed="false"' : ' aria-disabled="true"') + '>' + ico('play') + ico('pause') + '</button>' +
       '<span class="pl-voice-wave" aria-hidden="true">' + WAVE.map(function (h) { return '<i style="height:' + h + 'px"></i>'; }).join('') + '</span>' +
       '<span class="pl-voice-note">' + (ready ? '0:00' : 'Аудио скоро') + '</span></div>';
@@ -860,9 +868,9 @@
   function voiceHtml(lines, whole) {
     var spoken = asLines(lines).filter(function (l) { return l && typeof l === 'object' && !l.arrow && l.text != null; });
     if (!spoken.length) return '';
-    if (typeof whole === 'string' && mediaSrc(whole)) return voiceStrip([mediaSrc(whole)]);
+    if (typeof whole === 'string' && mediaSrc(whole)) return voiceStrip([mediaSrc(whole)], false, spoken.length, true);
     var list = spoken.map(function (l) { return typeof l.audio === 'string' ? mediaSrc(l.audio) : ''; });
-    return voiceStrip(list.every(Boolean) ? list : []);
+    return voiceStrip(list.every(Boolean) ? list : [], false, spoken.length, false);
   }
   // «Стрелка» — подсказка интерфейса у нужного элемента; показывается один раз (S.arrows), на том экране, где появилась
   var ARROW_NAMES = { sound: 'Звук', image: 'Картинка', board: 'Доска улик', hint: 'Подсказки', plus: 'По желанию', letter: 'Письмо', plan: 'План' };
@@ -1501,7 +1509,7 @@
     if (l.doc === 'letter') return letterPx(l);
     if (l.doc === 'card') return 260;
     if (l.img !== undefined || l.layers) return figPx(l, w);
-    if (l.audio && !l.text) return 60;
+    if (l.audio && !l.text) return 60 + (l.transcript || l.caption ? 10 + textPx(l.transcript || l.caption, w) : 0);
     if (!l.who) return textPx(l.text, w);
     var sp = speaker(l.who), paper = sp.style === 'note' || sp.style === 'letter' || sp.style === 'card';
     return (sp.style === 'titr' || (cont && !l.note) ? 0 : 32) + textPx(l.text, w - (paper ? 32 : 17)) + (paper ? 28 : 4);
@@ -2677,7 +2685,51 @@
 
   // ---------- звук: один плеер на страницу; файла нет — понятный тост, квест не ломается ----------
   var voice = null, voiceBox = null, voiceList = [], voiceAt = 0;
-  function stopVoice() { if (voice) { try { voice.pause(); } catch (e) { /* уже остановлен */ } } voice = null; voiceBox = null; }
+  function stopVoice() { if (voice) { try { voice.pause(); } catch (e) { /* уже остановлен */ } } voice = null; voiceBox = null; sayOff(); }
+  // H-62: субтитры. Текст каждой озвученной реплики и так на экране (data-say); плеер отмечает ту, что звучит, и раскрывает её
+  // свёрнутый хвост, когда голос дошёл до него (позиция в записи ≈ доля знаков текста). Реплики — следующие за плеером data-say
+  // в пределах задания или экрана (не в «Напомнить, что было сказано»)
+  function sayTargets(box) {
+    var n = +box.dataset.n || 0, scope = box.closest('.pl-task') || box.closest('#frame') || app;
+    if (!n || !scope) return [];
+    var nx = box.nextElementSibling;
+    if (nx && nx.matches('.pl-sub')) return [nx];   // звуковая улика: её текст — сразу под плеером
+    return [].filter.call(scope.querySelectorAll('[data-say]:not(.pl-sub)'), function (el) {
+      return (box.compareDocumentPosition(el) & 4) && !el.closest('.pl-recap');
+    }).slice(0, n);
+  }
+  function sayText(el, open) {   // текст реплики без имени говорящего и «Подробнее»; open — только видимое сейчас
+    var t = '';
+    (function walk(x) {
+      [].forEach.call(x.childNodes, function (c) {
+        if (c.nodeType === 3) { t += c.textContent; return; }
+        if (c.nodeType !== 1 || c.matches('.pl-who, summary, .visually-hidden') || (open && c.matches('details:not([open])'))) return;
+        walk(c);
+      });
+    })(el);
+    return t.replace(/\s+/g, ' ').trim().length;
+  }
+  function sayOff() { [].forEach.call(document.querySelectorAll('.is-speaking'), function (el) { el.classList.remove('is-speaking'); }); }
+  // file — номер записи в плеере, part — доля прослушанного (0…1); пусто — снять отметку
+  function sayAt(box, file, part) {
+    var els = sayTargets(box), was = document.querySelector('.is-speaking'), opened = false;
+    sayOff();
+    if (!els.length || file == null) return null;
+    if (box.dataset.whole !== '1') { els = els[file] ? [els[file]] : []; }
+    var lens = els.map(function (el) { return sayText(el, false) || 1; }), total = lens.reduce(function (a, b) { return a + b; }, 0);
+    var pos = Math.max(0, Math.min(1, part || 0)) * total, i = 0;
+    while (i < els.length - 1 && pos >= lens[i]) { pos -= lens[i]; i += 1; }
+    var el = els[i];
+    if (!el) return null;
+    el.classList.add('is-speaking');
+    // голос дошёл до свёрнутого хвоста — раскрыть, чтобы произносимое было на экране
+    if (pos > sayText(el, true) - 2) [].forEach.call(el.querySelectorAll('details.pl-more--text:not([open])'), function (d) { d.open = true; opened = true; });
+    // докрутка — только когда голос перешёл к другой реплике или раскрыл хвост, а не на каждом timeupdate: иначе игрок не может
+    // отлистать к картинке или плану, пока идёт запись
+    var r = el.getBoundingClientRect();
+    if ((el !== was || opened) && (r.bottom > innerHeight || r.top < 0)) el.scrollIntoView({ block: 'nearest', behavior: smooth() });
+    return i;
+  }
   function clock(s) { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   function playVoice(el, quiet) {
     var box = el.closest('.pl-voice');
@@ -2697,19 +2749,20 @@
       btn.setAttribute('aria-pressed', on ? 'true' : 'false'); btn.setAttribute('aria-label', on ? 'Пауза' : 'Слушать');
       box.classList.toggle('is-on', on);
     };
-    a.addEventListener('play', function () { set(true); });
-    a.addEventListener('pause', function () { set(false); });
+    a.addEventListener('play', function () { set(true); if (voice === a) sayAt(box, voiceAt, a.duration ? a.currentTime / a.duration : 0); });
+    a.addEventListener('pause', function () { set(false); if (voice === a && !a.ended) sayOff(); });
     a.addEventListener('timeupdate', function () {
       if (voice !== a || !a.duration) return;
       var part = (voiceAt + a.currentTime / a.duration) / voiceList.length, k = Math.round(part * bars.length);
       [].forEach.call(bars, function (b, i) { b.classList.toggle('on', i < k); });
       note.textContent = clock(a.currentTime);
+      if (!a.paused) sayAt(box, voiceAt, a.currentTime / a.duration);
     });
     a.addEventListener('ended', function () {
       if (voice !== a) return;
-      if (voiceAt + 1 < voiceList.length) { voiceAt += 1; playNext(quiet); } else set(false);
+      if (voiceAt + 1 < voiceList.length) { voiceAt += 1; playNext(quiet); } else { set(false); sayOff(); }
     });
-    a.addEventListener('error', function () { if (voice !== a) return; set(false); if (!quiet) toast('Озвучка ещё не готова — читаем глазами'); });
+    a.addEventListener('error', function () { if (voice !== a) return; set(false); sayOff(); if (!quiet) toast('Озвучка ещё не готова — читаем глазами'); });
     var pr = a.play();
     if (pr && pr.catch) pr.catch(function () { /* автозапуск запрещён или файла нет — остаётся кнопка */ });
   }
@@ -3072,6 +3125,9 @@
   // Для проверок: функции сверки ответов и состояние
   window.__dvorami = { norm: ANS.norm, matches: ANS.matches, shareLink: function () { return shareLink(); }, state: function () { return S; }, quest: function () { return Q; }, optOrder: function (st) { return optOrder(st, 'step').map(function (x) { return String(x.id); }); }, report: function () { return report(); },
     flags: function () { return FLAGS; }, cards: function () { return CARDS; },
+    // H-62: субтитры без настоящего звука — какие реплики озвучивает плеер экрана и какая отмечена при доле part записи file
+    say: function (file, part) { var b = document.querySelector('#frame .pl-voice[data-n]'); if (!b) return null; var i = sayAt(b, file, part);
+      return { n: +b.dataset.n, whole: b.dataset.whole === '1', found: sayTargets(b).length, at: i, open: document.querySelectorAll('#frame .is-speaking details.pl-more--text[open]').length }; },
     postcardLines: function () { return postcardLines(); }, postcard: function () { return postcard().then(function (b) { return b ? b.size : 0; }); },
     clockOpenAt: function (def, min) { return openAt(def, min); }, mskMinutes: function () { return mskMinutes(); }, sunsetMsk: function (lat, lon) { return sunsetMsk(lat, lon); },
     // мини-шаги: где игрок (live), что на экране (shown), сколько экранов в разделе, режим чтения

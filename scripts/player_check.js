@@ -48,6 +48,8 @@
  *   - H-82: развилка (fork) объявлена на обложке дела строкой «Развилка на точке N» с вариантами;
  *   - T-93: у дела без записей нет плашки «Аудио скоро» и выбора «Слушаю/Читаю», в ?field=1 — есть; цель flip (how: button,
  *     tap, swipe) — одна на точку и способ.
+ *   - H-62 (субтитры): у звуковой улики без реплики есть transcript; в ?field=1 на каждом экране у плеера реплики все его реплики
+ *     с текстом на экране, голос отмечает звучащую и раскрывает её свёрнутый хвост, когда до него дошёл.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
 'use strict';
@@ -124,6 +126,9 @@ let nearSeen = false;
     if (x.type === 'pick') for (const set of x.answers || []) for (const id of [].concat(set)) refs.push([id, where + ' (pick)']);
     if (x.type === 'choice') { const ids = (x.options || []).map(o => o.id); for (const a of [].concat(x.answer || x.answers || [])) if (!ids.includes(a)) err('данные', `${where}: верный вариант «${a}» не среди вариантов`); }
     if (x.type === 'ask' && !(x.answers || []).length && !(x.all || []).length) err('данные', `${where}: у загадки нет answers и all`);
+    // H-62: звук без реплики (звуковая улика) — текст под плеером из transcript (или caption); без него на шумной улице смысла нет
+    if (x.audio && x.text == null && !x.transcript && !x.caption && !x.n && !x.steps && !x.type && !x.scene && !x.ask)
+      err('данные', `${where}: звук без текста на экране — добавьте "transcript" (что слышно), H-62`);
     for (const [k, v] of Object.entries(x)) if (k !== 'if' && typeof v === 'object') walk(v, x.id && x.n ? `точка ${x.n}` : where);
   };
   walk(q, 'дело');
@@ -1104,6 +1109,56 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       const o = await open({}, QS + (QS ? '&' : '?') + 'field=1', 0);
       await o.page.click('[data-act="menu"]');
       if ((await o.page.$$('#sheet [data-act="mode"]')).length !== 2) err(tag, 'полевой тест: в меню нет выбора «Слушаю и читаю / Читаю» (T-93)');
+      await o.ctx.close();
+    }
+
+    // --- H-62: субтитры. В полевом тесте (?field=1) плеер реплики стоит на каждом экране с репликами — и с записями, и без.
+    // На каждом экране дела: у плеера есть все его реплики с текстом на экране; голос в конце записи отмечает последнюю реплику
+    // и раскрывает её свёрнутый хвост («Подробнее»), в начале — первую, хвост закрыт; звуковая улика — с текстом под плеером ---
+    {
+      const n = Q.points.length, hist = {};
+      for (let i = 0; i < n; i++) hist[i] = { res: Array.from({ length: 40 }, () => ({ st: 'ok' })), wa: Array.from({ length: 10 }, () => ({ res: { st: 'ok' } })) };
+      const o = await open({}, QS + (QS ? '&' : '?') + 'field=1', n - 1, { phase: 'done', p: n - 1, f: 0, t_end: Date.now(), hist, res: [], board: [], events: [], cards: [], struck: {}, wa: [], field: true });
+      const page = o.page;
+      let strips = 0, lines = 0, folds = 0;
+      for (const sec of [-1].concat(Q.points.map((x, i) => i))) {
+        const F = await page.evaluate(s2 => window.__dvorami.frames(s2), sec);
+        for (let f = 0; f < F.length; f++) {
+          const r = await page.evaluate(([s2, f2]) => {
+            const bt = document.createElement('button'); bt.dataset.act = 'jump'; bt.dataset.sec = s2; bt.dataset.f = f2; document.body.appendChild(bt); bt.click(); bt.remove();
+            const out = [], fr = document.getElementById('frame');
+            if (!fr) return { out, s: 0 };
+            const boxes = [...fr.querySelectorAll('.pl-voice[data-n]')];
+            for (const b of boxes) {
+              const nx = b.nextElementSibling;
+              if (nx && nx.matches('.pl-sub') && !nx.textContent.trim()) out.push('звуковая улика без текста под плеером');
+            }
+            for (const v of fr.querySelectorAll('.pl-voice:not([data-n])')) if (!(v.nextElementSibling && v.nextElementSibling.matches('.pl-sub')) && !(v.previousElementSibling && v.previousElementSibling.matches('[data-say]')))
+              out.push('плеер без текста на экране (звуковая улика без transcript?)');
+            const first = boxes[0];
+            if (!first) return { out, s: 0 };
+            const n0 = +first.dataset.n, whole = first.dataset.whole === '1';
+            const a = window.__dvorami.say(0, 0);
+            if (!a || a.found < n0) { out.push(`у плеера ${n0} реплик, на экране найдено ${a ? a.found : 0}`); return { out, s: boxes.length }; }
+            const vis = [...fr.querySelectorAll('.is-speaking')];
+            if (vis.length !== 1) out.push(`в начале записи отмечено реплик: ${vis.length} (нужна одна)`);
+            else if (!vis[0].textContent.trim() || vis[0].getBoundingClientRect().height < 4) out.push('отмеченная реплика без видимого текста');
+            if (a.open) out.push('хвост «Подробнее» раскрыт в самом начале записи');
+            const last = whole ? 0 : n0 - 1;
+            const z = window.__dvorami.say(last, 0.999);
+            const sp = fr.querySelector('.is-speaking');
+            if (!sp) out.push('в конце записи ни одна реплика не отмечена');
+            else if (sp.querySelector('details.pl-more--text:not([open])')) out.push('голос дошёл до конца реплики, а её хвост «Подробнее» свёрнут — текст не на экране');
+            window.__dvorami.say(null);
+            if (document.querySelector('.is-speaking')) out.push('отметка реплики не снимается');
+            return { out, s: boxes.length, l: n0, fold: z && z.open ? 1 : 0 };
+          }, [sec, f]);
+          strips += r.s; lines += r.l || 0; folds += r.fold || 0;
+          for (const m of r.out) err(tag, `H-62 ${sec < 0 ? 'вступление' : 'т.' + Q.points[sec].n} ${F[f].id}: ${m}`);
+        }
+      }
+      if (!strips && Q.format >= 5) err(tag, 'H-62: в полевом тесте ни одного плеера реплики — проверка субтитров ничего не проверила');
+      notes.push(`H-62 субтитры: плееров ${strips}, реплик под ними ${lines}, хвост «Подробнее» раскрывается голосом на ${folds} экранах`);
       await o.ctx.close();
     }
 
