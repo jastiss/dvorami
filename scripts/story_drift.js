@@ -15,6 +15,8 @@
  *     дела и в его карточках (текст и разметка), в OG (platform/site/og-manifest.json), в site/llms*.txt (строка дела и
  *     общие строки) и в постах канала (кроме status: published). Сравнение — как у ответов (answer_leaks.js): нормализация
  *     плеера, фраза с начала слова, последнее слово — как префикс («телеграмм» ловит «телеграммы»); число — целиком.
+ *     Кадры плеера на витрине (screens: файл → версия, scripts/player_frame.js) — с той же версии; кадр assets/play/ на главной
+ *     или в каталоге без записи в screens — ошибка. Снятое (в) ищется и в общих блоках главной и каталога (текст, alt, JSON-LD).
  * Пользуется site_check.js (и --sync). */
 'use strict';
 const fs = require('fs');
@@ -37,12 +39,18 @@ function scenarioVersion(id) {
   const N = Math.max(...n);
   return { v: 'v' + N, src: `quests/${id}/story/scenario-v${N}.md`, json: false };
 }
-function versionCheck(ids, sync, versionOf = scenarioVersion, syncName = rel(SYNC)) {
+function versionCheck(ids, sync, versionOf = scenarioVersion, syncName = rel(SYNC), exists = f => fs.existsSync(path.join(REPO, f))) {
   const errors = [], warns = [];
   for (const id of ids) {
     const cur = versionOf(id);
     if (!cur) continue;
     const rec = sync[id];
+    // кадры плеера на витрине (Продюсер 27.11: на главной висел экран v3 «4 из 12» с землемером) — с той же версии сценария
+    for (const [f, v] of Object.entries((rec && rec.screens) || {})) {
+      if (!exists(f)) { errors.push(`${syncName}: «${id}».screens — нет файла ${f}`); continue; }
+      if (v && typeof v === 'object') { if (!v.mockup || String(v.mockup).length < 10) errors.push(`${syncName}: «${id}».screens ${f} — макет без причины (mockup)`); continue; }
+      if (String(v) !== cur.v) errors.push(`кадр плеера ${f} снят со сценария ${v}, а дело «${id}» — ${cur.v} (${cur.src}): переснимите (node scripts/player_frame.js --quest=${id} …) и впишите ${cur.v} в ${syncName} → screens`);
+    }
     if (!rec || !rec.version) {
       (cur.json ? errors : warns).push(`${cur.src} (${cur.v}): в ${syncName} нет записи «${id}» — с какой версией сценария сверена витрина дела? Сверьте и впишите`);
       continue;
@@ -117,14 +125,30 @@ function retiredCheck(id, R, parts, where) {
 }
 
 // ---------- всё вместе ----------
+// кадры плеера (assets/play/…) на главной и в каталоге — каждый записан в story-sync.json → <id>.screens
+function screensCheck(sync, pages = HOME.map(f => [f, fs.readFileSync(path.join(REPO, 'site', f), 'utf8')]), syncName = rel(SYNC)) {
+  const known = new Set(Object.values(sync).flatMap(r => Object.keys((r && r.screens) || {})));
+  const out = [];
+  for (const [label, html] of pages) for (const m of String(html).matchAll(/<img\b[^>]*\ssrc="([^"]*assets\/play\/[^"]+)"/gi)) {
+    const f = 'site/' + m[1].replace(/^(\.\.\/)+/, '').replace(/^\//, '');
+    if (!known.has(f)) out.push(`${label}: кадр плеера ${f} не записан в ${syncName} → screens — с какой версии сценария он снят?`);
+  }
+  return out;
+}
+const HOME = ['index.html', 'moscow/index.html'].filter(f => fs.existsSync(path.join(REPO, 'site', f)));
+
 function check(opts = {}) {
   const errors = [], warns = [];
   const ids = opts.quest ? [opts.quest] : L.allIds();
   let sync = {};
   const syncFile = opts.sync ? path.resolve(opts.sync) : SYNC;
   try { sync = JSON.parse(fs.readFileSync(syncFile, 'utf8')); } catch (e) { errors.push(`${rel(syncFile)}: не читается — ${e.message}`); }
-  const v = versionCheck(ids, sync, scenarioVersion, opts.sync ? `${path.basename(syncFile)} (копия)` : rel(SYNC));
+  const syncName = opts.sync ? `${path.basename(syncFile)} (копия)` : rel(SYNC);
+  const v = versionCheck(ids, sync, scenarioVersion, syncName);
   errors.push(...v.errors); warns.push(...v.warns);
+  if (!opts.quest) errors.push(...screensCheck(sync, undefined, syncName));
+  // общие блоки главной и каталога (текст, alt, title, JSON-LD — corpusOf) — снятое любого дела тоже не встречается
+  const home = opts.html ? [] : HOME.map(f => L.corpusOf(fs.readFileSync(path.join(REPO, 'site', f), 'utf8'), null, f === 'index.html' ? 'главная' : f)).flat();
   for (const id of ids) {
     const corp = L.caseCorpus(id, opts.html);
     if (!corp) continue;
@@ -134,7 +158,7 @@ function check(opts = {}) {
     if (fs.existsSync(qf)) errors.push(...castCheck(id, html, JSON.parse(fs.readFileSync(qf, 'utf8')).speakers, corp.pg));
     const R = retiredOf(id);
     if (!(R.items || []).length && !R.error) continue;
-    const parts = corp.parts.concat(opts.html ? [] : L.extraParts(corp.slug, { llms: opts.llms, posts: opts.posts }))
+    const parts = corp.parts.concat(home, opts.html ? [] : L.extraParts(corp.slug, { llms: opts.llms, posts: opts.posts }))
       .concat(ogParts(corp.slug).map(p => Object.assign(p, { n: ' ' + L.norm(p.text) + ' ' })));
     errors.push(...retiredCheck(id, R, parts, corp.pg));
   }
@@ -150,6 +174,10 @@ function selftest() {
   const nv = vc({ md: { version: 'v3' } });
   if (nv.errors.length !== 1) out.push('(а) дело с quest.json без записи не краснеет');
   if (vc({ zz: { version: '5.6' } }).warns.length !== 1) out.push('(а) дело со сценарием-текстом без записи — нет предупреждения');
+  const sc = (screens, v = '5.6') => versionCheck(['zz'], { zz: { version: v, screens } }, id => ver[id], 'story-sync.json', () => true).errors;
+  if (sc({ 'site/assets/play/frame-riddle.jpg': '5.5' }).length !== 1) out.push('(а) кадр плеера со старой версии не краснеет');
+  if (sc({ 'site/assets/play/frame-riddle.jpg': '5.6', 'site/assets/play/m.jpg': { mockup: 'макет темы для дела без плеера' } }).length) out.push('(а) ложное срабатывание на кадре нужной версии или макете');
+  if (screensCheck({ zz: { screens: { 'site/assets/play/a.jpg': '1' } } }, [['fx', '<img src="assets/play/a.jpg"><img src="assets/play/b.jpg">']]).length !== 1) out.push('(а) кадр плеера без записи в screens не замечен');
   const sp = { a: { name: 'Зиля' }, b: { name: 'Тюфель' }, c: { name: 'Лёва' }, d: { name: 'Гоша' }, e: { name: 'Карточка свидетеля' } };
   const page = (dl, by) => `<section id="cast" class="c-sec"><blockquote class="c-quote">«…»<footer>${by}</footer></blockquote><dl class="c-people">${dl}</dl></section>`;
   const ok = page('<div><dt>Зиля</dt><dd>голубь. Ведёт дело.</dd></div><div><dt>Кот Тюфель</dt><dd>рыжий.</dd></div><div><dt>Свидетели</dt><dd>заводской оформитель Лёва и&nbsp;испытатель Гоша. Каждый расскажет своё.</dd></div>', 'Зиля, сыщик Бюро');
