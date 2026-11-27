@@ -1,11 +1,11 @@
 /* Барабан города в заголовке и список городов (site/assets/city.js). Цвета — от страницы: --city-accent, --city-pop-bg, --city-pop-fg, --city-line.
-   Без JS — обычное слово «Москве». prefers-reduced-motion — без прокрутки и плавной ширины. */
+   Без JS — обычное слово «Москве». Без анимации (владелец 27.11): ни прокрутки барабана, ни плавной ширины — город меняется сразу. */
 [data-city-only][hidden] { display: none !important; }
 .city-drum { position: relative; display: inline-block; white-space: nowrap; }
 .city-btn { --city-lh: 1.12em; display: inline-flex; align-items: flex-start; gap: .08em; padding: 0; margin: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; vertical-align: top; line-height: var(--city-lh); border-radius: 4px; }
 .city-btn:focus-visible { outline: 3px solid var(--city-accent, #FFC53D); outline-offset: 4px; }
-.city-win { display: inline-block; height: var(--city-lh); overflow: hidden; vertical-align: top; transition: width .45s cubic-bezier(.2, .8, .2, 1); background: linear-gradient(90deg, var(--city-accent, #FFC53D) 55%, transparent 0) left bottom / .28em .07em repeat-x; }
-.city-reel { display: block; transform: translateY(calc(var(--i, 0) * -1 * var(--city-lh))); transition: transform .55s cubic-bezier(.3, 1.35, .45, 1); }
+.city-win { display: inline-block; height: var(--city-lh); overflow: hidden; vertical-align: top; background: linear-gradient(90deg, var(--city-accent, #FFC53D) 55%, transparent 0) left bottom / .28em .07em repeat-x; }
+.city-reel { display: block; transform: translateY(calc(var(--i, 0) * -1 * var(--city-lh))); }
 .city-reel.is-still { transition: none; }
 .city-reel > span { display: block; width: max-content; height: var(--city-lh); line-height: var(--city-lh); }
 .city-chev { width: .5em; height: .5em; margin-top: .36em; flex: none; fill: none; stroke: var(--city-accent, #FFC53D); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }

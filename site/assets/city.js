@@ -8,7 +8,8 @@
      data-city-only="moscow" | "live" | "soon"            — блок только для этого города или статуса (soon-блоки в HTML — hidden);
      data-city-set="moscow"                                — кнопка «переключить город»;
      data-city-href                                        — ссылка на вторую марку: к адресу добавится ?city=, если город не основной.
-   Без JS страница остаётся московской, как сейчас. При prefers-reduced-motion барабан не крутится. */
+   Без JS страница остаётся московской, как сейчас. Барабан не крутится (владелец 27.11: «без анимации городов пока — как будто мешает»):
+   город меняется сразу, без прокрутки и без намёка-прокрутки при первом визите. Вернуть движение — STILL = false и transition в city.css (с prefers-reduced-motion). */
 (function () {
   'use strict';
   // Данные городов. Новый город: строка здесь + блоки страниц; дела — только настоящие (status "soon", пока их нет).
@@ -22,6 +23,7 @@
   var BASE = CITIES[0];
   var root = document.documentElement;
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var STILL = true;   // владелец 27.11: без анимации городов — статичное слово, выбор города работает как прежде
   function byId(id) { for (var i = 0; i < CITIES.length; i++) if (CITIES[i].id === id) return CITIES[i]; return null; }
   function get(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { /* без запоминания */ } }
@@ -118,7 +120,7 @@
     var self = this;
     this.show = function (c, animate) {
       var i = CITIES.indexOf(c), item = reel.children[i];
-      reel.classList.toggle('is-still', !animate || reduce);
+      reel.classList.toggle('is-still', !animate || reduce || STILL);
       reel.style.setProperty('--i', i);
       win.style.width = item.getBoundingClientRect().width + 'px';
       sr.textContent = c[form] + ' — сменить город';
@@ -148,7 +150,7 @@
     });
     // намёк, что город можно сменить: один раз на устройство барабан прокручивается к следующему городу и обратно
     this.hint = function () {
-      if (reduce || get(HINT)) return;
+      if (STILL || reduce || get(HINT)) return;
       set(HINT, '1');
       var i = CITIES.indexOf(cur), j = (i + 1) % CITIES.length;
       setTimeout(function () {

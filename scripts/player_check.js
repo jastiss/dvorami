@@ -41,6 +41,13 @@
  *     предупреждение, если у верного варианта выбора первое слово не такое, как у всех остальных;
  *   - доска формата 5: на 390 в конце дела первая улика — на первом экране доски; опровергнутые версии — строкой, раскрываются;
  *     переключатель «Все · Версии · Улики» показывает своё; развилка (fork): кнопки, выбор меняет ветку дела и пишется в сохранение.
+ *   - T-94 (владелец 27.11): нажатия «Дальше» и экраны по точкам — в выводе (прогон 390/тёмная); касание правой трети экрана и свайп
+ *     влево листают вперёд, касание слева и по кнопкам — нет; прокрутка экрана на 390×844 (прохождение) и 360×740 (все экраны
+ *     в просмотре) — предупреждением со списком экранов, тест не краснеет (длинный текст не всегда помещается);
+ *   - H-86: «Новое с прошлого раза» на доске — метка на карточках, легших после прошлого открытия «Улик», при повторном — без меток;
+ *   - H-82: развилка (fork) объявлена на обложке дела строкой «Развилка на точке N» с вариантами;
+ *   - T-93: у дела без записей нет плашки «Аудио скоро» и выбора «Слушаю/Читаю», в ?field=1 — есть; цель flip (how: button,
+ *     tap, swipe) — одна на точку и способ.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
 'use strict';
@@ -69,6 +76,8 @@ const passes = c => {
 const prune = x => Array.isArray(x) ? x.filter(e => !(e && typeof e === 'object' && !Array.isArray(e) && !passes(e.if))).map(prune)
   : (x && typeof x === 'object') ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, prune(v)])) : x;
 const Q = prune(RAW);
+// T-93: плеер реплики «Аудио скоро» и выбор «Слушаю и читаю / Читаю» — только у дела с записями или в ?field=1
+const VOICE = /"(walk_)?audio"\s*:\s*"(?!https?:|\/\/)[^"]+"/.test(JSON.stringify(RAW));
 const QS = args.flags ? '?flags=' + encodeURIComponent(args.flags) : '';
 // Без --data — как на стенде: дело зашифровано, коды — тестовые, только на время прогона
 const SEALED = !args.data;
@@ -326,11 +335,16 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
   const firstAnswer = st => st.answers && st.answers.length ? String(st.answers[0]).replace(/^~/, '')
     : (st.all || []).map(g => String((Array.isArray(g) ? g : g.answers)[0]).replace(/^~/, '')).join(' ');
   let screens = 0;
+  // T-94: нажатия «Дальше» по точкам и экраны с прокруткой на 390×844 — считаются в прогоне 390/тёмная
+  const tally = {}, tallyFrames = {}, scrolled = new Map(), seenFrames = new Set();
 
   for (const vp of [{ width: 390, height: 844 }, { width: 1024, height: 768 }, { width: 1440, height: 900 }]) {
     for (const theme of ['dark', 'sun']) {
       const tag = `${vp.width}/${theme}`;
       const SHUF = {}, SHUF_FIRST = [];
+      const TALLY = vp.width === 390 && theme === 'dark';
+      let tallyAt = 'вступление';
+      const press = () => { if (TALLY) tally[tallyAt] = (tally[tallyAt] || 0) + 1; };
       const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' });
       const page = await ctx.newPage();
       await page.route('**/*', route => {
@@ -366,6 +380,11 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       const fresh = async where => {
         await check(where);
         if (vp.width < 1024) { await page.evaluate(settle); (await page.evaluate(stickAudit)).forEach(m => err(`${tag} · ${where}`, m)); }
+        if (TALLY) {   // экран без прокрутки по вертикали (владелец 27.11): считаем каждый экран прохождения один раз
+          const o = await page.evaluate(() => { const f = document.getElementById('frame'); if (!f || !window.__dvorami) return null; const ps = window.__dvorami.pos();
+            return { key: ps.sec + ':' + ps.id, kind: ps.kind, over: Math.round(document.documentElement.scrollHeight - innerHeight), pic: !!f.querySelector('.pl-fig, .pl-letter') }; }).catch(() => null);
+          if (o && !seenFrames.has(o.key)) { seenFrames.add(o.key); if (o.over > 1) scrolled.set(o.key, `${where} (${o.kind}${o.pic ? ', картинка' : ''}): +${o.over} px`); }
+        }
       };
       const pos = () => page.evaluate(() => window.__dvorami.pos());
       const FWD = '#app .pl-bar [data-act="fwd"]';
@@ -377,7 +396,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           if (!b) return false;
           const ps = await pos();
           await fresh(`${where} · экран ${ps.id}`);
-          await b.click();
+          await b.click(); press();
         }
         err(tag, `${where}: «Дальше» не кончается`); return false;
       };
@@ -525,6 +544,12 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       };
 
       await check('обложка');
+      // H-82: развилка объявлена на обложке — номер точки и подписи вариантов из данных развилки
+      for (const fp of Q.points.filter(x => x.fork && x.fork.flag && (x.fork.options || []).length > 1)) {
+        const cov = await page.$eval('#app', e => e.textContent).catch(() => '');
+        const lbl = fp.fork.options.map(o => String(o.label).replace(/<[^>]+>/g, ''));
+        if (!cov.includes(`Развилка на точке ${fp.n}`) || lbl.some(l => !cov.includes(l))) err(tag, `обложка: развилка точки ${fp.n} не объявлена (H-82)`);
+      }
       // H-74: сохранение старой версии дела (5.2 на 5.4) — экран «Вышла новая версия дела»: «Продолжить» оставляет место,
       // «Начать заново» — обложку; выбор не повторяется после перезагрузки. На 390, в тёмной теме — «Продолжить», в светлой — «Начать заново».
       if (vp.width === 390 && RAW.version != null && Q.points.length > 1) {
@@ -565,15 +590,17 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         if (sn.text.includes('{время}')) err(tag, 'обложка: в строке о свете не подставлено время');
       }
       // режим «читаю / слушаю и читаю»: по умолчанию плеер реплик есть; в одном прогоне переключаем на «Читаю» — плеера нет нигде
-      const readMode = vp.width === 1024 && theme === 'sun';
-      if ((await page.$$('#app [data-act="mode"]')).length !== 2) err(tag, 'обложка: нет выбора «Слушаю и читаю / Читаю»');
+      const readMode = VOICE && vp.width === 1024 && theme === 'sun';
+      if (VOICE && (await page.$$('#app [data-act="mode"]')).length !== 2) err(tag, 'обложка: нет выбора «Слушаю и читаю / Читаю»');
+      if (!VOICE && (await page.$$('#app [data-act="mode"]')).length) err(tag, 'обложка: выбор «Слушаю и читаю / Читаю» у дела без записей (T-93)');
       if (readMode) {
         await click('#app [data-act="mode"][data-mode="read"]');
         if ((await pos()).mode !== 'read') err(tag, 'режим «Читаю» не включился');
         await check('обложка · режим «Читаю»');
       }
       await click('[data-act="start"]');
-      if (!readMode && Q.format >= 5 && !(await page.$('#frame .pl-voice.is-soon'))) err(tag, 'вступление: в режиме «Слушаю и читаю» нет плеера реплики с плашкой «Аудио скоро»');
+      if (VOICE && !readMode && Q.format >= 5 && !(await page.$('#frame .pl-voice.is-soon, #frame .pl-voice[data-srcs]'))) err(tag, 'вступление: в режиме «Слушаю и читаю» нет плеера реплики');
+      if (!VOICE && await page.$('#frame .pl-voice.is-soon')) err(tag, 'вступление: плашка «Аудио скоро» у дела без записей (T-93)');
       // владелец 27.11: один индикатор прогресса (полоса по точкам в шапке), оглавление — по названию точки, без отдельной иконки
       if (await page.$('.pl-minis, .pl-toc-btn')) err(tag, 'вступление: вторая полоса прогресса или отдельная кнопка оглавления под меню');
       if (!(await page.$('#app .pl-crumb .pl-crumb-btn[data-act="toc"]'))) err(tag, 'вступление: нет кнопки оглавления (название экрана)');
@@ -583,6 +610,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       let reviewed = false;
       for (const [pi, p] of Q.points.entries()) {
         const at = `точка ${p.n}`;
+        tallyAt = p.n;
         if ((await state()).phase !== 'walk') { err(tag, `${at}: нет экрана дороги`); break; }
         {
           const pg = await page.evaluate(() => { const b = document.querySelectorAll('.pl-progress, .pl-minis'), c = document.querySelector('#progress i.cur'); return { bars: b.length, cur: c ? getComputedStyle(c).getPropertyValue('--part').trim() : null, n: document.querySelectorAll('#progress i').length }; });
@@ -595,7 +623,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           await click('[data-view="point"]');
           await click('[data-act="menu"]'); await check(at + ' · меню'); await click('[data-act="close"]');
           // место внутри точки (мини-шаг) переживает перезагрузку
-          if (await page.$(FWD)) await click(FWD);
+          if (await page.$(FWD)) { await click(FWD); press(); }
           const before = await pos();
           await page.reload({ waitUntil: 'load' }); await page.waitForSelector('#frame');
           const s = await state(), after = await pos();
@@ -622,7 +650,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
             }
           } else await fresh(`${at} · дорога · экран ${ps.id}`);
           if (!(await page.$(FWD))) { err(tag, `${at}: на экране дороги ${ps.id} нет ни «Дальше», ни «Мы на месте»`); break; }
-          await click(FWD);
+          await click(FWD); press();
         }
         if (seenAsk.size !== asks.length) err(tag, `${at}: вопросов на ходу показано ${seenAsk.size} из ${asks.length}`);
         await fresh(at + ' · идём');
@@ -677,7 +705,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
             const back = await pos();
             if (back.peek || back.f !== here.f || back.sec !== here.sec) err(tag, `${sat}: «К текущему шагу» не вернул на место (${JSON.stringify(back)})`);
           }
-          if (plain) { await click('#app .pl-bar [data-act="next"]'); continue; }
+          if (plain) { await click('#app .pl-bar [data-act="next"]'); press(); continue; }
           if (st.type === 'free') { await page.fill('#ans', '10'); await click('#active button[type="submit"]'); continue; }
           if (st.type === 'choice' || st.type === 'pick' || st.type === 'strike') {
             await solve('#active', st, sat, si % 2 === 0);
@@ -746,6 +774,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         if (s1.phase !== 'point_done') { err(tag, `${at}: точка не закрылась (${s1.phase}/${s1.k})`); break; }
         await flip(at + ' · разбор', '[data-act="nextpoint"]');
         await fresh(at + ' · пройдена');
+        if (TALLY) tallyFrames[p.n] = await page.evaluate(i => window.__dvorami.frames(i), pi);
         // развилка (поле fork): кнопки на последнем экране «точка пройдена»; выбор меняет ветку дела, возврат — восстанавливает
         if (p.fork && p.fork.flag) {
           const fk = p.fork, cur = flag(fk.flag);
@@ -767,7 +796,18 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         }
         if (pi === 3 || (Q.letter && pi === Q.points.length - 2)) {
           await shot('player-clue');
+          const b0 = await state();
           await click('[data-view="board"]'); await check(at + ' · улики'); await shot('player-board');
+          // H-86: после прошлого открытия доски легли карточки — у каждой метка «Новое»; повторное открытие — без меток
+          if (typeof b0.bseen === 'number' && (b0.cards || []).length) {
+            const want = b0.cards.length - b0.bseen, got = await page.$$eval('#app .pl-fresh-tag', e => e.length);
+            if (got !== want) err(tag, `${at} · улики: меток «Новое» ${got}, а новых карточек с прошлого открытия ${want} (H-86)`);
+            else if (TALLY) notes.push(`H-86: на доске ${b0.cards.length} карточек, с прошлого открытия «Новое» — ${want}`);
+            if (want) {
+              await click('[data-view="point"]'); await click('[data-view="board"]');
+              if ((await page.$$('#app .pl-fresh-tag')).length) err(tag, `${at} · улики: метки «Новое» остались при повторном открытии`);
+            }
+          }
           // доска: первая улика — на первом экране (на 390, в конце дела: опровергнутые версии — строкой внизу, не сверху)
           if (pi === Q.points.length - 2) {
             const b = await page.evaluate(() => {
@@ -817,7 +857,9 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         if (end.board.length !== clues) err(tag, `улик ${end.board.length}, ожидали ${clues}`);
         // «стрелки»: каждая цель показана, и показана один раз (запомнена за одним экраном)
         const targets = new Set(JSON.stringify(Q).match(/"arrow":"[^"]+"/g) || []);
-        for (const t of targets) { const k = t.split('"')[3]; if (!end.arrows || !end.arrows[k]) err(tag, `стрелка «${k}» ни разу не показана`); }
+        for (const t of targets) { const k = t.split('"')[3]; if (k === 'sound' && (!VOICE || readMode)) continue; if (!end.arrows || !end.arrows[k]) err(tag, `стрелка «${k}» ни разу не показана`); }
+        // T-93: без плеера реплики (нет записей или режим «Читаю») совета «Звук» нет
+        if ((!VOICE || readMode) && end.arrows && end.arrows.sound) err(tag, 'стрелка «Звук» показана, хотя плеера реплики нет (T-93)');
         if (Q.letter && !end.letter) err(tag, 'письмо-улика не попало на доску');
         // финальная карточка: номер дела, штамп «Раскрыто», ни одного слова-ответа; оценка звёздами хранится на телефоне; отзыв — в бота
         const pageQid = await page.evaluate(() => document.body.dataset.quest);   // у макета темы папка дела своя
@@ -891,7 +933,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
   {
     const tag = '390/доп';
     const p0 = Q.points[Math.min(2, Q.points.length - 1)];
-    const open = async (extra, qs, statePoint) => {
+    const open = async (extra, qs, statePoint, saved) => {
       const ctx = await browser.newContext(Object.assign({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' }, extra));
       const page = await ctx.newPage();
       await page.route('**/*', route => {
@@ -902,10 +944,10 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       });
       page.on('pageerror', e => err(tag, 'JS: ' + e.message));
       page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::|quest\.locked\.json|\/media\//.test(m.text() + ((m.location() || {}).url || ''))) err(tag, 'консоль: ' + m.text().slice(0, 200)); });
-      await page.addInitScript(([qid, code, ver, pi]) => {
+      await page.addInitScript(([qid, code, ver, pi, saved]) => {
         try {
           if (code) localStorage.setItem('dvorami:code:' + qid, code);
-          localStorage.setItem('dvorami:play:' + qid, JSON.stringify({ v: 1, quest: qid, version: ver, phase: 'walk', p: pi, k: 0, f: 0, t_start: Date.now() - 6e5, field: false }));
+          localStorage.setItem('dvorami:play:' + qid, JSON.stringify(Object.assign({ v: 1, quest: qid, version: ver, phase: 'walk', p: pi, k: 0, f: 0, t_start: Date.now() - 6e5, field: false }, saved || {})));
         } catch (e) {}
         window.__goals = []; let real = null;
         Object.defineProperty(window, 'dvoramiTrack', { configurable: true, get: () => (g, p) => { window.__goals.push([g, Object.assign({}, p)]); if (real) try { real(g, p); } catch (e) {} }, set: f => { real = f; } });
@@ -915,7 +957,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         if (G) { const w = G.watchPosition.bind(G), c = G.clearWatch.bind(G); const live = new Set();
           G.watchPosition = (...a) => { const id = w(...a); live.add(id); window.__watch = live.size; return id; };
           G.clearWatch = id => { live.delete(id); window.__watch = live.size; return c(id); }; }
-      }, [QID, SEALED ? BUNDLE.code : '', RAW.version == null ? null : RAW.version, statePoint]);
+      }, [QID, SEALED ? BUNDLE.code : '', RAW.version == null ? null : RAW.version, statePoint, saved || null]);
       await page.goto(`${BASE}/${PAGE}${qs}`, { waitUntil: 'load' });
       await page.waitForSelector('#app .pl-bar, #app [data-view], #tabs:not([hidden])', { timeout: 15000 }).catch(() => {});
       return { ctx, page };
@@ -949,6 +991,10 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           await page.$eval('#app .pl-fb', e => e.scrollIntoView({ block: 'center' }));
           await audit1(page, 'полевой тест · плашка'); await jpg(page, 'player-field-fb');
           notes.push(`плашка «🔶 запасной текст» в ?field=1: ${total} меток в деле, проверена на точке ${Q.points[where].n} — «${t.slice(0, 70)}…»`);
+          // T-120: в полевом отчёте — блок «Факты 🔶» с флагом этой плашки и его значением
+          const rep = await page.evaluate(() => window.__dvorami.report()).catch(() => '');
+          const fk = (t.match(/:\s*(\S+)\s—/) || [])[1];
+          if (!/ФАКТЫ 🔶/.test(rep) || (fk && !new RegExp('- ' + fk.replace(/[^\w-]/g, '') + ' = [A-Z]').test(rep))) err(tag, `полевой отчёт: нет блока «Факты 🔶» с флагом ${fk} (T-120)`);
         }
         await ctx.close();
         // тот же экран без ?field=1 — плашки нет (сохранение не полевое)
@@ -1000,6 +1046,89 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       }
       await ctx.close();
     }
+
+    // --- T-94: касание правой трети экрана и свайп влево — «Дальше»; касание слева и по кнопкам — нет ---
+    {
+      const SKIP = 'a, button, input, textarea, select, label, summary, details, [data-act], .pl-form, .pl-opts, .pl-sel, .pl-frame, .pl-letter, .pl-fig, svg, dialog';
+      let { ctx, page } = await open({ hasTouch: true }, QS, 0);
+      // точка, где у дороги несколько экранов (разговор в пути): там есть «Дальше»
+      const wi = await page.evaluate(() => { const D = window.__dvorami, n = D.quest().points.length;
+        for (let i = 0; i < n; i++) { const F = D.frames(i); if (F.findIndex(x => x.kind === 'arrive') >= 2) return i; } return -1; });
+      if (wi < 0) notes.push('касание и свайп: в деле нет дороги с несколькими экранами — не проверено');
+      else {
+        if (wi !== 0) { await ctx.close(); ({ ctx, page } = await open({ hasTouch: true }, QS, wi)); }
+        const f0 = () => page.evaluate(() => window.__dvorami.pos().f);
+        const spot = side => page.evaluate(([side, skip]) => {
+          const f = document.getElementById('frame').getBoundingClientRect(), x = side === 'r' ? innerWidth * 0.85 : innerWidth * 0.15;
+          const bar = (document.querySelector('#app .pl-bar') || { getBoundingClientRect: () => ({ top: innerHeight }) }).getBoundingClientRect().top;
+          for (let y = Math.max(f.top + 4, 70); y < Math.min(bar - 4, innerHeight - 70); y += 6) { const el = document.elementFromPoint(x, y); if (el && el.closest('#app') && !el.closest(skip)) return { x, y }; }
+          return null;
+        }, [side, SKIP]);
+        const flips = async how => (await page.evaluate(() => window.__goals)).filter(([g, p]) => g === 'flip' && p.how === how);
+        const a = await f0(), L = await spot('l');
+        if (L) { await page.mouse.click(L.x, L.y); if (await f0() !== a) err(tag, 'касание левой части экрана листает вперёд — должно только правой трети'); }
+        const R = await spot('r');
+        if (!R) err(tag, 'касание: на экране дороги нет свободного места справа (всё занято кнопками)');
+        else {
+          await page.mouse.click(R.x, R.y);
+          if (await f0() !== a + 1) err(tag, `касание правой трети экрана не листает вперёд (экран ${a} → ${await f0()})`);
+          const ft = await flips('tap');
+          if (ft.length !== 1 || ft[0][1].quest !== QID || ft[0][1].point == null) err(tag, `касание: ждали одну цель flip (how=tap, quest, point), получили ${JSON.stringify(ft)}`);
+        }
+        const b = await f0(), more = await page.$('#app .pl-bar [data-act="fwd"], #app .pl-bar [data-act="next"]');
+        if (more) {
+          await page.evaluate(() => {
+            const el = document.getElementById('frame'), r = el.getBoundingClientRect(), y = r.top + Math.min(r.height / 2, 120);
+            const t = x => new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
+            el.dispatchEvent(new TouchEvent('touchstart', { touches: [t(320)], changedTouches: [t(320)], bubbles: true }));
+            el.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t(150)], bubbles: true }));
+          });
+          if (await f0() !== b + 1) err(tag, `свайп влево не листает вперёд (экран ${b} → ${await f0()})`);
+          if ((await flips('swipe')).length !== 1) err(tag, 'свайп: нет цели flip (how=swipe)');
+        }
+        // на последнем экране дороги — «Мы на месте»: касание не отмечает прибытие за игрока
+        let pressed = 0;
+        for (let i = 0; i < 20 && await page.$('#app .pl-bar [data-act="fwd"]'); i++) { await page.click('#app .pl-bar [data-act="fwd"]'); pressed++; }
+        const fb = await flips('button');
+        if (pressed && fb.length !== 1) err(tag, `кнопка «Дальше»: ждали одну цель flip (how=button) на точку, получили ${fb.length}`);
+        const R2 = await spot('r'), ph = (await page.evaluate(() => window.__dvorami.state().phase));
+        if (R2) { await page.mouse.click(R2.x, R2.y); if ((await page.evaluate(() => window.__dvorami.state().phase)) !== ph) err(tag, 'касание справа нажало «Мы на месте» за игрока'); }
+        await audit1(page, 'касание и свайп');
+        notes.push(`касание правой трети и свайп влево листают вперёд, касание слева и «Мы на месте» — нет (точка ${wi + 1})`);
+      }
+      await ctx.close();
+    }
+
+    // --- T-93: в полевом тесте (?field=1) плеер реплики и выбор «Слушаю и читаю / Читаю» есть и без записей ---
+    {
+      const o = await open({}, QS + (QS ? '&' : '?') + 'field=1', 0);
+      await o.page.click('[data-act="menu"]');
+      if ((await o.page.$$('#sheet [data-act="mode"]')).length !== 2) err(tag, 'полевой тест: в меню нет выбора «Слушаю и читаю / Читаю» (T-93)');
+      await o.ctx.close();
+    }
+
+    // --- прокрутка на 360×740 (владелец 27.11): все экраны дела в просмотре пройденного, плашка «Пройденное» скрыта ---
+    {
+      const n = Q.points.length, hist = {};
+      for (let i = 0; i < n; i++) hist[i] = { res: Array.from({ length: 40 }, () => ({ st: 'ok' })), wa: Array.from({ length: 10 }, () => ({ res: { st: 'ok' } })) };
+      const o = await open({ viewport: { width: 360, height: 740 } }, QS, n - 1, { phase: 'done', p: n - 1, f: 0, t_end: Date.now(), hist, res: [], board: [], events: [], cards: [], struck: {}, wa: [] });
+      const page = o.page;
+      await page.addStyleTag({ content: '.pl-review{display:none!important}' });
+      const secs = [-1].concat(Q.points.map((x, i) => i));
+      let all = 0; const over = [];
+      for (const sec of secs) {
+        const F = await page.evaluate(s2 => window.__dvorami.frames(s2), sec);
+        for (let f = 0; f < F.length; f++) {
+          const m = await page.evaluate(([s2, f2]) => { const bt = document.createElement('button'); bt.dataset.act = 'jump'; bt.dataset.sec = s2; bt.dataset.f = f2; document.body.appendChild(bt); bt.click(); bt.remove();
+            const fr = document.getElementById('frame'); return { over: Math.round(document.documentElement.scrollHeight - innerHeight), pic: !!(fr && fr.querySelector('.pl-fig, .pl-letter')) }; }, [sec, f]);
+          all++;
+          if (m.over > 1) over.push(`${sec < 0 ? 'вступление' : 'т.' + Q.points[sec].n} ${F[f].id} (${F[f].kind}${m.pic ? ', картинка' : ''}): +${m.over} px`);
+        }
+      }
+      const pics = over.filter(x => /картинка/.test(x)).length;
+      warn('прокрутка 360×740', `экранов с прокруткой ${over.length} из ${all} (с картинкой ${pics})` + (over.length ? ':\n     ' + over.slice(0, 40).join('\n     ') + (over.length > 40 ? '\n     …' : '') : ''));
+      await o.ctx.close();
+    }
   }
 
   await browser.close();
@@ -1009,6 +1138,17 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
   const firsts = ALL_FIRST.filter(Boolean).length;   // по всем прогонам: случайно «всегда первый» в 20+ выборах не выпадает
   if (ALL_FIRST.length >= 6 && firsts === ALL_FIRST.length) err('варианты', `верный вариант первым во всех ${firsts} перемешиваемых выборах`);
   if (sk.length && sk.every(v => v.size === 1)) err('варианты', 'порядок вариантов одинаков во всех прогонах — перемешивание не зависит от игрока');
+  // T-94: нажатия «Дальше» и экраны по точкам (прогон 390/тёмная), прокрутка на 390×844
+  if (Object.keys(tally).length) {
+    const pts = Q.points.map(x => x.n), intro = tally['вступление'] || 0;
+    const total = pts.reduce((a, n) => a + (tally[n] || 0), 0);
+    const line = pts.map(n => { const F = tallyFrames[n] || []; const r = F.filter(x => x.kind === 'result' || (x.kind === 'done' && x.parts)).length; return `т.${n} ${tally[n] || 0} (экранов ${F.length}, разбор ${r})`; }).join(' · ');
+    notes.push(`«Дальше» на 390×844 (T-94): ${line}; всего по точкам ${total}, со вступлением ${total + intro}`);
+  }
+  if (seenFrames.size) {
+    const list = [...scrolled.values()], pics = list.filter(x => /картинка/.test(x)).length;
+    warn('прокрутка 390×844', `экранов с прокруткой ${list.length} из ${seenFrames.size} (с картинкой ${pics})` + (list.length ? ':\n     ' + list.join('\n     ') : ''));
+  }
   [...new Set(notes)].forEach(n => console.log(' · ' + n));
   console.log(' · ' + SRC);
   if (ALL_FIRST.length) console.log(` · варианты перемешаны: верный первым в ${firsts} из ${ALL_FIRST.length} выборов`);

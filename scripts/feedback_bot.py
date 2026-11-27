@@ -73,7 +73,9 @@ MSK = ZoneInfo("Europe/Moscow")
 
 # Единственный базовый адрес для игроков — боевой домен. Тестовый стенд игрокам не показываем.
 SITE = "https://dvorami.ru/"
-CITY_URL = SITE + "moscow/"
+# H-71: ссылки бота на сайт несут ?from=bot — в Метрике визит виден параметром from (docs/analytics.md, «Метка ?from=»)
+FROM = "?from=bot"
+CITY_URL = SITE + "moscow/" + FROM
 CHANNEL = "https://t.me/dvorami_quest"
 EXPIRE = 24 * 3600   # незаконченный диалог живёт сутки
 LOW = 3              # оценка не выше этой — сразу владельцу
@@ -261,7 +263,7 @@ def find_case(quest):
 
 
 def case_url(case):
-    return SITE + "moscow/" + case["slug"] + "/"
+    return SITE + "moscow/" + case["slug"] + "/" + FROM
 
 
 def case_name(quest):

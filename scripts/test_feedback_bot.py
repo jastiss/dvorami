@@ -145,6 +145,7 @@ class FeedbackBotTest(unittest.TestCase):
         urls = [b[4:] for b in self.tg.last_buttons() if b.startswith("url:")]
         self.assertEqual(len(urls), len(fb.CASES) + 1)
         self.assertTrue(all(u.startswith("https://dvorami.ru/moscow/") for u in urls), urls)
+        self.assertTrue(all(u.endswith("?from=bot") for u in urls), urls)   # H-71: метка источника в каждой ссылке бота
         src = pathlib.Path(fb.__file__).read_text(encoding="utf-8")
         self.assertNotIn("github.io", src)
         for c in fb.CASES:   # каждая ссылка — на существующую страницу дела
