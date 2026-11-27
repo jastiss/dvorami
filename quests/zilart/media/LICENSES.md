@@ -66,3 +66,4 @@
 | `voices/tyufel-d-eric.mp3`, `lyova-c-george.mp3`, `lyova-d-daniel.mp3`, `gosha-b-roger.mp3`, `gosha-c-bill.mp3` | Пробы голосов | `elevenlabs/tts/eleven-v4`, библиотечные голоса Eric, George, Daniel, Roger, Bill |
 | `voices/tyufel-e-design.mp3` | Голос по текстовому описанию | `fal-ai/qwen-3-tts/voice-design/1.7b` (открытая модель Qwen3-TTS; лицензию модели сверить до публикации) |
 | `voices/tyufel-f-minimax.mp3` | Проба голоса | `fal-ai/minimax/speech-2.8-hd`, голос Elegant_Man |
+| `scenes/ref-sheet-4.jpg`, `site/play/zilart/media/scenes/s01…s07*.jpg` | Лист героев и 7 сцен квеста, стиль 4 (27.11, A-66) | `fal-ai/nano-banana-pro/edit` — условия те же, что у строк кастинга выше |
