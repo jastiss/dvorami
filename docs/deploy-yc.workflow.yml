@@ -1,10 +1,13 @@
 # ЧЕРНОВИК workflow деплоя в Yandex Cloud (docs/yandex-cloud.md, раздел 5).
 # Лежит в docs/, потому что правку .github/workflows команде блокирует автопроверка.
 # Владелец: скопировать в .github/workflows/deploy-yc.yml (GitHub → Add file → Create new file), когда сделаны шаги раздела 6.
+# Боевые бакеты получают файлы только при пуше в ветку production (её создаёт и сливает в неё только владелец).
+# Бакеты www.<домен> файлов не получают: в них только переадресация (шаг 6.4).
 # Секретов в файле нет — только имена. Заводятся в Settings → Secrets and variables → Actions:
 #   Secrets:   YC_SA_KEY_ID, YC_SA_SECRET (статический ключ сервисного аккаунта dvorami-deploy), QUEST_MASTER_CODE (уже есть),
 #              YC_STAND_BUCKET (секретное имя бакета стенда — секретом, чтобы GitHub скрывал его в журналах)
-#   Variables: YC_PROD_BUCKET (dvorami.ru), YC_SLEDAMI_BUCKET (sledami.ru),
+#   Variables: YC_PROD_BUCKET (dvorami.ru), YC_SLEDAMI_BUCKET (sledami.ru), YC_ZALAMI_BUCKET (zalami.ru; заведён 28.11 —
+#              читается и как Variable, и как Secret),
 #              OPEN_INDEXING (пусто; "yes" — только по решению владельца открыть сайт поисковикам)
 name: Сайт — деплой в Yandex Cloud
 
@@ -128,6 +131,7 @@ jobs:
           STAND: ${{ secrets.YC_STAND_BUCKET }}
           PROD: ${{ vars.YC_PROD_BUCKET }}
           SLEDAMI: ${{ vars.YC_SLEDAMI_BUCKET }}
+          ZALAMI: ${{ vars.YC_ZALAMI_BUCKET || secrets.YC_ZALAMI_BUCKET }}
         run: |
           set -eu
           # HTML и данные дела — всегда свежие; остальное браузер может держать час (service worker плеера и так версионирует кэш)
@@ -143,13 +147,23 @@ jobs:
             put site "s3://$STAND/_preview/$PREVIEW"
             echo "Предпросмотр выложен в папку _preview/$PREVIEW/ стенда (адрес стенда — у владельца и команды)"
           elif [ "$REF" = "production" ]; then
-            put site "s3://$PROD" --exclude 'sledami/*'
+            put site "s3://$PROD" --exclude 'sledami/*' --exclude 'zalami/*'
             # sledami.ru: витрина site/sledami/ в корне и общий плеер /play/ (свои дела у него появятся позже)
             # страницы sledami и плеер ссылаются на ../assets/ и ../legal/ — кладём их рядом, иначе шрифты, скрипты и «Политика» не откроются
             put site/sledami "s3://$SLEDAMI" --exclude 'play/*' --exclude 'assets/*' --exclude 'legal/*'
             put site/play "s3://$SLEDAMI/play"
             put site/assets "s3://$SLEDAMI/assets"
             if [ -d site/legal ]; then put site/legal "s3://$SLEDAMI/legal"; fi
+            # zalami.ru (A-77, отдельный бренд): та же схема, что у sledami.ru; пока нет site/zalami/ — бакет не трогаем
+            if [ -d site/zalami ] && [ -n "${ZALAMI:-}" ]; then
+              put site/zalami "s3://$ZALAMI" --exclude 'play/*' --exclude 'assets/*' --exclude 'legal/*'
+              put site/play "s3://$ZALAMI/play"
+              put site/assets "s3://$ZALAMI/assets"
+              if [ -d site/legal ]; then put site/legal "s3://$ZALAMI/legal"; fi
+              echo "zalami.ru обновлён: https://zalami.ru/"
+            else
+              echo "zalami.ru: витрины site/zalami/ ещё нет — бакет не тронут"
+            fi
             echo "Боевые сайты обновлены: https://dvorami.ru/ и https://sledami.ru/"
           elif [ "$REF" = "main" ]; then
             put site "s3://$STAND" --exclude '_preview/*'
