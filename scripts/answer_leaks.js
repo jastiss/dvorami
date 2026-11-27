@@ -24,9 +24,14 @@
  * Где ищем: страница дела — видимый текст (без <script>/<style>), разметка (<title>, alt, title, aria-label, content,
  * placeholder, имена файлов в src/href/srcset, JSON-LD), текст локальных SVG, на которые ссылается страница; карточка
  * дела в site/index.html и site/moscow/index.html (элемент li.qcard со ссылкой на дело) — так же.
+ * H-119: ещё site/llms*.txt (пишутся руками) — строка со ссылкой на дело проверяется ответами этого дела, строки без ссылки
+ * на дело (шапка, справка) — ответами всех дел; и посты канала docs/marketing/channel/posts/*.md (кроме status: published —
+ * они уже вышли) — текст поста без шапки ответами всех дел. Исключения answer_leaks.json → ok действуют и здесь.
+ * Обратная проверка: --llms=копия.txt (вместо site/llms*.txt) и --posts=папка (вместо posts/) — подставленный ответ краснеет.
  * Одна находка — одно поле сценария (канонический ответ и его основы вместе; одинаковые поля разных шагов — одной строкой).
  * Исключения — scripts/answer_leaks.json → ok: {"<id дела>": {"<любой ответ или основа поля>": "почему это не спойлер"}};
- * значение-объект {"why": "…", "warn": true} — известная находка ждёт решения (Сценарист): не красное, а жёлтое каждый запуск.
+ * значение-объект {"why": "…", "warn": true} — известная находка ждёт решения (Сценарист): не красное, а жёлтое каждый запуск;
+ * {"why": "…", "only": "006-otvet-zil-gagarin.md"} — исключение только для находок в этих местах (тот же ответ на витрине — красное).
  * Причина обязательна (от 15 знаков); исключение, которое больше ничего не снимает, — предупреждение «снять».
  * Пользуется site_check.js (и --sync): найденный ответ без исключения — ошибка. */
 'use strict';
@@ -180,6 +185,35 @@ function caseCorpus(id, htmlOverride) {
   return { slug, pg, parts };
 }
 
+// ---------- H-119: llms*.txt и посты канала ----------
+const POSTS = path.join(REPO, 'docs', 'marketing', 'channel', 'posts');
+function caseSlugs() { const d = path.join(SITE, 'moscow'); return fs.readdirSync(d).filter(s => fs.existsSync(path.join(d, s, 'index.html'))); }
+// строки llms-файла для дела slug: строка со ссылкой на это дело и строки без ссылки ни на одно дело
+function llmsPartsOf(text, label, slug, slugs) {
+  const out = [];
+  String(text).split('\n').forEach((line, i) => {
+    const own = slugs.filter(s => line.includes(`/moscow/${s}/`));
+    if (own.length && !own.includes(slug)) return;
+    if (!line.trim()) return;
+    out.push({ where: `${label}:${i + 1}${own.length ? ' (строка дела)' : ''}`, text: decode(line) });
+  });
+  return out;
+}
+function extraParts(slug, opts) {
+  const parts = [], slugs = caseSlugs();
+  const llms = opts.llms ? [path.resolve(opts.llms)] : fs.readdirSync(SITE).filter(f => /^llms.*\.txt$/.test(f)).map(f => path.join(SITE, f));
+  for (const f of llms) parts.push(...llmsPartsOf(fs.readFileSync(f, 'utf8'), opts.llms ? `${path.basename(f)} (копия)` : path.relative(REPO, f), slug, slugs));
+  const dir = opts.posts ? path.resolve(opts.posts) : POSTS;
+  if (fs.existsSync(dir)) for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.md')).sort()) {
+    const t = fs.readFileSync(path.join(dir, f), 'utf8');
+    const fm = t.match(/^---\n([\s\S]*?)\n---\n?/);
+    const status = fm && (fm[1].match(/^status:\s*"?([\w-]+)/m) || [])[1];
+    if (status === 'published') continue;
+    parts.push({ where: `${opts.posts ? f + ' (копия)' : path.relative(REPO, path.join(dir, f))} (пост канала${status ? ', ' + status : ''})`, text: strip(fm ? t.slice(fm[0].length) : t) });
+  }
+  return parts.map(p => Object.assign(p, { n: ' ' + norm(p.text) + ' ' }));
+}
+
 // ---------- проверка ----------
 function answersFor(id) {
   const qf = path.join(REPO, 'quests', id, 'quest.json');
@@ -230,6 +264,7 @@ function check(ids, opts = {}) {
     if (T.skip) { info.push(T.skip); continue; }
     const corp = opts.parts ? { pg: '(фикстура)', parts: opts.parts } : caseCorpus(id, opts.html);
     if (!corp) { info.push(`${T.src}: нет страницы site/moscow/${id}-…/ — пропуск`); continue; }
+    if (!opts.parts && !opts.html) corp.parts = corp.parts.concat(extraParts(corp.slug, opts));
     const exc = new Map(Object.entries(ok[id] || {}).map(([k, v]) => [norm(k.replace(/^~/, '')), v]));
     const used = new Set();
     for (const f of T.fields) {
@@ -238,14 +273,16 @@ function check(ids, opts = {}) {
       const { t, ps } = hit[0], p = ps[0], i = p.n.search(t.re);
       const ctx = p.n.slice(Math.max(0, i - 35), i + 45).trim();
       const places = ps.map(h => h.where).filter((v, j, a) => a.indexOf(v) === j);
-      const msg = `${corp.pg}: ответ «${t.answer}» (${T.src}, ${f.where.join('; ')} · ${f.kind}) — ${places.slice(0, 4).join(', ')}${places.length > 4 ? ` и ещё ${places.length - 4}` : ''}: «…${ctx}…»`;
-      const k = f.terms.map(x => norm(x.answer.replace(/^~/, ''))).find(x => exc.has(x));
+      const msg = `${places[0].startsWith(corp.pg) ? corp.pg : 'дело ' + id}: ответ «${t.answer}» (${T.src}, ${f.where.join('; ')} · ${f.kind}) — ${places.slice(0, 4).join(', ')}${places.length > 4 ? ` и ещё ${places.length - 4}` : ''}: «…${ctx}…»`;
+      // "only": "<часть места>" — исключение только для находок, все места которых его содержат (напр. один пост канала)
+      const inScope = v => !(v && typeof v === 'object' && v.only) || places.every(pl => pl.includes(v.only));
+      const k = f.terms.map(x => norm(x.answer.replace(/^~/, ''))).find(x => exc.has(x) && inScope(exc.get(x)));
       if (k == null) { errors.push(msg); continue; }
       used.add(k);
       const v = exc.get(k);
       if (v && typeof v === 'object' && v.warn) warns.push(`${msg} — известная находка, ждёт решения: ${v.why}`);
     }
-    if (!opts.html && !opts.parts) for (const k of exc.keys()) if (!used.has(k)) warns.push(`scripts/answer_leaks.json: исключение «${k}» (${id}) больше ничего не снимает — снять`);
+    if (!opts.html && !opts.parts && !opts.llms && !opts.posts) for (const k of exc.keys()) if (!used.has(k)) warns.push(`scripts/answer_leaks.json: исключение «${k}» (${id}) больше ничего не снимает — снять`);
   }
   return { errors, warns, info };
 }
@@ -279,6 +316,12 @@ function selftest() {
   if (run('<p>Главная аллея парка</p>').length !== 1) out.push('верный вариант choice по флагу не найден');
   if (run('<p>Ложный путь, 17 точек, семнадцать минут</p>').length) out.push('ложное срабатывание: неверный вариант или число короче 3 цифр');
   if (run('<p>подпорки</p>', { 'подпорка': 'фикстура: осознанное исключение' }).length) out.push('исключение не снимает находку');
+  if (run('<p>подпорки</p>', { 'подпорка': { why: 'фикстура: исключение только для поста', only: 'posts/' } }).length !== 1) out.push('исключение с "only" сняло находку вне своих мест');
+  // H-119: строка llms.txt своего дела и общая строка проверяются, строка чужого дела — нет
+  const L = llmsPartsOf('# Шапка\n- [Дело 1](https://x/moscow/a-one/): подпорка у пруда\n- [Дело 2](https://x/moscow/b-two/): тоже подпорка\nСправка: подпорки', 'llms.txt', 'a-one', ['a-one', 'b-two']);
+  if (L.length !== 3 || L.some(p => p.text.includes('Дело 2'))) out.push('llms.txt: строки дела выбраны неверно (своя + общие, без чужих)');
+  const ll = check(['fx'], { quest, parts: L.map(p => Object.assign(p, { n: ' ' + norm(p.text) + ' ' })), conf: { ok: {} } }).errors;
+  if (ll.length !== 1 || !/llms\.txt:2/.test(ll[0])) out.push('llms.txt: ответ в строке дела не найден');
   return out;
 }
 
@@ -300,7 +343,7 @@ if (require.main === module) {
     }
     process.exit(0);
   }
-  const r = check(ids, { html: args.html });
+  const r = check(ids, { html: args.html, llms: args.llms, posts: args.posts });
   r.info.forEach(m => console.log(' · ' + m));
   r.warns.forEach(m => console.log(' ! ' + m));
   r.errors.forEach(m => console.log(' ✗ ' + m));

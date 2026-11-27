@@ -166,6 +166,19 @@ def issue(reg, n, label):
 SPOIL_FIELDS = ("scene", "walk", "outro", "place")
 
 
+def with_temporary(quest_json, quest):
+    """H-117: пока quest.json заморожен полевым тестом, сроки временных объектов — в quests/<id>/temporary.json.
+    Плеер читает их из поля "temporary" дела (docs/quest-format.md, «Временные объекты»): после срока флаг "flag" — ветка Б.
+    Сам quest.json не меняется — адаптер только для зашифрованной копии."""
+    side = ROOT / "quests" / quest / "temporary.json"
+    q = json.loads(quest_json) if isinstance(quest_json, (str, bytes)) else dict(quest_json)
+    if side.exists():
+        items = json.loads(side.read_text(encoding="utf-8")).get("items") or []
+        if items:
+            q["temporary"] = list(q.get("temporary") or []) + items
+    return q
+
+
 def build_locked(quest_json, reg, master, priv=None, log=print):
     """Возвращает словарь quest.locked.json. Без мастер-кода — таблица пуста: плеер покажет экран кода, ни один код не подойдёт."""
     AESGCM, _, _, _ = crypto()
@@ -393,7 +406,7 @@ def main(argv=None):
             print(f"  № {c['n']:>3} · {c['created']} · {'отозван ' + c['revoked'] if c.get('revoked') else 'действует'} · {c.get('label') or ''}")
     elif a.cmd == "seal":
         reg = load_registry(a.quest, a.registry)
-        q = (ROOT / "quests" / a.quest / "quest.json").read_text(encoding="utf-8")
+        q = with_temporary((ROOT / "quests" / a.quest / "quest.json").read_text(encoding="utf-8"), a.quest)
         locked = build_locked(q, reg, env_master())
         out = pathlib.Path(a.out)
         out.write_text(json.dumps(locked, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
@@ -431,7 +444,8 @@ def main(argv=None):
         (n1, good), (n2, revoked) = issue(reg, 2, "selftest")
         reg["codes"][1]["revoked"] = datetime.date.today().isoformat()
         qf = pathlib.Path(a.data) if a.data else ROOT / "quests" / a.quest / "quest.json"
-        locked = build_locked(qf.read_text(encoding="utf-8"), reg, master, priv, log=lambda *_: None)
+        qd = qf.read_text(encoding="utf-8") if a.data else with_temporary(qf.read_text(encoding="utf-8"), a.quest)
+        locked = build_locked(qd, reg, master, priv, log=lambda *_: None)
         assert open_locked(locked, good) is not None and open_locked(locked, master.lower().replace("-", " ")) is not None
         assert open_locked(locked, revoked) is None and open_locked(locked, new_code()) is None
         (out / "quest.locked.json").write_text(json.dumps(locked, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

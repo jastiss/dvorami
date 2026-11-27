@@ -71,6 +71,15 @@ const QUEST = args.data || path.join(REPO, 'quests', QID, 'quest.json');
 const RAW = JSON.parse(fs.readFileSync(QUEST, 'utf8'));
 // Ветки А/Б — как в плеере: элемент списка с "if" остаётся, только если флаг совпал (по умолчанию «A»)
 const FLAGS = Object.assign({}, RAW.flags || {});
+// H-117: временные объекты — как в плеере: после срока элемент с "temporary" снимается, "flag" записи (в деле или
+// quests/<id>/temporary.json) переключает ветку; --today=ГГГГ-ММ-ДД передаётся плееру ссылкой ?today=
+const TMP = require('./temporary_check.js');
+const TODAY = args.today || TMP.todayMsk();
+const gone = t => !!(t && typeof t === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(String(t.until || '')) && String(t.until) < TODAY);
+const TMP_RECS = args.data ? TMP.forQuest(null, QUEST) : TMP.forQuest(QID);
+const TMP_FLAGS = {};
+for (const r of TMP_RECS) if (gone(r) && r.flag && !r.flagBad) { const [k, v] = String(r.flag).split(/[:=]/).map(x => x.trim()); TMP_FLAGS[k] = v; }
+Object.assign(FLAGS, TMP_FLAGS);
 if (args.flags) args.flags.split(',').forEach(p => { const [k, v] = p.split(/[:=]/); if (k && v) FLAGS[k] = v; });
 const flag = k => String(FLAGS[k] || 'A');
 const passes = c => {
@@ -78,12 +87,12 @@ const passes = c => {
   if (typeof c === 'string') { const m = c.match(/^\s*([\w-]+)\s*(!?=)\s*(.+?)\s*$/); if (!m) return true; const hit = m[3].split('|').map(x => x.trim()).includes(flag(m[1])); return m[2] === '=' ? hit : !hit; }
   return Object.entries(c).every(([k, v]) => [].concat(v).map(String).includes(flag(k)));
 };
-const prune = x => Array.isArray(x) ? x.filter(e => !(e && typeof e === 'object' && !Array.isArray(e) && !passes(e.if))).map(prune)
+const prune = x => Array.isArray(x) ? x.filter(e => !(e && typeof e === 'object' && !Array.isArray(e) && (gone(e.temporary) || !passes(e.if)))).map(prune)
   : (x && typeof x === 'object') ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, prune(v)])) : x;
 const Q = prune(RAW);
 // T-93: плеер реплики «Аудио скоро» и выбор «Слушаю и читаю / Читаю» — только у дела с записями или в ?field=1
 const VOICE = /"(walk_)?audio"\s*:\s*"(?!https?:|\/\/)[^"]+"/.test(JSON.stringify(RAW));
-const QS = args.flags ? '?flags=' + encodeURIComponent(args.flags) : '';
+const QS = [args.flags ? 'flags=' + encodeURIComponent(args.flags) : '', args.today ? 'today=' + args.today : ''].filter(Boolean).reduce((a, x) => a + (a ? '&' : '?') + x, '');
 // Без --data — как на стенде: дело зашифровано, коды — тестовые, только на время прогона
 const SEALED = !args.data;
 const BUNDLE = SEALED ? JSON.parse(execFileSync('python3', [path.join(REPO, 'scripts', 'codes.py'), 'selftest-bundle', '--quest', QID,
@@ -140,8 +149,7 @@ let nearSeen = false;
 
 // H-111: временные объекты маршрута ("temporary" в деле, quests/<id>/temporary.json) — за 30 дней предупреждение, после срока ошибка
 (function temporary() {
-  const T = require('./temporary_check.js');
-  const r = T.judge(args.data ? T.forQuest(null, QUEST) : T.forQuest(QID), args.today, false);
+  const r = TMP.judge(TMP_RECS, args.today, false, { player: true });
   r.errors.forEach(e => err('временные объекты', e));
   r.warns.forEach(w => warn('временные объекты', w));
 })();
@@ -496,6 +504,20 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         await click('#code-go');
       }
       await page.waitForSelector('[data-act="start"]');
+      // H-117: плеер на дату TODAY снял элементы с прошедшим сроком и переключил ветку записи "flag" (раз на прогон)
+      if (vp.width === 390 && theme === 'dark') {
+        const pl = await page.evaluate(() => ({ today: window.__dvorami.today(), flags: window.__dvorami.flags(), q: JSON.stringify(window.__dvorami.quest()) }));
+        if (pl.today !== TODAY) err(tag, `временные объекты: плеер считает сегодня ${pl.today}, проверка — ${TODAY} (?today=)`);
+        const urlF = {}; if (args.flags) args.flags.split(',').forEach(p => { const [k, v] = p.split(/[:=]/); if (k && v) urlF[k] = v; });
+        for (const [k, v] of Object.entries(TMP_FLAGS)) if (!urlF[k] && pl.flags[k] !== v) err(tag, `временные объекты: срок вышел, а флаг ${k} в плеере «${pl.flags[k]}», ожидали «${v}»`);
+        const hidden = [];
+        (function walk(x) {
+          if (Array.isArray(x)) return x.forEach(e => { if (e && typeof e === 'object' && !Array.isArray(e) && (gone(e.temporary) || Object.keys(TMP_FLAGS).some(k => (typeof e.if === 'string' ? new RegExp(`^\\s*${k}\\s*!?=`).test(e.if) : e.if && k in e.if) && !passes(e.if))) && typeof (e.text || e.transcript) === 'string') hidden.push(e.text || e.transcript); walk(e); });
+          if (x && typeof x === 'object') Object.values(x).forEach(walk);
+        })(RAW.points || []);
+        for (const t of hidden) if (pl.q.includes(JSON.stringify(t).slice(1, 60))) err(tag, `временные объекты: срок вышел, а плеер показывает «${t.slice(0, 50)}…»`);
+        if (hidden.length) notes.push(`временные объекты на ${TODAY}: в плеере скрыто по сроку ${hidden.length} элем. (${Object.entries(TMP_FLAGS).map(([k, v]) => k + '=' + v).join(', ') || 'по сроку'})`);
+      }
       if (viaLink && /code=/.test(page.url())) err(tag, 'код остался в адресе страницы после входа по ссылке');
       if (SEALED) {
         const ok = await lastGoal('code_ok');

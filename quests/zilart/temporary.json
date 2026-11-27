@@ -1,9 +1,10 @@
 {
- "_": "Временные объекты маршрута (H-111, docs/quest-format.md, «Временные объекты»). Пока quest.json заморожен полевым тестом — здесь; после разбора теста перенести в поле temporary элемента quest.json и удалить файл. Проверяет scripts/temporary_check.js (в site_check и player_check): за 30 дней до until — предупреждение, после — ошибка.",
+ "_": "Временные объекты маршрута (H-111, docs/quest-format.md, «Временные объекты»). Пока quest.json заморожен полевым тестом — здесь; после разбора теста перенести в поле temporary элемента quest.json и удалить файл. Проверяет scripts/temporary_check.js (в site_check и player_check): за 30 дней до until — предупреждение, после — ошибка. \"flag\" — флаг-факт, который плеер после until сам ставит на ветку Б (H-117; запись попадает в зашифрованное дело через codes.py seal). Предупреждение владельцу в Telegram за 30 дней — scripts/temporary_notify.py, отметки — .telegram/temporary-sent.json (H-118).",
  "items": [
   {
    "what": "«Самосвал» Вима Дельвуа",
    "until": "2027-01-17",
+   "flag": "st4s=B",
    "source": "сайт музея «ЗИЛАРТ», research/artworks.md № 16",
    "where": "т.4 scene, реплика Тюфеля при st4s=A; витрина — «Что посмотреть рядом» в c1_zilart.py",
    "match": "Самосвал"

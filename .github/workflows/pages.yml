@@ -10,6 +10,7 @@ on:
       - "site/**"
       - "quests/**/quest.json"
       - "quests/**/codes.json"
+      - "quests/**/temporary.json"   # H-117: сроки временных объектов попадают в зашифрованное дело (codes.py seal)
       - "scripts/codes.py"
       - "scripts/player_check.js"
       - "scripts/answer_check.js"
@@ -107,3 +108,25 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Тревога владельцу (27.11: выкладка краснела 7 раз подряд, а в отчётах было «витрина синхронизирована»):
+  # упал build или deploy — короткое сообщение в Telegram «Стенд НЕ обновлён: упал шаг …» со ссылкой на запуск.
+  # Нет секретов TELEGRAM_* — шаг тихо выходит. Продюсер до отчёта проверяет то же локально: python3 scripts/pages_status.py
+  alarm:
+    needs: [build, deploy]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: scripts
+      - name: Тревога в Telegram — стенд НЕ обновлён
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/pages_status.py --alarm

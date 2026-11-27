@@ -85,9 +85,32 @@
   // Флаг такой ветки — "open" / "closed": по местному времени Москвы на подходе к точке или кнопкой «Двери закрыты».
   // Отбор по таким флагам — не при загрузке, а при показе (реплики дороги, сцены, итога точки и walk_m); ?flags=zum:closed — для проверки.
   var CLOCK = {}, CLOCK_SEC = -1;
+  // H-117: временные объекты (docs/quest-format.md, «Временные объекты»). После "until" (последний день на месте, по Москве)
+  // элемент с полем "temporary" снимается, как элемент с непрошедшим "if"; запись с "flag": "st4s=B" (в элементе или в Q.temporary —
+  // туда codes.py seal кладёт quests/<id>/temporary.json, пока quest.json заморожен) переключает флаг-факт на ветку Б.
+  // Явный ?flags= важнее. Дата — один раз при загрузке дела; ?today=2027-01-18 — проверить на другую дату.
+  var TODAY = '';
+  function todayMsk() {
+    var m = location.search.match(/[?&]today=(\d{4}-\d{2}-\d{2})(?![\d])/);
+    return m ? m[1] : new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+  }
+  function gone(t) { return !!(t && typeof t === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(String(t.until || '')) && String(t.until) < TODAY); }
+  function goneFlags(q) {
+    var out = {}, recs = [].concat(Array.isArray(q.temporary) ? q.temporary : []);
+    (function walk(x) {
+      if (Array.isArray(x)) return x.forEach(walk);
+      if (!x || typeof x !== 'object') return;
+      if (x.temporary && !Array.isArray(x.temporary)) recs.push(x.temporary);
+      for (var k in x) if (k !== 'temporary' && Object.prototype.hasOwnProperty.call(x, k) && x[k] && typeof x[k] === 'object') walk(x[k]);
+    })(q.points || []);
+    recs.forEach(function (t) { var kv = gone(t) && t.flag ? String(t.flag).split(/[:=]/) : []; if (kv[0] && kv[1]) out[kv[0].trim()] = kv[1].trim(); });
+    return out;
+  }
   function readFlags(q) {
     var f = {}, d = q.flags || {};
     for (var k in d) if (Object.prototype.hasOwnProperty.call(d, k)) f[k] = String(d[k]);
+    var tf = goneFlags(q);
+    for (var tk in tf) if (Object.prototype.hasOwnProperty.call(tf, tk)) f[tk] = tf[tk];
     var m = location.search.match(/[?&]flags=([^&#]+)/);
     if (m) {
       var raw = m[1];
@@ -238,6 +261,7 @@
       var out = [], gaps = [];
       x.forEach(function (e) {
         var obj = e && typeof e === 'object' && !Array.isArray(e);
+        if (obj && gone(e.temporary)) return;   // H-117: объект увезли — элемент снимается
         if (obj && !isClockCond(e['if']) && !passes(e['if'])) {
           // основной текст скрыт, а запасного рядом нет (реплика «по факту» просто снимается) — плашка у соседнего элемента
           var g = fbOf(e, x, true);
@@ -318,6 +342,7 @@
   }
   function prepare(q) {
     CLOCK = {};
+    TODAY = todayMsk();
     var cq = q.clock || {};
     for (var ck in cq) if (Object.prototype.hasOwnProperty.call(cq, ck) && cq[ck] && typeof cq[ck] === 'object') CLOCK[ck] = cq[ck];
     FLAGS = readFlags(q);
@@ -3130,7 +3155,7 @@
 
   // Для проверок: функции сверки ответов и состояние
   window.__dvorami = { norm: ANS.norm, matches: ANS.matches, shareLink: function () { return shareLink(); }, state: function () { return S; }, quest: function () { return Q; }, optOrder: function (st) { return optOrder(st, 'step').map(function (x) { return String(x.id); }); }, report: function () { return report(); },
-    flags: function () { return FLAGS; }, cards: function () { return CARDS; },
+    flags: function () { return FLAGS; }, cards: function () { return CARDS; }, today: function () { return TODAY; },
     // H-62: субтитры без настоящего звука — какие реплики озвучивает плеер экрана и какая отмечена при доле part записи file
     say: function (file, part) { var b = document.querySelector('#frame .pl-voice[data-n]'); if (!b) return null; var i = sayAt(b, file, part);
       return { n: +b.dataset.n, whole: b.dataset.whole === '1', found: sayTargets(b).length, at: i, open: document.querySelectorAll('#frame .is-speaking details.pl-more--text[open]').length }; },

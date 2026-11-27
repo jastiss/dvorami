@@ -58,12 +58,12 @@
    "theme": "tuman",
    "title": "Дело о тумане в овраге",
    "where": "Квест-прогулка по Коломенскому без гида",
-   "ask": "Какой нынче век?",
+   "ask": "Какой год у гонца?",
    "meta": "Метро «Коломенская» · 8 точек · 4 км · 2–2,5 часа · 0+",
    "template": 3
   },
-  "input_sha": "d98efcaa9dfe0ed7e24e3ba91e4f64ea629d66ee41464ebabd92fd25294acc46",
-  "file_sha": "130e9998c738373fd2449c4298679c325cbaa4b5d2f0c5e650df1def9d27d459",
+  "input_sha": "752ecc45958c8a42ad9757bd9196a51acfb90150b3d9ca19be7689d764560dfe",
+  "file_sha": "398f54cebbc785eb147a11d3a0ed8cc35f465eed017c3eb6053c2dd2eb4d5724",
   "min_px_600": 14.0
  },
  "krasnaya.png": {
@@ -108,12 +108,12 @@
    "theme": "avangard",
    "title": "Дело о Синей птице",
    "where": "Квест-прогулка по ЗИЛАРТу без гида",
-   "ask": "Что за Синяя птица?",
+   "ask": "Кто дал слово?",
    "meta": "Метро «ЗИЛ» · 10 точек · 3 км · 2,5–3 часа · 0+",
    "template": 3
   },
-  "input_sha": "7a669063e139a8885fdadb14d0044e621b058ad95ed583b63af2df0a5161b0af",
-  "file_sha": "6a243c50c88fb4629ba3e4b9c3f5da768cc4abfbbed58dc3c4204956d2dc7b17",
+  "input_sha": "63857cd4b8b4ed5c442eb48aba44f083ef770e11a379024966e702196c9474ae",
+  "file_sha": "f62a9144d457cad1a2fe0ac5fd0662fb533a15ced492d5ff15b745e0c6510d87",
   "min_px_600": 13.0
  }
 }
