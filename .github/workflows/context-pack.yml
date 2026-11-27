@@ -1,0 +1,28 @@
+name: Бэкап — пакет контекста
+
+# Смысловой бэкап одной кнопкой (docs/backup.md): Actions → «Бэкап — пакет контекста» → Run workflow.
+# Через минуту в запуске внизу — архив «dvorami-context» с двумя файлами (полный и облегчённый пакет).
+# Секреты не нужны и не читаются; в репозиторий ничего не пишется.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Собрать пакет
+        run: |
+          d="$(date -u +%F)"
+          mkdir -p "$RUNNER_TEMP/pack"
+          python3 scripts/context_pack.py -o "$RUNNER_TEMP/pack/dvorami-context-$d.md"
+          python3 scripts/context_pack.py --lite -o "$RUNNER_TEMP/pack/dvorami-context-$d-lite.md"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dvorami-context
+          path: ${{ runner.temp }}/pack/
+          retention-days: 90
