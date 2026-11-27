@@ -1,18 +1,26 @@
-name: Медиа — скачать из fal
+name: Медиа — скачать из fal и ElevenLabs
 
-# Среда Claude не может скачивать файлы с *.fal.media (сеть закрыта), а GitHub Actions — может.
-# Команда запускает этот workflow сама:
+# Среда Claude не может скачивать файлы с *.fal.media и elevenlabsusercontent.com (сеть закрыта), а GitHub Actions — может.
+# Команда запускает этот workflow сама (gh api или GitHub MCP actions_run_trigger):
 #   gh api -X POST repos/jastiss/dvorami/actions/workflows/fetch-media.yml/dispatches \
 #     -f ref=main -f 'inputs[url]=https://v3b.fal.media/files/...png' -f 'inputs[path]=quests/zilart/media/assets/test/zilya-portrait.png'
+# Несколько файлов одним коммитом: inputs[batch] — по строке «<ссылка> <путь>» (url и path тогда пустые).
+# Скачивать только принятое (готовые сведённые файлы), а не все дубли: каждый бинарник остаётся в клоне навсегда.
 on:
   workflow_dispatch:
     inputs:
       url:
-        description: "Ссылка на файл fal (только *.fal.media)"
-        required: true
+        description: "Ссылка на файл (*.fal.media или elevenlabsusercontent.com)"
+        required: false
+        default: ""
       path:
-        description: "Куда положить в репозитории (quests/, site/assets/, platform/design/, docs/)"
-        required: true
+        description: "Куда положить в репозитории (quests/, site/assets/, site/play/, platform/design/, docs/)"
+        required: false
+        default: ""
+      batch:
+        description: "Несколько файлов: строки «<ссылка> <путь>»"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -31,32 +39,44 @@ jobs:
         env:
           URL: ${{ inputs.url }}
           DEST: ${{ inputs.path }}
+          BATCH: ${{ inputs.batch }}
         run: |
           python3 - <<'PY'
           import os, re, sys, urllib.parse, urllib.request, pathlib
-          url, dest = os.environ["URL"].strip(), os.environ["DEST"].strip()
-          host = urllib.parse.urlparse(url).hostname or ""
-          if urllib.parse.urlparse(url).scheme != "https" or not (host == "fal.media" or host.endswith(".fal.media")):
-              sys.exit(f"Разрешены только https-ссылки *.fal.media, получено: {host}")
-          p = pathlib.PurePosixPath(dest)
-          if p.is_absolute() or ".." in p.parts or not re.match(r"^(quests|site/assets|platform/design|docs)/", dest):
-              sys.exit("Путь должен быть внутри quests/, site/assets/, platform/design/ или docs/")
-          if not re.search(r"\.(png|jpe?g|webp|gif|mp3|wav|ogg|m4a|mp4|webm)$", dest, re.I):
-              sys.exit("Неподдерживаемое расширение файла")
-          data = urllib.request.urlopen(url, timeout=120).read()
-          if len(data) > 50 * 1024 * 1024:
-              sys.exit("Файл больше 50 МБ — хранить в репозитории нельзя")
-          out = pathlib.Path(dest); out.parent.mkdir(parents=True, exist_ok=True); out.write_bytes(data)
-          print(f"Сохранено {len(data)} байт → {dest}")
+          pairs = [ln.split() for ln in os.environ.get("BATCH", "").splitlines() if ln.strip()]
+          if not pairs and os.environ.get("URL", "").strip():
+              pairs = [[os.environ["URL"].strip(), os.environ.get("DEST", "").strip()]]
+          if not pairs:
+              sys.exit("Нет ни url/path, ни batch")
+          saved = []
+          for pr in pairs:
+              if len(pr) != 2:
+                  sys.exit(f"Строка batch должна быть «<ссылка> <путь>»: {pr}")
+              url, dest = pr
+              u = urllib.parse.urlparse(url)
+              host = u.hostname or ""
+              if u.scheme != "https" or not (host == "fal.media" or host.endswith(".fal.media") or host == "elevenlabsusercontent.com"):
+                  sys.exit(f"Разрешены только https-ссылки *.fal.media и elevenlabsusercontent.com, получено: {host}")
+              p = pathlib.PurePosixPath(dest)
+              if p.is_absolute() or ".." in p.parts or not re.match(r"^(quests|site/assets|site/play|platform/design|docs)/", dest):
+                  sys.exit("Путь должен быть внутри quests/, site/assets/, site/play/, platform/design/ или docs/")
+              if not re.search(r"\.(png|jpe?g|webp|gif|mp3|wav|ogg|m4a|mp4|webm)$", dest, re.I):
+                  sys.exit("Неподдерживаемое расширение файла")
+              data = urllib.request.urlopen(url, timeout=120).read()
+              if len(data) > 50 * 1024 * 1024:
+                  sys.exit("Файл больше 50 МБ — хранить в репозитории нельзя")
+              out = pathlib.Path(dest); out.parent.mkdir(parents=True, exist_ok=True); out.write_bytes(data)
+              print(f"Сохранено {len(data)} байт → {dest}")
+              saved.append(dest)
+          pathlib.Path(os.environ["RUNNER_TEMP"], "saved.txt").write_text("\n".join(saved) + "\n")
           PY
       - name: Сохранить в репозиторий
-        env:
-          DEST: ${{ inputs.path }}
         run: |
           git config user.name "dvorami-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- "$DEST"
+          xargs -d '\n' git add -- < "$RUNNER_TEMP/saved.txt"
           git diff --cached --quiet && exit 0
-          git commit -m "Медиа из fal: $DEST"
+          n=$(wc -l < "$RUNNER_TEMP/saved.txt")
+          git commit -m "Медиа: $(head -1 "$RUNNER_TEMP/saved.txt")$([ "$n" -gt 1 ] && echo " и ещё $((n-1))")"
           for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 5; done
           exit 1
