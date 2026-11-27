@@ -18,6 +18,14 @@
 не та реплика.
 «Звучит игроку» — ссылка на живой путь при текущих флагах дела (ветки «if» по дороге и [флаг=…] совпадают), или
 «финал», «intro», «summary», или «сайт». Ячейка «— …» до первой «;» — нигде.
+
+H-129 (предупреждения): составной статус — в колонке «Статус» вне скобок и подтверждённое (✅, 👀 владелец, 👤), и
+сомнительное (🔶, ⚠️, ❌): один факт — один статус, разбейте строку; цитата «…» в части «сайт: …» ячейки «Где у игрока»
+(до «;», «·» или конца предложения; скобки с «т.N», «снят», «было», «вместо» — о сценарии и истории, не о витрине)
+не найдена на витрине дела (site/moscow/<id>-*/index.html и карточки каталогов; без учёта регистра, кавычек, ё и
+окончаний; «…» внутри цитаты — пропуск) — витрина поменялась или цитата не дословная.
+H-115 (ошибка): у шага (любого узла) quest.json поле «facts»: ["15.21"] — номера из колонки «#» facts.md дела; факта
+с таким номером нет или он не ✅ — красное: реплика опирается на непроверенный факт.
 """
 import argparse
 import json
@@ -73,7 +81,7 @@ def texts(x):
     if isinstance(x, list):
         return [t for e in x for t in texts(e)]
     if isinstance(x, dict):
-        return [t for k, v in x.items() if k not in ("id", "if", "img", "audio", "who") for t in texts(v)]
+        return [t for k, v in x.items() if k not in ("id", "if", "img", "audio", "who", "facts") for t in texts(v)]
     return []
 
 
@@ -259,7 +267,102 @@ def tables(md):
         yield i, hdr, dict(zip(hdr, cells))
 
 
-def check_quest(qid, md_path=None, q=None):
+def plain_status(st):
+    """Статус без скобок и цитат — что сказано о факте сейчас, без истории и оговорок."""
+    prev = None
+    while prev != st:
+        prev = st
+        st = re.sub(r"\([^()]*\)", " ", st)
+    return re.sub(r"«[^»]*»", " ", st)
+
+
+def composite_status(st):
+    """H-129: «✅ …; 🔶 …» в одной ячейке — два статуса у одной строки. → список классов или [] (если строка уже
+    разбита: «→ разбит …: X ✅ 15.3, Y 🔶 15.4» — это указатель на новые строки, не статус)."""
+    s = plain_status(st)
+    if "разбит" in s:
+        return []
+    cls = [c for c, p in (("✅", r"✅|👀 владелец|👤"), ("🔶", r"🔶|⚠"), ("❌", r"❌")) if re.search(p, s)]
+    return cls if len(cls) > 1 else []
+
+
+def norm_site(s):
+    """Текст витрины и цитаты — к одному виду: без тегов и сущностей, регистра, ё, кавычек и знаков препинания."""
+    import html as _html
+    s = _html.unescape(re.sub(r"<[^>]+>", " ", s)).lower().replace("ё", "е")
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", s)).strip()
+
+
+def showcase_text(qid):
+    """Витрина дела: страница site/moscow/<id>-*/ и каталоги с его карточкой (главная, /moscow/). Нет страницы — None."""
+    pages = sorted((ROOT / "site" / "moscow").glob(qid + "-*/index.html"))
+    if not pages:
+        return None
+    files = pages + [ROOT / "site" / "index.html", ROOT / "site" / "moscow" / "index.html"]
+    return " " + " ".join(norm_site(p.read_text(encoding="utf-8")) for p in files if p.exists()) + " "
+
+
+def site_quotes(cell):
+    """H-129: цитаты из частей «сайт: …» ячейки «Где у игрока». Часть кончается на «;», «·» или конце предложения
+    («. Замена: «…»» — предложение, а не текст витрины) вне скобок и кавычек. Цитаты в скобках с «т.N» (о сценарии)
+    или «снят/было/вместо» (история) и цитата, за которой «снят(о)», не сверяются."""
+    cell = cell.replace("**", "")
+    out = []
+    for m in re.finditer(r"сайт\s*:", cell):
+        part, depth, qd = cell[m.end():], 0, 0
+        end = len(part)
+        for i, ch in enumerate(part):
+            depth += (ch == "(") - (ch == ")")
+            qd += (ch == "«") - (ch == "»")
+            if depth <= 0 and qd <= 0 and (ch in ";·" or (ch == "." and re.match(r"\.(\s+[А-ЯЁA-Z]|\s*$)", part[i:]))):
+                end = i
+                break
+        part = part[:end]
+        skip = []  # интервалы скобок, где цитаты не о витрине
+        stack = []
+        for i, ch in enumerate(part):
+            if ch == "(":
+                stack.append(i)
+            elif ch == ")" and stack:
+                a = stack.pop()
+                if re.search(r"т\.\s?\d|снят|было|вместо", part[a:i]):
+                    skip.append((a, i))
+        for q in re.finditer(r"«((?:[^«»]|«[^»]*»)*)»", part):
+            if any(a < q.start() < b for a, b in skip) or re.match(r"\s*(?:—\s*)?снят", part[q.end():]):
+                continue
+            out.append(q.group(1))
+    return out
+
+
+def on_site(quote, text):
+    """Цитата есть на витрине: каждый кусок между «…» — подряд, слова от 5 букв — по основе (падеж: «Кружевного грузовика»)."""
+    for frag in re.split(r"…|\.\.\.", quote):
+        words = norm_site(frag).split()
+        if not words:
+            continue
+        pat = r"\s+".join(re.escape(w[: max(4, len(w) - 2)]) + r"\w*" if len(w) >= 5 else re.escape(w) for w in words)
+        if not re.search(r"(?<!\w)" + pat + r"(?!\w)" if len(words[-1]) < 5 else r"(?<!\w)" + pat, text):
+            return False
+    return True
+
+
+def fact_refs(node, path=""):
+    """H-115: все узлы quest.json с полем «facts» → [(путь, [номера])]."""
+    out = []
+    if isinstance(node, dict):
+        if "facts" in node:
+            v = node["facts"]
+            out.append((path or "/", v if isinstance(v, list) else [v]))
+        for k, v in node.items():
+            if k != "facts":
+                out += fact_refs(v, f"{path}/{k}" if path else k)
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            out += fact_refs(v, f"{path}/{i}")
+    return out
+
+
+def check_quest(qid, md_path=None, q=None, site=False):
     errors, warns, info = [], [], []
     md_path = md_path or QUESTS / qid / "research" / "facts.md"
     rel = md_path.relative_to(ROOT) if str(md_path).startswith(str(ROOT)) else md_path
@@ -270,6 +373,8 @@ def check_quest(qid, md_path=None, q=None):
     points = q.get("points") or []
     sounding = {"bad": [], "doubt": []}
     rows = 0
+    fact_cls = {}  # номер из колонки «#» → (класс статуса, статус) — для H-115
+    site_txt = showcase_text(qid) if site is False else site
     for line, hdr, row in tables(md_path.read_text(encoding="utf-8")):
         if row is None:
             errors.append(f"{rel}:{line}: в строке таблицы не столько ячеек, сколько в заголовке — колонка «Где у игрока» съехала")
@@ -282,6 +387,17 @@ def check_quest(qid, md_path=None, q=None):
         rid = row.get("#") or re.sub(r"\*\*", "", row[fact_col])[:40]
         tag = f"{rel}:{line} [{rid}]"
         cls = status_class(strip_parens(row["Статус"])[0])  # «✅ (было 🔶)» — ✅: в скобках история и оговорки
+        if row.get("#"):
+            fact_cls[re.sub(r"\*\*|\s", "", row["#"])] = (cls, row["Статус"][:30].strip())
+        comp = composite_status(row["Статус"])
+        if comp:
+            warns.append(f"{tag}: составной статус ({' и '.join(comp)} в одной ячейке: «{row['Статус'][:60].strip()}») — "
+                         f"один факт — один статус: разбейте строку (как 1.5 → 1.5а, 1.5б)")
+        if site_txt:
+            for qt in site_quotes(row[where_col]):
+                if not on_site(qt, site_txt):
+                    warns.append(f"{tag}: «сайт: «{qt[:60]}»» — на витрине дела такого текста нет: витрина поменялась "
+                                 f"или цитата не дословная — обновите колонку")
         cell = re.sub(r"\*\*|`", "", row[where_col])
         body, quotes = strip_parens(cell)
         segs = re.split(r"[;·]", body)
@@ -349,6 +465,15 @@ def check_quest(qid, md_path=None, q=None):
             sounding[cls].append(f"{rid} ({row['Статус'][:30].strip()})")
             if cls == "bad":
                 errors.append(f"{tag}: факт ❌ звучит игроку — снять из текста или исправить")
+    for where, ids in fact_refs(q):
+        for fid in ids:
+            fid = re.sub(r"\s", "", str(fid))
+            got = fact_cls.get(fid)
+            if got is None:
+                errors.append(f"quests/{qid}/quest.json {where}: facts «{fid}» — в {rel} нет факта с таким номером (колонка «#»)")
+            elif got[0] != "ok":
+                errors.append(f"quests/{qid}/quest.json {where}: опирается на факт {fid} со статусом «{got[1]}» — "
+                              f"нужен ✅: подтвердить факт или переписать реплику")
     if sounding["doubt"]:
         warns.append(f"{rel}: не ✅ и звучит игроку ({len(sounding['doubt'])}): {'; '.join(sounding['doubt'])}")
     info.append(f"{rel}: фактов со статусом {rows}")
@@ -357,19 +482,42 @@ def check_quest(qid, md_path=None, q=None):
 
 def selftest():
     import tempfile
-    q = {"flags": {"s": "A"}, "points": [{"n": 1, "id": "a", "walk": ["Набережная Марка Шагала"], "steps": [{"ok": ["x"]}]}]}
+    q = {"flags": {"s": "A"}, "points": [{"n": 1, "id": "a", "walk": ["Набережная Марка Шагала"],
+                                          "steps": [{"ok": ["x"], "facts": ["1"]}, {"say": "y", "facts": ["4", "99"]}]}]}
     md = ("| # | Факт | Статус | Где у игрока (H-110) |\n|---|---|---|---|\n"
           "| 1 | Набережная Шагала | ✅ | т.1 a/walk/0 |\n"
           "| 2 | Шагал | ✅ | т.1 a/walk/3 |\n"
           "| 3 | Шагал | ❌ | т.1 walk/0 |\n"
           "| 4 | Кандинский | ⚠️ | т.1 steps/0/ok/0 [s=B] — не звучит |\n"
           "| 5 | Кандинский | ✅ | т.1 a/walk/0 |\n"
-          "| 6 | Шагал | ❌ | т.1 a/walk/7 |\n")
+          "| 6 | Шагал | ❌ | т.1 a/walk/7 |\n"
+          "| 7 | Шагал | 👀 владелец · 🔶 адрес | — |\n"
+          "| 8 | Шагал | 🔶 → разбит: дом ✅ 9, сад 🔶 10 | — |\n"
+          "| 9 | Шагал | ✅ (было 🔶) | сайт: карточка «Кружевной грузовик», справка («общая кухня») |\n"
+          "| 10 | Шагал | ✅ | сайт: «Старт» (т.1 walk/0 — «вдоль воды»); т.1 a/walk/0 |\n"
+          "| 11 | Шагал | ✅ | сайт: «Старт» — 🔶. Замена: «Кружевного самосвала нет» |\n")
+    site = " " + norm_site("<h3>Старт</h3><p>Там стоит кружевного&nbsp;грузовика нет — общая столовая.</p>") + " "
     with tempfile.TemporaryDirectory() as d:
         p = pathlib.Path(d) / "facts.md"
         p.write_text(md, encoding="utf-8")
-        e, w, _ = check_quest("fx", p, q)
+        e, w, _ = check_quest("fx", p, q, site=site)
     out = []
+    if not any("[7]" in x and "составной статус" in x for x in w):
+        out.append("составной статус «👀 владелец · 🔶» не пойман (H-129)")
+    if any("[8]" in x and "составной" in x for x in w) or any("[9]" in x and "составной" in x for x in w):
+        out.append("составной статус: ложное срабатывание на «→ разбит» или на «✅ (было 🔶)»")
+    if not any("[9]" in x and "общая кухня" in x for x in w):
+        out.append("цитата «сайт: … «общая кухня»», которой нет на витрине, не поймана (H-129)")
+    if any("[9]" in x and "Кружевной" in x for x in w):
+        out.append("цитата «Кружевной грузовик» в другом падеже на витрине посчитана расхождением")
+    if any(("[10]" in x or "[11]" in x) and "витрине" in x for x in w):
+        out.append("цитаты о сценарии (в скобках с «т.N») или из предложения «Замена: …» сверены с витриной")
+    if not any("facts «99»" in x for x in e):
+        out.append("facts с несуществующим номером факта не красный (H-115)")
+    if not any("факт 4 " in x for x in e):
+        out.append("facts на факт не ✅ (⚠️) не красный (H-115)")
+    if any("факт 1 " in x or "«1»" in x for x in e):
+        out.append("facts на факт ✅ дал ошибку (H-115)")
     if not any("[2]" in x and "мёртвый путь" in x for x in w):
         out.append("мёртвый путь (walk/3) не пойман предупреждением")
     if any("[2]" in x for x in e):
@@ -409,6 +557,15 @@ def main(argv=None):
         errors += e
         warns += w
         info += i
+    if not a.quest:  # H-129: составной статус — и у дел без quest.json (сценарий ещё пишется, учёт уже ведётся)
+        for md in sorted(QUESTS.glob("*/research/facts.md")):
+            if md.parent.parent.name in ids:
+                continue
+            for line, hdr, row in tables(md.read_text(encoding="utf-8")):
+                comp = composite_status(row["Статус"]) if row and "Статус" in row else []
+                if comp:
+                    warns.append(f"{md.relative_to(ROOT)}:{line}: составной статус ({' и '.join(comp)} в одной ячейке) — "
+                                 f"один факт — один статус: разбейте строку")
     if a.json:
         print(json.dumps({"errors": errors, "warns": warns, "info": info}, ensure_ascii=False))
         return 0

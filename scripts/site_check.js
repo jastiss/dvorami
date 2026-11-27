@@ -51,6 +51,30 @@ const MAIN_CTA = 'Взять дело';
 const errors = [];
 const err = (page, vp, msg) => errors.push(`${page}${vp ? ' @' + vp : ''}: ${msg}`);
 
+/* T-109: слово из site_spoilers.json ловится с начала слова — «сфера» не находит «атмосфера» (\b в JS кириллицу не
+ * понимает, поэтому граница — lookbehind по буквам и цифрам). Конец слова открыт: в списке основы («мозаик», «Полтав»
+ * ловят «мозаика», «под Полтавой»); число не ловится внутри другого числа («349» — не в «1349» и не в «3490»). */
+const SPOILER_CH = 'а-яёa-z0-9';
+const spoilerRes = new Map();
+function spoilerHit(text, word) {
+  const w = word.toLowerCase();
+  if (!spoilerRes.has(w)) {
+    const left = new RegExp(`^[${SPOILER_CH}]`).test(w) ? `(?<![${SPOILER_CH}])` : '';
+    const right = /[0-9]$/.test(w) ? '(?![0-9])' : '';
+    spoilerRes.set(w, new RegExp(left + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + right));
+  }
+  return spoilerRes.get(w).test(String(text).toLowerCase());
+}
+function spoilerSelftest() {
+  const out = [];
+  const yes = [['сфера', 'Это сфера.'], ['сфера', 'СФЕРА над входом'], ['сфера', '(Сфера)'], ['сфера', 'сине-сфера'], ['Полтав', 'под Полтавой'],
+    ['мозаик', 'Мозаика'], ['349', 'всего 349 строк'], ['1571', 'в 1571-м'], ['«Космос»', 'павильон«Космос»'], ['Арбат,&nbsp;53', 'Арбат,&nbsp;53']];
+  const no = [['сфера', 'атмосфера двора'], ['сфера', 'Атмосфера'], ['349', 'в 1349 году'], ['349', 'номер 3490'], ['лежали', 'принадлежали'], ['ГДР', 'хгдр']];
+  for (const [w, t] of yes) if (!spoilerHit(t, w)) out.push(`«${w}» не найден в «${t}» — настоящий спойлер пропущен`);
+  for (const [w, t] of no) if (spoilerHit(t, w)) out.push(`«${w}» найден в «${t}» — часть другого слова или числа`);
+  return out;
+}
+
 function listPages(dir = ROOT, rel = '') {
   let out = [];
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -569,7 +593,7 @@ function llmsSync(spoilers) {
       if (!ids) out.push(`${file}: ссылка на несуществующую страницу https://dvorami.ru/${m[1]}`);
       else if (m[2] && !ids.has(m[2])) out.push(`${file}: ссылка на несуществующий якорь https://dvorami.ru/${m[1]}#${m[2]}`);
     }
-    for (const w of spoilers['*'] || []) if (t.toLowerCase().includes(w.toLowerCase())) out.push(`${file}: спойлер «${w}»`);
+    for (const w of spoilers['*'] || []) if (spoilerHit(t, w)) out.push(`${file}: спойлер «${w}»`);
     const lines = t.split('\n');
     for (const [slug, c] of Object.entries(cases)) {
       const ln = lines.find(l => l.includes(`dvorami.ru/moscow/${slug}/`) && /Дело\s*№/.test(l));
@@ -594,7 +618,7 @@ function llmsSync(spoilers) {
       if (st && !c.status.toLowerCase().startsWith(st[1].trim().toLowerCase())) out.push(`${tag}: «Статус: ${st[1].trim()}», на странице дела «${c.status.split('.')[0]}»`);
       for (const [key, words] of Object.entries(spoilers)) {
         if (key.startsWith('_') || key === '*' || !pg.startsWith(key)) continue;
-        for (const w of words) if (ln.toLowerCase().includes(w.toLowerCase())) out.push(`${tag}: спойлер «${w}»`);
+        for (const w of words) if (spoilerHit(ln, w)) out.push(`${tag}: спойлер «${w}»`);
       }
     }
   }
@@ -742,6 +766,7 @@ async function mapTaps() {
     if (/wikipedia\.org|wikimedia\.org/i.test(s)) err(path.relative(ROOT, f), '', 'ссылка на Wikipedia/Wikimedia');
     if (/Купить квест/.test(s)) err(path.relative(ROOT, f), '', 'подпись «Купить квест» — должно быть «Взять дело»');
   }
+  spoilerSelftest().forEach(m => err('спойлеры (самопроверка, T-109)', '', m));
   questSync().forEach(m => err('сценарий ↔ витрина', '', m));
   ogSync().forEach(m => err('OG-картинки', '', m));
   llmsSync(spoilers).forEach(m => err('llms.txt ↔ дела', '', m));
@@ -786,6 +811,13 @@ async function mapTaps() {
     fc.errors.forEach(m => err('факты ↔ сценарий', '', m));
     fc.warns.forEach(w => warns.push('факты: ' + w));
   } catch (e) { err('факты ↔ сценарий', '', `scripts/facts_check.py не запустился: ${String(e.message).split('\n')[0]}`); }
+  // H-128: крючок дела (marketer.md, «Крючок дела», п. 1 и 7) — og_description начинается вопросом тизера, тизер ≤ 120,
+  // вопрос ≤ 70, og ≤ 200, card.ask ≤ 20 (scripts/hook_check.py). Пока предупреждение; самопроверка скрипта — красное
+  try {
+    const hk = JSON.parse(require('child_process').execFileSync('python3', ['-B', path.join(__dirname, 'hook_check.py'), '--json'], { encoding: 'utf8' }));
+    hk.errors.forEach(m => err('крючок дела', '', m));
+    hk.warns.forEach(w => warns.push('крючок дела: ' + w));
+  } catch (e) { err('крючок дела', '', `scripts/hook_check.py не запустился: ${String(e.message).split('\n')[0]}`); }
   // 27.11 (итерация 28): последний шаг pages.yml — codes.py leakcheck (текст сцен дел в site/ дословно). Он краснел 7 выкладок подряд,
   // а команда узнавала об этом только из CI — стенд стоял на версии 27.11 утра. Теперь тот же leakcheck здесь, до push.
   try {
@@ -892,7 +924,7 @@ async function mapTaps() {
       for (const [key, words] of Object.entries(spoilers)) {
         if (key.startsWith('_')) continue;
         if (!(key === '*' || rel.startsWith(key))) continue;
-        for (const w of words) if (r.text.toLowerCase().includes(w.toLowerCase())) err(rel, vp.width, `спойлер на странице: «${w}»`);
+        for (const w of words) if (spoilerHit(r.text, w)) err(rel, vp.width, `спойлер на странице: «${w}»`);
       }
       if (vp.width === VIEWPORTS[0].width) {
         if (r.cards.length) catalogs[rel] = r.cards;
