@@ -715,7 +715,8 @@ async function mapTaps() {
   const sd = SD.check();
   sd.errors.forEach(m => err('витрина ↔ сценарий', '', m));
   sd.warns.forEach(w => warns.push('витрина ↔ сценарий: ' + w));
-  // H-110: колонка «Где у игрока» в quests/<id>/research/facts.md — мёртвый путь в quest.json и ❌ у игрока — ошибка,
+  // H-110: колонка «Где у игрока» в quests/<id>/research/facts.md — ❌ у игрока (и битая ссылка у факта ❌) — ошибка; мёртвый путь
+  // у остальных фактов — предупреждение: учёт в research выкладку не блокирует (T-138, 27.11);
   // не ✅ у игрока, сокращённый путь, ссылка на текст без ключевых слов факта — предупреждение (scripts/facts_check.py)
   try {
     const fc = JSON.parse(require('child_process').execFileSync('python3', [path.join(__dirname, 'facts_check.py'), '--json'], { encoding: 'utf8' }));

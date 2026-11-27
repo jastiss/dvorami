@@ -4,16 +4,18 @@
   python3 scripts/facts_check.py                 — все дела, у которых есть и facts.md, и quest.json
   python3 scripts/facts_check.py --quest zilart  — одно дело
   python3 scripts/facts_check.py --json          — {"errors": [...], "warns": [...], "info": [...]} для site_check.js
-  python3 scripts/facts_check.py --selftest      — фикстура: мёртвый путь и ❌ у игрока краснеют
+  python3 scripts/facts_check.py --selftest      — фикстура: ❌ у игрока краснеет, мёртвый путь — предупреждение (у ❌ — красное)
 
 Формат ссылки (docs/facts-format.md): «т.N id/поле/индекс/…» — N = поле n точки, id — её id (можно не писать),
 дальше путь по quest.json через «/» или пробел, индексы с нуля, диапазон «0–2»; «, » — ещё путь от той же точки;
 поле, которого нет у текущего узла, ищется выше (у шага, у точки, у дела: «intro», «finale», «summary»).
 [флаг=значение] — ветка. Русские слова и текст в (…) и «…» — пояснения, путь не продолжают.
 
-Ошибка (красное): мёртвый путь (поля или индекса нет), id не той точки, нет точки N, неизвестный флаг,
-факт ❌ звучит игроку. Предупреждение: факт не ✅ (⚠️, 🔶) звучит игроку; ссылка ведёт на текст, где нет ни одного
-ключевого слова факта (имена, годы, слова в «…») — возможно, не та реплика.
+Ошибка (красное): факт ❌ звучит игроку; у факта ❌ ссылка не проверяется (мёртвый путь и т. п. — не узнать, звучит ли он);
+съехала колонка таблицы. Предупреждение (T-138, 27.11: выкладку стенда не блокирует — это учёт в research, игрок его
+не видит): мёртвый путь (поля или индекса нет), id не той точки, нет точки N, неизвестный флаг; факт не ✅ (⚠️, 🔶)
+звучит игроку; ссылка ведёт на текст, где нет ни одного ключевого слова факта (имена, годы, слова в «…») — возможно,
+не та реплика.
 «Звучит игроку» — ссылка на живой путь при текущих флагах дела (ветки «if» по дороге и [флаг=…] совпадают), или
 «финал», «intro», «summary», или «сайт». Ячейка «— …» до первой «;» — нигде.
 """
@@ -286,6 +288,8 @@ def check_quest(qid, md_path=None, q=None):
         if body.strip().startswith("—"):
             segs = segs[1:]
         heard = False
+        # T-138: битая ссылка — учёт в research, выкладку не блокирует; у факта ❌ — красное: не узнать, звучит ли он игроку
+        stale = (lambda m: errors.append(m + " — у факта ❌: не проверить, звучит ли он игроку")) if cls == "bad" else warns.append
         kw = keywords(row[fact_col], quotes)  # и цитаты из самой ячейки: «(«в семьдесят пятом году»)»
         for seg in segs:
             low_seg = seg.lower()
@@ -299,7 +303,7 @@ def check_quest(qid, md_path=None, q=None):
                 short = re.sub(r"\s+", " ", ref_txt)[:60]
                 cands = [p for p in points if p.get("n") == n]
                 if not cands:
-                    errors.append(f"{tag}: «{short}» — в quest.json нет точки {n}")
+                    stale(f"{tag}: «{short}» — в quest.json нет точки {n}")
                     continue
                 pid = paths[0][0] if paths and paths[0] and FIELD.match(paths[0][0]) else None
                 ids = {p.get("id") for p in points}
@@ -307,7 +311,7 @@ def check_quest(qid, md_path=None, q=None):
                     cand = [p for p in cands if p.get("id") == pid]
                     if not cand:
                         other = next(p for p in points if p.get("id") == pid)
-                        errors.append(f"{tag}: «{short}» — {pid} это т.{other.get('n')}, а не т.{n}")
+                        stale(f"{tag}: «{short}» — {pid} это т.{other.get('n')}, а не т.{n}")
                         continue
                     point = cand[0]
                     paths[0] = paths[0][1:]
@@ -315,12 +319,12 @@ def check_quest(qid, md_path=None, q=None):
                     point = next((p for p in cands if passes(p.get("if"), flags, clock)), cands[0])
                 bad_flag = [k for k, _ in rflags if k not in known]
                 if bad_flag:
-                    errors.append(f"{tag}: «{short}» — флага {', '.join(bad_flag)} нет в quest.json (flags/clock)")
+                    stale(f"{tag}: «{short}» — флага {', '.join(bad_flag)} нет в quest.json (flags/clock)")
                     continue
                 paths = [p for p in paths if p]
                 nodes, shorts, err = resolve(q, point, paths) if paths else ([[("", q), ("т", point)]], [], None)
                 if err:
-                    errors.append(f"{tag}: «{short}» — мёртвый путь: {err} (т.{n} {point.get('id')})")
+                    stale(f"{tag}: «{short}» — мёртвый путь: {err} (т.{n} {point.get('id')})")
                     continue
                 live_flag = all(k in clock or same(flags.get(k, "A"), v) for k, v in rflags)
                 live = live_flag and any(all(passes(x.get("if"), flags, clock) for _, x in ch if isinstance(x, dict)) for ch in nodes)
@@ -359,14 +363,19 @@ def selftest():
           "| 2 | Шагал | ✅ | т.1 a/walk/3 |\n"
           "| 3 | Шагал | ❌ | т.1 walk/0 |\n"
           "| 4 | Кандинский | ⚠️ | т.1 steps/0/ok/0 [s=B] — не звучит |\n"
-          "| 5 | Кандинский | ✅ | т.1 a/walk/0 |\n")
+          "| 5 | Кандинский | ✅ | т.1 a/walk/0 |\n"
+          "| 6 | Шагал | ❌ | т.1 a/walk/7 |\n")
     with tempfile.TemporaryDirectory() as d:
         p = pathlib.Path(d) / "facts.md"
         p.write_text(md, encoding="utf-8")
         e, w, _ = check_quest("fx", p, q)
     out = []
-    if not any("[2]" in x and "мёртвый путь" in x for x in e):
-        out.append("мёртвый путь (walk/3) не пойман")
+    if not any("[2]" in x and "мёртвый путь" in x for x in w):
+        out.append("мёртвый путь (walk/3) не пойман предупреждением")
+    if any("[2]" in x for x in e):
+        out.append("мёртвый путь у факта ✅ блокирует выкладку (T-138: только предупреждение)")
+    if not any("[6]" in x and "мёртвый путь" in x for x in e):
+        out.append("мёртвый путь у факта ❌ не красный")
     if not any("[3]" in x and "❌" in x for x in e):
         out.append("❌ у игрока не пойман")
     if any("[1]" in x for x in e + w):

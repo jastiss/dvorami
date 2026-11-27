@@ -17,6 +17,19 @@ on:
       - "scripts/answer_match.py"
       - "scripts/site_check.js"
       - "platform/site/og-manifest.json"
+      # T-138: входы site_check --sync — правка ответов, фактов или сценария сразу проверяется сборкой, а не следующим пушем
+      # с site/. Битая ссылка «Где у игрока» в facts.md — предупреждение, выкладку не блокирует (красное — только ❌ у игрока).
+      - "scripts/answer_leaks.*"
+      - "scripts/facts_check.py"
+      - "scripts/story_drift.js"
+      - "scripts/temporary_check.js"
+      - "scripts/site_spoilers.json"
+      - "scripts/tone_stamps.json"
+      - "quests/**/research/facts.md"
+      - "quests/**/story/scenario-v*.md"
+      - "quests/**/retired.json"
+      - "platform/site/story-sync.json"
+      - "docs/marketing/channel/posts/*.md"   # посты канала сверяются с ответами дел и снятым из сценария (H-119, T-140)
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
