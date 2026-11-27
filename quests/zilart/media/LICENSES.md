@@ -78,3 +78,27 @@
 | `casting/voices/r3-*.mp3` | пробы голосов раунда 4 | `eleven_v4` |
 | `assets/audio/sfx/sfx-*.mp3` | голубь, кот, шаги, трамвай, гудок | `eleven_text_to_sound_v3` |
 | `assets/audio/sfx/music-courtyard-mystery-30s.mp3` | музыка «тайна во дворе» | `eleven_music_v2_5` |
+
+## Карточки «Искусство вокруг» и подложка карты (fal), 2026-11-28
+
+Основание — A-85 и A-75 (владелец, 27.11). Модель — `fal-ai/nano-banana-pro/edit`, 2K, 4:3; образец техники — фрагмент нашей сцены `s02` (гуашь, стиль 4). Чужих исходников нет: в промптах нет имён художников и названий работ, в кадре — предметы ремесла эпохи, чистые листы и холсты. Условия коммерческого использования — по условиям fal для модели; **подтвердить до публикации** (как выше).
+
+| Файл на сайте | Исходник | Что | request_id |
+|---|---|---|---|
+| `site/assets/art/zilart/melnikov-desk.jpg` | `cards/melnikov-desk.jpg` | стол архитектора 1920-х: чертёжная доска, рейсшина, циркуль | `01a21f1a-7a64-7270-a49a-0ed630c4b172` |
+| `site/assets/art/zilart/tatlin-desk.jpg` | `cards/tatlin-desk.jpg` | верстак: рейки, проволока, пила, отвес (без конструкций) | `01a21f1a-7a9f-7c32-9f1e-2be3f809a014` |
+| `site/assets/art/zilart/shagal-desk.jpg` | `cards/shagal-desk.jpg` | мольберт с чистым холстом у окна (за окном только небо) | `01a21f1a-7a9d-7e93-b88b-46bb6f5e1485` |
+| `site/assets/art/zilart/rodchenko-desk.jpg` | `cards/rodchenko-desk.jpg` | дальномерный фотоаппарат 1930-х без марки, футляр, плёнка | `01a21f1a-7ab9-7450-9878-d1805bbb6546` |
+| `site/assets/art/zilart/stepanova-desk.jpg` | `cards/stepanova-desk.jpg` | рулоны однотонного ситца, ножницы, линейка, циркуль (без узоров) | `01a21f1a-7a9b-7073-b552-266b699261d3` |
+| `site/assets/art/zilart/avtozavod-1931.jpg` | `site/play/zilart/media/scenes/s02-amo-1931.jpg` (нижняя часть кадра) | завод в 1931 году, без генерации | сцена s02 (A-66) |
+| `site/play/zilart/media/map.jpg` (+ `.webp`) | `map/map-gouache-4.jpg`, маска — `map/mask.py`, сборка — `map/build.py` | подложка схемы в плеере: парк, пруд и река по координатам `quest.json` → `map.landmarks`; улиц и домов нет | `01a21f1c-5008-7c40-9424-5d936eb74dd8` |
+
+Подписи на сайте: «Рисунок „Дворами“… Не работа <автора>» (`art.credit` в `platform/site/cases/c1_zilart.py`).
+
+Репродукции общественного достояния для трёх карточек — ждут скачивания (переменная `MEDIA_UA`, `docs/photos-to-download.md`); при скачивании вписать сюда страницу файла, шаблон лицензии и дату проверки:
+
+| Файл | Работа | Страница файла | Право в РФ | Подпись |
+|---|---|---|---|---|
+| `kandinsky-composition-7.jpg` | В. Кандинский (1866–1944), «Композиция VII», 1913, ГТГ | https://commons.wikimedia.org/wiki/File:Vassily_Kandinsky,_1913_-_Composition_7.jpg | общественное достояние с 2015 (с +4 — с 2019) | «Василий Кандинский, 1913. Государственная Третьяковская галерея. Общественное достояние» |
+| `lentulov-vasiliy-blazhenny.jpg` | А. Лентулов (1882–1943), «Василий Блаженный», 1913, ГТГ | https://commons.wikimedia.org/wiki/File:Lentulov_Basil.jpg | общественное достояние с 2018 | «Аристарх Лентулов, 1913. Государственная Третьяковская галерея. Общественное достояние» |
+| `lisitsky-klinom-krasnym.jpg` | Эль Лисицкий (1890–1941), «Клином красным бей белых», 1920 | https://commons.wikimedia.org/wiki/File:Klinom_Krasnim_by_El_Lisitskiy_(1920).jpg | общественное достояние с 2016 | «Эль Лисицкий, 1920. Общественное достояние» (владельца оттиска вписать со страницы файла) |

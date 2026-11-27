@@ -43,7 +43,14 @@
 | `melnikov-house.jpg` | — | https://commons.wikimedia.org/wiki/File:Melnikov_House,_May_2021.jpg (запасной — https://commons.wikimedia.org/wiki/File:Krivoarbat.JPG, категория https://commons.wikimedia.org/wiki/Category:Melnikov_House). Кадр — фасад с цилиндрами, без людей крупно | Здание — свобода панорамы (ГК РФ, ст. 1276, п. 1). Снимок — только CC0 или ОД, подпись «Фото: <автор>, CC0»; CC BY / BY-SA — сначала вопрос владельцу (нужна ссылка на источник). Проще — своё фото: Кривоарбатский пер., 10 |
 | `shagal-embankment.jpg` (вместо картины Шагала) | — | категория https://commons.wikimedia.org/wiki/Category:Marka_Shagala_Embankment — серия Retired electrician, апрель 2025, CC0 | Картину Шагала нельзя (охраняется до 2056, с +4 — до 2060). Кадр набережной — без Золотой арки и вездехода (загадка и ответ маршрута) и не тот, что в слоте `arch`. Подпись «Фото: Retired electrician, CC0» |
 
-Татлин (до 1.01.2028), Родченко (до 1.01.2031), Степанова (до 1.01.2033) — **не скачивать**: репродукции на сайте нельзя, карточки остаются без картинки (`art_none` с причиной).
+Татлин (до 1.01.2028), Родченко (до 1.01.2031), Степанова (до 1.01.2033) — **не скачивать**: репродукции на сайте нельзя; в карточках — оригинальные рисунки «Дворами» (28.11, `docs/photos-artists-zilart.md`, «Картинки карточек»).
+
+**28.11: workflow `fetch-photo` запущен и упал — не задана переменная репозитория `MEDIA_UA`** (Settings → Secrets and variables → Actions → Variables; значение вида `dvorami-media/1.0 (почта для связи)`). Файл workflow — `.github/workflows/fetch-photo.workflow.yml`. После переменной — три запуска (GitHub MCP `actions_run_trigger`, `workflow_id: fetch-photo.workflow.yml`, `ref: main`, `fit` пустой):
+- `url` https://upload.wikimedia.org/wikipedia/commons/b/b4/Vassily_Kandinsky%2C_1913_-_Composition_7.jpg → `path` `site/assets/art/zilart/kandinsky-composition-7.jpg`
+- `url` https://upload.wikimedia.org/wikipedia/commons/5/50/Lentulov_Basil.jpg → `path` `site/assets/art/zilart/lentulov-vasiliy-blazhenny.jpg` (сверить глазами: «Василий Блаженный» 1913 года)
+- `url` https://upload.wikimedia.org/wikipedia/commons/9/93/Klinom_Krasnim_by_El_Lisitskiy_%281920%29.jpg → `path` `site/assets/art/zilart/lisitsky-klinom-krasnym.jpg`
+
+Подписи `art.credit` у трёх карточек уже стоят; файл, пришедший коммитом workflow, встанет после `python3 scripts/build_cases.py` (workflow страницу не пересобирает — пересобрать и закоммитить). Фото дома Мельникова (хеш-путь `3/37/Melnikov_House%2C_May_2021.jpg`) — только после того, как на странице файла прочитаны автор и лицензия.
 
 Следующие на очереди (нужно открыть страницу файла и записать автора и лицензию; подойдут только CC0 и общественное достояние — иначе нужна ссылка на вики): Дом Мельникова (кандидаты — в таблице выше, 27.11), ДК ЗИЛ, старые снимки рощи и завода из категории «Tyufeleva Grove» («AMO factory construction», «Pond in Tyufeleva Roscha», «Tyufeleva Roscha from the Simonov Monastery»). Снимки PastVu встраивать нельзя: лицензий на страницах нет (`quests/zilart/research/pastvu.md`).
 

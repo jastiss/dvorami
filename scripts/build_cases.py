@@ -292,7 +292,7 @@ def world_card(k):
       yr | year_none, title, text, credit | credit_none, art {file, alt, credit[, fit]} | art_none.
     Слот картинки — вверху карточки, кадр 4:3 (case-media.css): репродукция вписывается целиком (fit 'contain', по умолчанию —
     картины не кадрируем), снимок места — 'cover'. Файл — site/assets/art/<дело>/<файл>.jpg (1200×900, JPEG); пока его нет,
-    карточка такая же, как без картинки. Под картинкой — подпись-атрибуция art.credit: автор, лицензия, источник
+    карточка такая же, как без картинки (и тогда рядом с art ставят art_none «ждёт файла» — он снимается сам, когда файл появился). Под картинкой — подпись-атрибуция art.credit: автор, лицензия, источник
     (team/std/images.md); без неё сборка падает. p.credit — источник самой карточки (где хранится работа, ссылка)."""
     art, fig, cls = k.get('art'), '', 'c-world-card'
     if art and os.path.exists(os.path.join(SITE, 'assets', 'art', art['file'])):
@@ -305,7 +305,10 @@ def world_card(k):
         cls += ' has-art'
     yr = f'<span class="yr">{k["yr"]}</span>' if k.get('yr') else ''
     credit = f'<p class="credit">{k["credit"]}</p>' if k.get('credit') else ''
-    return f'<article class="{cls}"{none_attrs(k)}>{fig}{yr}<h3>{k["title"]}</h3><p>{k["text"]}</p>{credit}</article>'
+    # art_none рядом с art — «файл ждёт скачивания»: как только файл лёг в site/assets/art/, исключение снимается само
+    # (иначе файл, пришедший коммитом workflow fetch-photo, краснил бы card_grid_check: «исключение у карточки с картинкой»)
+    kk = {x: v for x, v in k.items() if x != 'art_none'} if fig and art else k
+    return f'<article class="{cls}"{none_attrs(kk)}>{fig}{yr}<h3>{k["title"]}</h3><p>{k["text"]}</p>{credit}</article>'
 
 
 def world_block(w):
