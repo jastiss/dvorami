@@ -34,7 +34,18 @@
 
 Хеш-пути трёх репродукций (`b/b4`, `5/50`, `9/93`) вычислены по правилу Commons и не открывались: не сработает — «Original file» на странице файла. Ссылки на фото мест взяты из каталога Openverse как есть.
 
-Следующие на очереди (нужно открыть страницу файла и записать автора и лицензию; подойдут только CC0 и общественное достояние — иначе нужна ссылка на вики): Дом Мельникова, ДК ЗИЛ, старые снимки рощи и завода из категории «Tyufeleva Grove» («AMO factory construction», «Pond in Tyufeleva Roscha», «Tyufeleva Roscha from the Simonov Monastery»). Снимки PastVu встраивать нельзя: лицензий на страницах нет (`quests/zilart/research/pastvu.md`).
+**27.11, Историк — блок «художники» целиком (8 карточек), права и подписи — `docs/photos-artists-zilart.md`.** Подпись ставится полем `art.credit` в `world.cards` (`c1_zilart.py`). Прямых ссылок у новых строк нет: адреса файлов не вычисляем — «Original file» на странице файла.
+
+| Файл | Прямая ссылка (оригинал) | Страница файла | Право |
+|---|---|---|---|
+| `kandinsky-composition-7.jpg` (замена скана, по желанию) | — | https://commons.wikimedia.org/wiki/File:Composition_VII_-_Wassily_Kandinsky,_GAC.jpg — скан Google Art Project, обычно крупнее и точнее по цвету | ОД, как строкой выше; подпись — «Государственная Третьяковская галерея» |
+| `lisitsky-klinom-krasnym.jpg` (лучший источник) | — | https://rusneb.ru/catalog/000199_000009_004879579/ — скан РГБ в НЭБ («скачать PDF»): страницу PDF → JPEG, `-resize '1200x1600>'` | ОД; подпись «Российская государственная библиотека» верна только для этого скана. Берёте файл Commons — прочитать на его странице, чей оттиск, и подписать тем музеем |
+| `melnikov-house.jpg` | — | https://commons.wikimedia.org/wiki/File:Melnikov_House,_May_2021.jpg (запасной — https://commons.wikimedia.org/wiki/File:Krivoarbat.JPG, категория https://commons.wikimedia.org/wiki/Category:Melnikov_House). Кадр — фасад с цилиндрами, без людей крупно | Здание — свобода панорамы (ГК РФ, ст. 1276, п. 1). Снимок — только CC0 или ОД, подпись «Фото: <автор>, CC0»; CC BY / BY-SA — сначала вопрос владельцу (нужна ссылка на источник). Проще — своё фото: Кривоарбатский пер., 10 |
+| `shagal-embankment.jpg` (вместо картины Шагала) | — | категория https://commons.wikimedia.org/wiki/Category:Marka_Shagala_Embankment — серия Retired electrician, апрель 2025, CC0 | Картину Шагала нельзя (охраняется до 2056). Кадр набережной — без Золотой арки и вездехода (загадка и ответ маршрута) и не тот, что в слоте `arch`. Подпись «Фото: Retired electrician, CC0» |
+
+Татлин (до 1.01.2028), Родченко (до 1.01.2031), Степанова (до 1.01.2033) — **не скачивать**: репродукции на сайте нельзя, карточки остаются без картинки (`art_none` с причиной).
+
+Следующие на очереди (нужно открыть страницу файла и записать автора и лицензию; подойдут только CC0 и общественное достояние — иначе нужна ссылка на вики): Дом Мельникова (кандидаты — в таблице выше, 27.11), ДК ЗИЛ, старые снимки рощи и завода из категории «Tyufeleva Grove» («AMO factory construction», «Pond in Tyufeleva Roscha», «Tyufeleva Roscha from the Simonov Monastery»). Снимки PastVu встраивать нельзя: лицензий на страницах нет (`quests/zilart/research/pastvu.md`).
 
 ## Как скачать руками
 Открыть прямую ссылку → сохранить → `convert in.jpg -resize '1200x900^' -gravity center -extent 1200x900 -quality 80 -strip site/assets/photo/zilart/<слот>.jpg` (репродукции: `-resize '1200x1600>'` без `-extent`) → `python3 scripts/build_cases.py` → `node scripts/site_check.js` → коммит. Можно просто прислать файлы — команда сожмёт и поставит.
