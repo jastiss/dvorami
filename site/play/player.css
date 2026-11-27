@@ -265,12 +265,14 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
   .pl-fresh .pl-doc code i { animation: pl-type .01s steps(1) both; animation-delay: calc(var(--i) * 42ms + 350ms); }
   .pl-badge.bump { animation: pl-bump .5s ease; }
   .pl-map-cur { animation: pl-halo 2.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  .pl-me-dot { animation: pl-me 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 }
 .pl-doc code i { font-style: normal; }
 @keyframes pl-drop { from { opacity: 0; transform: translateY(-18px) rotate(-5deg) scale(1.04); } }
 @keyframes pl-stamp { from { opacity: 0; transform: scale(1.9) rotate(-14deg); } }
 @keyframes pl-type { from { opacity: 0; } }
 @keyframes pl-bump { 40% { transform: scale(1.45); } }
+@keyframes pl-me { 50% { transform: scale(1.25); } }
 @keyframes pl-halo { from { transform: scale(1); opacity: .9; } to { transform: scale(2.4); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .pl-task.pulse { animation: none; } .pl-btn:active { transform: none; } }
 
@@ -309,6 +311,13 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-map-dot { fill: var(--accent); }
 .pl-map-dot--cur { fill: var(--text); }
 .pl-map-cur { fill: none; stroke: var(--text); stroke-width: 1.5; }
+/* H-85: «вы здесь» — только по кнопке «Где я на схеме»; за краем схемы — стрелка-направление */
+.pl-me-acc { fill: var(--ok); fill-opacity: .16; stroke: var(--ok); stroke-opacity: .5; stroke-width: 1; }
+.pl-me-dot { fill: var(--ok); stroke: var(--surface); stroke-width: 2.5; }
+.pl-me-out path { fill: var(--ok); stroke: var(--surface); stroke-width: 1.5; stroke-linejoin: round; }
+.pl-locate { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 12px; }
+.pl-locate .pl-loc-note { margin: 0; flex: 1 1 200px; }
+.pl-locate .pl-loc-note:empty { display: none; }
 .pl-map text { font: 700 13px/1 var(--font-text); fill: var(--on-accent-fill); text-anchor: middle; dominant-baseline: central; }
 .pl-map text.cur { fill: var(--bg); }
 .pl-stops { list-style: none; padding: 0; display: grid; }
@@ -325,6 +334,10 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-field li + li { margin-top: 6px; }
 details.pl-field > summary { font-size: 15px; }
 details.pl-field[open] > summary { margin-bottom: 4px; }
+/* H-83: плашка полевого теста «🔶 запасной текст» — только в ?field=1 (player.js, fbHtml) */
+.pl-fb { margin: 8px 0; padding: 8px 12px; border: 2px dashed var(--accent-text); border-radius: min(var(--radius), 8px); font: 15px/1.4 var(--font-text); color: var(--text); overflow-wrap: anywhere; }
+.pl-fb b { color: var(--accent-text); font-weight: 600; }
+.pl-fb code { font: inherit; font-weight: 600; }
 
 /* ---------- 8. Навигация: три постоянных раздела, одинаковые во всех делах ---------- */
 .pl-nav {

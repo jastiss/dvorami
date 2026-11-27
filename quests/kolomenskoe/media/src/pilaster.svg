@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+<defs>
+<linearGradient id="cyl" x1="0" x2="1"><stop offset="0" stop-color="#C9D2CB"/><stop offset=".3" stop-color="#FAFBF8"/><stop offset=".62" stop-color="#E2E8E2"/><stop offset="1" stop-color="#9DAAA2"/></linearGradient>
+<pattern id="hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="14" stroke="#5E7A5A" stroke-width="4"/></pattern>
+</defs>
+<rect width="1200" height="900" fill="#EEF1EC"/>
+<rect x="60" y="96" width="500" height="554" fill="#DCE2DC"/>
+<line x1="60" y1="158" x2="560" y2="158" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="60" y1="220" x2="560" y2="220" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="60" y1="282" x2="560" y2="282" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="60" y1="344" x2="560" y2="344" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="60" y1="406" x2="560" y2="406" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="60" y1="468" x2="560" y2="468" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="60" y1="530" x2="560" y2="530" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="60" y1="592" x2="560" y2="592" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="122" y1="96" x2="122" y2="158" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="246" y1="96" x2="246" y2="158" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="370" y1="96" x2="370" y2="158" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="494" y1="96" x2="494" y2="158" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="184" y1="158" x2="184" y2="220" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="308" y1="158" x2="308" y2="220" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="432" y1="158" x2="432" y2="220" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="556" y1="158" x2="556" y2="220" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="122" y1="220" x2="122" y2="282" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="246" y1="220" x2="246" y2="282" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="370" y1="220" x2="370" y2="282" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="494" y1="220" x2="494" y2="282" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="184" y1="282" x2="184" y2="344" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="308" y1="282" x2="308" y2="344" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="432" y1="282" x2="432" y2="344" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="556" y1="282" x2="556" y2="344" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="122" y1="344" x2="122" y2="406" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="246" y1="344" x2="246" y2="406" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="370" y1="344" x2="370" y2="406" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="494" y1="344" x2="494" y2="406" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="184" y1="406" x2="184" y2="468" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="308" y1="406" x2="308" y2="468" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="432" y1="406" x2="432" y2="468" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="556" y1="406" x2="556" y2="468" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="122" y1="468" x2="122" y2="530" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="246" y1="468" x2="246" y2="530" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="370" y1="468" x2="370" y2="530" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="494" y1="468" x2="494" y2="530" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="184" y1="530" x2="184" y2="592" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="308" y1="530" x2="308" y2="592" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="432" y1="530" x2="432" y2="592" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="556" y1="530" x2="556" y2="592" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="122" y1="592" x2="122" y2="650" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="246" y1="592" x2="246" y2="650" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="370" y1="592" x2="370" y2="650" stroke="#C2CBC4" stroke-width="3"/>
+<line x1="494" y1="592" x2="494" y2="650" stroke="#C2CBC4" stroke-width="3"/>
+<rect x="375" y="232" width="12" height="368" fill="#B3BFB7"/>
+<rect x="245" y="225" width="130" height="378" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<rect x="233" y="600" width="154" height="22" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<rect x="223" y="620" width="174" height="30" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<rect x="241" y="206" width="138" height="19" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<path d="M215 160 H405 V172 Q405 206 375 206 H245 Q215 206 215 172 Z" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<ellipse cx="280" cy="186" rx="10" ry="13" fill="none" stroke="#3F4A45" stroke-width="3"/>
+<ellipse cx="310" cy="186" rx="10" ry="13" fill="none" stroke="#3F4A45" stroke-width="3"/>
+<ellipse cx="340" cy="186" rx="10" ry="13" fill="none" stroke="#3F4A45" stroke-width="3"/>
+<circle cx="231" cy="194" r="36" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<path d="M231.0 163.0 L234.7 163.4 L238.3 164.3 L241.7 165.6 L245.0 167.3 L247.9 169.4 L250.6 171.7 L253.0 174.4 L255.0 177.3 L256.6 180.4 L257.9 183.7 L258.7 187.0 L259.1 190.4 L259.1 193.9 L258.7 197.2 L257.9 200.5 L256.7 203.6 L255.2 206.5 L253.3 209.2 L251.2 211.6 L248.8 213.7 L246.1 215.5 L243.3 217.0 L240.4 218.1 L237.4 218.9 L234.3 219.2 L231.3 219.2 L228.3 218.9 L225.3 218.1 L222.6 217.1 L220.0 215.7 L217.6 214.0 L215.4 212.1 L213.5 209.9 L211.9 207.6 L210.6 205.1 L209.6 202.5 L209.0 199.8 L208.7 197.1 L208.7 194.4 L209.0 191.7 L209.7 189.1 L210.6 186.7 L211.8 184.4 L213.3 182.3 L215.0 180.4 L216.9 178.7 L219.0 177.3 L221.2 176.2 L223.5 175.3 L225.9 174.8 L228.2 174.5 L230.6 174.6 L232.9 174.9 L235.1 175.5 L237.3 176.3 L239.3 177.4 L241.1 178.7 L242.7 180.2 L244.1 181.8 L245.3 183.6 L246.2 185.5 L246.9 187.5 L247.4 189.5 L247.6 191.5 L247.6 193.6 L247.3 195.5 L246.7 197.4 L246.0 199.2 L245.1 200.9 L244.0 202.4 L242.7 203.8 L241.3 204.9 L239.8 205.9 L238.1 206.7 L236.5 207.2 L234.8 207.6 L233.1 207.7 L231.4 207.7 L229.8 207.4 L228.3 206.9 L226.8 206.3 L225.4 205.5 L224.2 204.6 L223.1 203.5 L222.2 202.3 L221.5 201.1 L220.9 199.8 L220.4 198.4 L220.2 197.1 L220.1 195.7 L220.2 194.4 L220.5 193.1 L220.9 191.9 L221.4 190.8 L222.1 189.7 L222.8 188.8 L223.7 188.0 L224.6 187.3 L225.6 186.8 L226.6 186.4 L227.6 186.1 L228.7 186.0 L229.7 186.0 L230.7 186.1 L231.6 186.4 L232.5 186.7 L233.3 187.1 L234.0 187.7 L234.6 188.3 L235.1 188.9 L235.6 189.6 L235.9 190.3 L236.1 191.0 L236.2 191.7 L236.2 192.5 L236.2 193.1 L236.0 193.8 L235.8 194.4 L235.5 194.9 L235.1 195.3" fill="none" stroke="#B8893A" stroke-width="5" stroke-linecap="round"/>
+<circle cx="231" cy="194" r="5" fill="#B8893A"/>
+<circle cx="389" cy="194" r="36" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<path d="M389.0 163.0 L385.3 163.4 L381.7 164.3 L378.3 165.6 L375.0 167.3 L372.1 169.4 L369.4 171.7 L367.0 174.4 L365.0 177.3 L363.4 180.4 L362.1 183.7 L361.3 187.0 L360.9 190.4 L360.9 193.9 L361.3 197.2 L362.1 200.5 L363.3 203.6 L364.8 206.5 L366.7 209.2 L368.8 211.6 L371.2 213.7 L373.9 215.5 L376.7 217.0 L379.6 218.1 L382.6 218.9 L385.7 219.2 L388.7 219.2 L391.7 218.9 L394.7 218.1 L397.4 217.1 L400.0 215.7 L402.4 214.0 L404.6 212.1 L406.5 209.9 L408.1 207.6 L409.4 205.1 L410.4 202.5 L411.0 199.8 L411.3 197.1 L411.3 194.4 L411.0 191.7 L410.3 189.1 L409.4 186.7 L408.2 184.4 L406.7 182.3 L405.0 180.4 L403.1 178.7 L401.0 177.3 L398.8 176.2 L396.5 175.3 L394.1 174.8 L391.8 174.5 L389.4 174.6 L387.1 174.9 L384.9 175.5 L382.7 176.3 L380.7 177.4 L378.9 178.7 L377.3 180.2 L375.9 181.8 L374.7 183.6 L373.8 185.5 L373.1 187.5 L372.6 189.5 L372.4 191.5 L372.4 193.6 L372.7 195.5 L373.3 197.4 L374.0 199.2 L374.9 200.9 L376.0 202.4 L377.3 203.8 L378.7 204.9 L380.2 205.9 L381.9 206.7 L383.5 207.2 L385.2 207.6 L386.9 207.7 L388.6 207.7 L390.2 207.4 L391.7 206.9 L393.2 206.3 L394.6 205.5 L395.8 204.6 L396.9 203.5 L397.8 202.3 L398.5 201.1 L399.1 199.8 L399.6 198.4 L399.8 197.1 L399.9 195.7 L399.8 194.4 L399.5 193.1 L399.1 191.9 L398.6 190.8 L397.9 189.7 L397.2 188.8 L396.3 188.0 L395.4 187.3 L394.4 186.8 L393.4 186.4 L392.4 186.1 L391.3 186.0 L390.3 186.0 L389.3 186.1 L388.4 186.4 L387.5 186.7 L386.7 187.1 L386.0 187.7 L385.4 188.3 L384.9 188.9 L384.4 189.6 L384.1 190.3 L383.9 191.0 L383.8 191.7 L383.8 192.5 L383.8 193.1 L384.0 193.8 L384.2 194.4 L384.5 194.9 L384.9 195.3" fill="none" stroke="#B8893A" stroke-width="5" stroke-linecap="round"/>
+<circle cx="389" cy="194" r="5" fill="#B8893A"/>
+<rect x="201" y="142" width="218" height="20" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<line x1="40" y1="650" x2="1160" y2="650" stroke="#5E7A5A" stroke-width="5"/>
+<path d="M425 194 C 470 194 480 120 500 98" fill="none" stroke="#B8893A" stroke-width="4"/>
+<circle cx="425" cy="194" r="6" fill="#B8893A"/>
+<text x="470" y="80" font-family="Alegreya Sans" font-weight="700" font-size="54" fill="#7A5A1C">капитель с завитками</text>
+<ellipse cx="960" cy="652" rx="120" ry="12" fill="#C9D2CB"/>
+<rect x="879" y="620" width="162" height="30" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<rect x="893" y="598" rx="11" width="134" height="24" fill="url(#cyl)" stroke="#26302C" stroke-width="4"/>
+<rect x="905" y="250" width="110" height="350" fill="url(#cyl)" stroke="#26302C" stroke-width="4"/>
+<rect x="893" y="226" rx="12" width="134" height="26" fill="url(#cyl)" stroke="#26302C" stroke-width="4"/>
+<rect x="877" y="200" width="166" height="28" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<g>
+<rect x="140" y="700" width="340" height="22" fill="url(#hatch)" stroke="#5E7A5A" stroke-width="3"/>
+<rect x="245" y="722" width="130" height="22" fill="#F8F9F5" stroke="#26302C" stroke-width="4"/>
+<circle cx="960" cy="738" r="55" fill="url(#cyl)" stroke="#26302C" stroke-width="4"/>
+<text x="640" y="740" text-anchor="middle" font-family="Alegreya Sans" font-weight="500" font-size="44" fill="#3F4A45">вид сверху</text>
+</g>
+<text x="310" y="836" text-anchor="middle" font-family="Alegreya" font-weight="700" font-size="62" fill="#26302C">Пилястра</text>
+<text x="310" y="884" text-anchor="middle" font-family="Alegreya Sans" font-weight="500" font-size="46" fill="#3F4A45">плоская, у стены</text>
+<text x="960" y="836" text-anchor="middle" font-family="Alegreya" font-weight="700" font-size="62" fill="#26302C">Колонна</text>
+<text x="960" y="884" text-anchor="middle" font-family="Alegreya Sans" font-weight="500" font-size="46" fill="#3F4A45">круглая, отдельно</text>
+</svg>

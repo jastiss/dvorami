@@ -166,21 +166,92 @@
     return Object.keys(cond);
   }
   function isClockCond(cond) { return condKeys(cond).some(function (k) { return !!CLOCK[k]; }); }
-  function passes(cond) {
+  // over — подставные значения флагов ({f_kand: 'A'}): «прошёл бы элемент при основной ветке»
+  function passes(cond, over) {
     if (!cond) return true;
+    var fv = function (k) { return over && over[k] != null ? over[k] : flag(k); };
     if (typeof cond === 'string') {
       var m = cond.match(/^\s*([\w-]+)\s*(!?=)\s*(.+?)\s*$/);
       if (!m) return true;
-      var hit = m[3].split('|').map(function (s) { return s.trim(); }).indexOf(flag(m[1])) !== -1;
+      var hit = m[3].split('|').map(function (s) { return s.trim(); }).indexOf(fv(m[1])) !== -1;
       return m[2] === '=' ? hit : !hit;
     }
-    for (var k in cond) if ([].concat(cond[k]).map(String).indexOf(flag(k)) === -1) return false;
+    for (var k in cond) if ([].concat(cond[k]).map(String).indexOf(fv(k)) === -1) return false;
     return true;
+  }
+  // H-83: флаги фактов 🔶 (ветка B — запасная формулировка, пока Историк не подтвердит). В режиме ?field=1 у такого
+  // элемента — служебная плашка «🔶 запасной текст: <флаг> — <что подтвердить>». Флаг считается фактом 🔶, если он есть
+  // в необязательном flag_notes дела, или строка check, где он упомянут, говорит «Историк»/«🔶», или он f_* при «🔶» в _flags.
+  // Что подтвердить: flag_notes[флаг] → фраза из check с этим флагом → начало основного текста (ветки A).
+  var FACT = {};
+  function factFlags(q) {
+    var out = {}, notes = q.flag_notes && typeof q.flag_notes === 'object' ? q.flag_notes : {};
+    var lines = [];
+    (q.points || []).forEach(function (p) { [].concat(p.check || []).forEach(function (c) { if (typeof c === 'string') lines.push(c); }); });
+    var all = Object.keys(q.flags || {});
+    Object.keys(notes).forEach(function (k) { if (all.indexOf(k) === -1) all.push(k); });
+    all.forEach(function (k) {
+      if (CLOCK[k]) return;
+      var re = new RegExp('(^|[^\\w])' + k.replace(/[^\w-]/g, '') + '(?![\\w])');
+      var line = lines.filter(function (c) { return re.test(c); })[0] || '';
+      var bits = line.replace(/📍|🔶/g, '\n').match(/[^.!?\n]+(?:\([^)]*\))?[^.!?\n]*[.!?]?/g) || [];
+      var bit = line ? (bits.filter(function (s) { return re.test(s); })[0] || line) : '';
+      bit = bit.replace(/^\s*\d+\s*/, '').trim();
+      var fact = !!notes[k] || /Историк|🔶/.test(line) || (/^f_/.test(k) && /🔶/.test(String(q._flags || '')));
+      if (fact) out[k] = { note: String(notes[k] || bit || '') };
+    });
+    return out;
+  }
+  function excerpt(e) {
+    var t = e && typeof e === 'object' ? (e.text != null ? e.text : e.ask || e.title || '') : e;
+    t = plain(String(t || ''));
+    return t.length > 90 ? t.slice(0, 88).replace(/\s+\S*$/, '') + '…' : t;
+  }
+  // Чем основной текст отличается от запасного: слова между общим началом и общим концом
+  function diffPart(main, fb) {
+    var a = plain(String(main.text || '')).split(' '), b = plain(String(fb.text || '')).split(' ');
+    var i = 0, j = 0;
+    while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    while (j < a.length - i && j < b.length - i && a[a.length - 1 - j] === b[b.length - 1 - j]) j++;
+    var mid = a.slice(i, a.length - j).join(' ');
+    if (!mid) return excerpt(main);
+    var ex = excerpt(mid);
+    return (i ? '…' : '') + ex + (j && !/[….!?]$/.test(ex) ? '…' : '');
+  }
+  // Элемент из-за флага-факта в запасной ветке: {flag, note}; gap — основной элемент скрыт, замены нет
+  function fbOf(e, list, gap) {
+    var ks = condKeys(e && e['if']).filter(function (k) { return FACT[k] && flag(k) !== 'A'; });
+    if (!ks.length) return null;
+    var k = ks[0], over = {}; over[k] = 'A';
+    if (gap) {
+      if (!passes(e['if'], over)) return null;
+      return { flag: k, gap: true, note: FACT[k].note || ('основной текст: «' + excerpt(e) + '»') };
+    }
+    if (passes(e['if'], over)) return null;   // элемент одинаков в обеих ветках
+    var main = list.filter(function (x) { return x && typeof x === 'object' && condKeys(x['if']).indexOf(k) !== -1 && passes(x['if'], over); })[0];
+    return { flag: k, note: FACT[k].note || (main ? 'в основном варианте: «' + diffPart(main, e) + '»' : 'факт не подтверждён') };
   }
   // Ветки по часам при загрузке не отбираются (решаются при показе — clockPick)
   function prune(x) {
-    if (Array.isArray(x)) return x.filter(function (e) { return !(e && typeof e === 'object' && !Array.isArray(e) && !isClockCond(e['if']) && !passes(e['if'])); }).map(prune);
-    if (x && typeof x === 'object') { var o = {}; for (var k in x) if (Object.prototype.hasOwnProperty.call(x, k)) o[k] = prune(x[k]); return o; }
+    if (Array.isArray(x)) {
+      var out = [], gaps = [];
+      x.forEach(function (e) {
+        var obj = e && typeof e === 'object' && !Array.isArray(e);
+        if (obj && !isClockCond(e['if']) && !passes(e['if'])) {
+          // основной текст скрыт, а запасного рядом нет (реплика «по факту» просто снимается) — плашка у соседнего элемента
+          var g = fbOf(e, x, true);
+          if (g && !x.some(function (y) { return y !== e && y && typeof y === 'object' && condKeys(y['if']).indexOf(g.flag) !== -1 && passes(y['if']); })) gaps.push(g);
+          return;
+        }
+        var o = prune(e);
+        if (obj) { var fb = fbOf(e, x, false); if (fb) o._fb = fb; }
+        if (gaps.length && o && typeof o === 'object' && !Array.isArray(o)) { o._fbGap = gaps.map(function (g) { return Object.assign({ pos: 'before' }, g); }); gaps = []; }
+        out.push(o);
+      });
+      if (gaps.length) for (var i = out.length - 1; i >= 0; i--) if (out[i] && typeof out[i] === 'object' && !Array.isArray(out[i])) { out[i]._fbGap = (out[i]._fbGap || []).concat(gaps); break; }
+      return out;
+    }
+    if (x && typeof x === 'object') { var o2 = {}; for (var k in x) if (Object.prototype.hasOwnProperty.call(x, k)) o2[k] = prune(x[k]); return o2; }
     return x;
   }
   // Вопросы на ходу (по желанию) — на экране дороги; один объект или список
@@ -249,6 +320,7 @@
     var cq = q.clock || {};
     for (var ck in cq) if (Object.prototype.hasOwnProperty.call(cq, ck) && cq[ck] && typeof cq[ck] === 'object') CLOCK[ck] = cq[ck];
     FLAGS = readFlags(q);
+    FACT = factFlags(q);
     clockWarn(q);
     var p = prune(q);
     var p0 = (p.points || [])[0] || {};
@@ -710,7 +782,17 @@
       return out;
     }).join('');
   }
-  function lineHtml(l, cont) {
+  // H-83: служебная плашка полевого теста у запасного текста по флагу-факту 🔶 (игроку без ?field=1 не видна)
+  function fbHtml(o, pos) {
+    if (!S || !S.field || !o || typeof o !== 'object') return '';
+    var list = pos === 'before' ? [] : [].concat(o._fb || []);
+    list = list.concat((o._fbGap || []).filter(function (g) { return (g.pos || 'after') === pos || (pos === 'after' && !g.pos); }));
+    return list.map(function (x) {
+      return '<p class="pl-fb" role="note"><b>🔶 ' + (x.gap ? 'скрыто до подтверждения' : 'запасной текст') + ':</b> <code>' + esc(x.flag) + '</code> — ' + esc(x.note) + '</p>';
+    }).join('');
+  }
+  function lineHtml(l, cont) { return fbHtml(l, 'before') + lineHtml0(l, cont) + fbHtml(l, 'after'); }
+  function lineHtml0(l, cont) {
     if (typeof l === 'string') return '<div class="pl-prose">' + proseFold(l) + '</div>';
     if (!l || typeof l !== 'object') return '';
     if (l.arrow) return arrowHtml(l.arrow, l.text);
@@ -981,8 +1063,9 @@
   function verRowHtml(id) {
     var c = CARDS[id];
     if (!c) return '';
-    return '<details class="pl-more pl-verx" data-card="' + esc(id) + '"><summary><span class="pl-verx-title"><span class="visually-hidden">Вычеркнуто: </span>' + esc(plain(c.title)) + '</span>' +
-      '<span class="pl-stamp pl-stamp--ans pl-verx-x" aria-hidden="true">Вычеркнуто</span></summary><div class="pl-more-body">' + cardHtml(id) + '</div></details>';
+    return '<details class="pl-more pl-verx" data-card="' + esc(id) + '"><summary><span class="pl-verx-title"><span class="visually-hidden">Отпала: </span>' + esc(plain(c.title)) + '</span>' +
+      // T-118: короткий штамп — «Вычеркнуто» съедал заголовок версии на 390 (до 24 знаков заголовок виден целиком, player_check)
+      '<span class="pl-stamp pl-stamp--ans pl-verx-x" aria-hidden="true">Отпала</span></summary><div class="pl-more-body">' + cardHtml(id) + '</div></details>';
   }
   // Доска улик формата 5: письмо и карточки по остановкам (новые первыми); версии — отдельной группой.
   // Живые версии — сверху; опровергнутые сворачиваются в строку и уходят вниз доски (в режиме «Версии» — под живыми),
@@ -1068,6 +1151,66 @@
     for (var i = 0; i < LM_TEXT.length; i++) if (LM_TEXT[i].text.indexOf(lab) !== -1) return +LM_TEXT[i].n;
     return null;
   }
+  // H-85: «вы здесь» на схеме. Геолокация браузера — только по нажатию кнопки и только пока открыта «Карта»
+  // (watchPosition → clearWatch, как только раздел сменился или вкладка скрыта). Координаты никуда не уходят:
+  // ни запросов, ни сохранения; в Метрику — только цель map_locate с итогом (in — на схеме, out — за краем, denied, error).
+  var MAPGEO = null, LOC = { watch: null, pos: null, note: '', sent: false };
+  var HAS_GEO = !!(navigator.geolocation && navigator.geolocation.watchPosition);
+  function locateHtml() {
+    if (!HAS_GEO) return '';
+    var on = LOC.watch != null;
+    return '<div class="pl-locate"><button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="locate" aria-pressed="' + on + '">' + ico('point') + (on ? 'Скрыть, где я' : 'Где я на схеме') + '</button>' +
+      '<p class="pl-small pl-loc-note" id="loc-note" role="status">' + esc(LOC.note) + '</p></div>';
+  }
+  function meSvg() {
+    if (!MAPGEO || !LOC.pos || LOC.watch == null) return '';
+    var G = MAPGEO, c = G.proj(LOC.pos.lat, LOC.pos.lon), m = 14;
+    var f1 = function (v) { return v.toFixed(1); };
+    if (c[0] >= m && c[0] <= G.W - m && c[1] >= m && c[1] <= G.H - m) {
+      var r = Math.max(18, Math.min(60, (LOC.pos.acc || 0) * G.mpx));   // не меньше кружка точки (11): у точки, где стоит игрок, виден круг вокруг номера
+      return '<circle class="pl-me-acc" cx="' + f1(c[0]) + '" cy="' + f1(c[1]) + '" r="' + f1(r) + '"/>' +
+        '<circle class="pl-me-dot" cx="' + f1(c[0]) + '" cy="' + f1(c[1]) + '" r="6"/>';
+    }
+    // вне рамки: стрелка у края схемы — по направлению от центра к игроку
+    var cx = G.W / 2, cy = G.H / 2, dx = c[0] - cx, dy = c[1] - cy;
+    var t = Math.min(Math.abs(dx) > 1e-6 ? (cx - m) / Math.abs(dx) : 1e9, Math.abs(dy) > 1e-6 ? (cy - m) / Math.abs(dy) : 1e9);
+    var ex = cx + dx * t, ey = cy + dy * t, ang = Math.atan2(dy, dx) * 180 / Math.PI;
+    return '<g class="pl-me-out" transform="translate(' + f1(ex) + ' ' + f1(ey) + ') rotate(' + f1(ang) + ')"><path d="M9 0-7-8-3 0-7 8Z"/></g>';
+  }
+  function locNote() {
+    if (!LOC.pos) return;
+    var inside = /pl-me-dot/.test(meSvg());
+    LOC.note = inside ? 'Вы — в круге на схеме.' : 'Вы за краем схемы — стрелка у края показывает, в какой вы стороне.';
+    return inside ? 'in' : 'out';
+  }
+  function paintMe() {
+    var g = document.getElementById('pl-me'), n = document.getElementById('loc-note');
+    if (g) g.innerHTML = meSvg();
+    if (n) n.textContent = LOC.note;
+  }
+  function locSent(res) { if (LOC.sent) return; LOC.sent = true; track('map_locate', { quest: QID, res: res, field: S && S.field ? 1 : 0 }); }
+  function stopLocate() {
+    if (LOC.watch != null) { try { navigator.geolocation.clearWatch(LOC.watch); } catch (e) { /* уже снято */ } }
+    LOC.watch = null; LOC.pos = null;
+  }
+  function startLocate() {
+    LOC.sent = false; LOC.pos = null; LOC.note = 'Ищем вас…';
+    try {
+      LOC.watch = navigator.geolocation.watchPosition(function (p) {
+        if (LOC.watch == null) return;
+        LOC.pos = { lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy };
+        var res = locNote(); paintMe(); locSent(res);
+      }, function (e) {
+        // сбой уже найденного места (нет спутников, сменилась сеть) — не гасим точку: следующее обновление придёт само
+        if (e && e.code !== 1 && LOC.pos && LOC.watch != null) return;
+        stopLocate();
+        LOC.note = e && e.code === 1 ? 'Геолокация не разрешена — схема работает и без неё.' : 'Не получилось определить, где вы. Попробуйте ещё раз на открытом месте.';
+        locSent(e && e.code === 1 ? 'denied' : 'error');
+        if (view === 'map') { render(); refocus('[data-act="locate"]'); }
+      }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+    } catch (e) { LOC.watch = null; LOC.note = 'Не получилось определить, где вы.'; locSent('error'); }
+  }
+  document.addEventListener('visibilitychange', function () { if (document.hidden && LOC.watch != null) { stopLocate(); LOC.note = ''; if (view === 'map') render(); } });
   function mapView() {
     var n = Q.points.length, all = S.phase === 'done';
     var upto = all ? n - 1 : (S.phase === 'intro' ? 0 : S.p);
@@ -1085,6 +1228,7 @@
     var ox = (W - (x1 - x0) * sc) / 2, oy = (H - (y1 - y0) * sc) / 2;
     var proj = function (lat, lon) { return [(lon * k - x0) * sc + ox, (-lat - y0) * sc + oy]; };
     var mpx = sc / 111320;   // пикселей схемы на метр (градус широты ≈ 111,3 км)
+    MAPGEO = { proj: proj, W: W, H: H, mpx: mpx };
     var f1 = function (v) { return v.toFixed(1); };
     var pos = known.map(function (p, i) { return [(xs[i] - x0) * sc + ox, (ys[i] - y0) * sc + oy]; });
     // соседние точки ближе диаметра кружка раздвигаем, чтобы номера не слипались
@@ -1198,8 +1342,10 @@
     var h = head(caseName(), 'Карта', all ? 'Маршрут пройден: ' + n + ' из ' + n + ' точек' : 'Пройдено точек: ' + done + ' из ' + n, 0) +
       '<figure class="pl-map' + (img ? ' pl-map--img' : '') + '"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Схема пути: ' + (all ? 'все точки' : 'точки с 1 по ' + (upto + 1)) +
       (lmNames.length ? '; ориентиры: ' + esc(lmNames.join(', ')) : '') + '">' +
-      under + shapes + deco + (known.length > 1 ? '<path class="pl-map-path" d="' + path + '"/>' : '') + marks + dots + labels.join('') + '</svg>' +
-      '<figcaption class="pl-small">Схема: север сверху, расстояния в масштабе, улиц нет — дорогу ведёт текст точки.</figcaption></figure>';
+      under + shapes + deco + (known.length > 1 ? '<path class="pl-map-path" d="' + path + '"/>' : '') + marks +
+      // «вы здесь» — под кружками точек: номер точки, у которой стоит игрок, остаётся читаемым, круг точности виден вокруг
+      '<g id="pl-me" class="pl-me">' + meSvg() + '</g>' + dots + labels.join('') + '</svg>' +
+      '<figcaption class="pl-small">Схема: север сверху, расстояния в масштабе, улиц нет — дорогу ведёт текст точки.</figcaption></figure>' + locateHtml();
     if (cur) h += '<a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + esc(mapLink(cur)) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + cur.n + '">' + ico('out') + 'Точка ' + cur.n + ' в Яндекс Картах</a>';
     h += '<ol class="pl-stops">' + known.map(function (p, i) {
       var isCur = cur && i === upto;
@@ -1459,6 +1605,7 @@
     var isLive = c.live && S.phase === 'step' && fr.step === S.k;
     var h = '<section class="pl-card pl-task' + (t.cls === 'opt' ? ' pl-task--opt' : '') + '"' + (isLive ? ' id="active"' : '') + ' data-step="' + fr.step + '" data-ctx="step">' +
       '<div class="pl-task-top">' + tagHtml(t) + '<span class="pl-stepno">Шаг ' + (fr.step + 1) + ' из ' + p.steps.length + '</span></div>' +
+      fbHtml(st, 'before') + fbHtml(st, 'after') +
       (fr.inline && fr.inline.length ? voiceHtml(fr.inline, st.audio) + '<div class="pl-lines">' + linesHtml(fr.inline) + '</div>' : '') +
       (t.text ? '<div class="pl-prose pl-ask">' + prose(t.text) + '</div>' : fr.ask ? '<div class="pl-prose pl-ask"><p>' + esc(fr.ask) + '</p></div>' : '');
     var recap = fr.recap && fr.recap.length ? moreHtml('Напомнить, что было сказано', linesHtml(fr.recap), 'pl-recap') : '';
@@ -1493,11 +1640,18 @@
     dvorami: { home: '../../#quests', homeText: 'Другие дела «Дворами»', other: '../../sledami/', otherName: '«Следами»', otherNote: 'вечерние детективные прогулки для взрослых, 18+' },
     sledami: { home: '../../sledami/#cases', homeText: 'Другие дела «Следами»', other: '../../', otherName: '«Дворами»', otherNote: 'семейные квесты-прогулки по районам' }
   };
+  // H-87: ссылки несут ?from=<марка> (и ?city=<город дела>, если город не основной) — на приёме analytics.js отдаёт метку
+  // параметром визита в Метрику (после согласия на cookie), docs/analytics.md, «Метка ?from=»
+  var CITY_IDS = { 'Москва': 'moscow', 'Санкт-Петербург': 'spb', 'Петербург': 'spb' };
+  function tagged(href) {
+    var m = String(href).match(/^([^#?]*)(?:\?[^#]*)?(#.*)?$/), city = CITY_IDS[Q && Q.city] || '';
+    return m[1] + '?from=' + BRAND + (city && city !== 'moscow' ? '&city=' + city : '') + (m[2] || '');
+  }
   function nextHtml() {
     var x = CROSS[BRAND];
     return '<section class="pl-card pl-next"><h2 class="pl-rate-q">Что дальше</h2>' +
-      '<div class="pl-actions"><a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + x.home + '" data-track="next_case">' + esc(x.homeText) + '</a></div>' +
-      '<p class="pl-small">Другой формат: <a href="' + x.other + '" data-track="brand_cross" data-track-to="' + (BRAND === 'dvorami' ? 'sledami' : 'dvorami') + '">' + esc(x.otherName) + '</a> — ' + esc(x.otherNote) + '.</p></section>';
+      '<div class="pl-actions"><a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + esc(tagged(x.home)) + '" data-track="next_case">' + esc(x.homeText) + '</a></div>' +
+      '<p class="pl-small">Другой формат: <a href="' + esc(tagged(x.other)) + '" data-track="brand_cross" data-track-to="' + (BRAND === 'dvorami' ? 'sledami' : 'dvorami') + '">' + esc(x.otherName) + '</a> — ' + esc(x.otherNote) + '.</p></section>';
   }
   function closedHtml() {
     warmPostcard();
@@ -1726,6 +1880,8 @@
     app.classList.toggle('pl-fresh', key !== lastKey && view === 'point');
     lastKey = key;
     if (voiceBox && !document.contains(voiceBox)) stopVoice();
+    if (view !== 'map' && LOC.watch != null) { stopLocate(); LOC.note = ''; }
+    if (view !== 'map') LOC.note = '';
     app.innerHTML = view === 'board' ? boardView() : view === 'map' ? mapView() : pointView();
     kbGone();
     var fr = document.getElementById('frame');
@@ -2133,6 +2289,10 @@
       if (!same) { window.scrollTo(0, 0); return; }
       // повторное нажатие «Точка» — вернуться к текущему шагу
       show(liveSec(), S.f, 'fwd');
+    },
+    locate: function () {
+      if (LOC.watch != null) { stopLocate(); LOC.note = ''; } else startLocate();
+      render(); refocus('[data-act="locate"]');
     },
     note: function () { openSheet('note'); },
     menu: function () { openSheet('menu'); },

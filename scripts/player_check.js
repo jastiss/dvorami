@@ -228,6 +228,9 @@ function audit() {
   };
   const visible = el => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 1 && r.height > 1 && cs.visibility !== 'hidden' && cs.display !== 'none' && !el.closest('.visually-hidden, [hidden], dialog:not([open])'); };
   const name = el => (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : el.tagName.toLowerCase()) + ' «' + (el.textContent || '').trim().slice(0, 28) + '»';
+  // H-83: служебная плашка «🔶 запасной текст» — только в режиме полевого теста
+  const fieldOn = /[?&]field=1(&|$)/.test(location.search) || !!(window.__dvorami && window.__dvorami.state() && window.__dvorami.state().field);
+  if (!fieldOn && document.querySelector('.pl-fb')) out.push('плашка полевого теста «🔶 запасной текст» видна игроку без ?field=1');
   if (document.documentElement.scrollWidth > window.innerWidth) out.push(`горизонтальный скролл: ${document.documentElement.scrollWidth} > ${window.innerWidth}`);
   const root = document.querySelector('dialog[open]') || document.body;
   for (const el of root.querySelectorAll('*')) {
@@ -244,7 +247,7 @@ function audit() {
         const c = ratio(fg, bg), large = size >= 24 || (size >= 18.66 && parseInt(cs.fontWeight, 10) >= 700);
         if (c < (large ? 3 : 4.5)) out.push(`контраст текста ${c.toFixed(2)} (${cs.color} на rgb(${bg.map(Math.round)})): ${name(el)}`);
       }
-      if (/\p{Extended_Pictographic}/u.test([...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').replace(/[✓]/g, ''))) out.push(`эмодзи в интерфейсе: ${name(el)}`);
+      if (/\p{Extended_Pictographic}/u.test([...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').replace(/[✓]/g, '')) && !el.closest('.pl-fb')) out.push(`эмодзи в интерфейсе: ${name(el)}`);
     }
     if (el.matches('button, a.pl-btn, input, textarea, .pl-hint, .pl-tag, .pl-stamp')) {
       for (let e = el; e && e !== document.body; e = e.parentElement) if (+getComputedStyle(e).opacity < 1 && !e.matches('.pl-toast')) { out.push(`opacity < 1: ${name(el)}`); break; }
@@ -782,6 +785,13 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
               }
             }
             if (b.rows) {
+              // T-118: штамп отпавшей версии не съедает заголовок — до 24 знаков заголовок виден целиком на 390
+              if (vp.width === 390) {
+                const cut = await page.$$eval('#app .pl-verx-title', es => es.map(e => ({ t: e.textContent.replace(/^Отпала:\s*/, '').trim(), over: e.scrollWidth > e.clientWidth + 1 })).filter(x => x.t.length <= 24 && x.over).map(x => x.t));
+                cut.forEach(t => err(tag, `${at} · улики: заголовок отпавшей версии обрезан на 390 — «${t}» (T-118)`));
+                notes.push(`T-118: заголовки отпавших версий на 390 проверены (строк: ${b.rows})`);
+                await page.$eval('#app .pl-vers--gone', e => e.scrollIntoView({ block: 'center' })).catch(() => {}); await shot('player-board-gone');
+              }
               await click('#app .pl-verx > summary'); await check(at + ' · улики · версия открыта');
               if (!(await page.$('#app .pl-verx[open] .pl-cardx'))) err(tag, `${at} · улики: опровергнутая версия не раскрывается по нажатию`);
               await click('#app .pl-verx > summary');
@@ -876,6 +886,122 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       await ctx.close();
     }
   }
+  // H-83 и H-85 — отдельный короткий прогон на 390: плашка «🔶 запасной текст» в ?field=1 и «вы здесь» на схеме
+  // (геолокация подменена, внешние запросы заблокированы). Вход — сохранённым кодом и сохранением на нужной точке.
+  {
+    const tag = '390/доп';
+    const p0 = Q.points[Math.min(2, Q.points.length - 1)];
+    const open = async (extra, qs, statePoint) => {
+      const ctx = await browser.newContext(Object.assign({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' }, extra));
+      const page = await ctx.newPage();
+      await page.route('**/*', route => {
+        const u = route.request().url();
+        if (/\/quest\.locked\.json(\?|$)/.test(u) && u.startsWith(BASE)) return SEALED ? route.fulfill({ path: BUNDLE.locked, contentType: 'application/json' }) : route.fulfill({ status: 404 });
+        if (/\/quest\.json(\?|$)/.test(u) && u.startsWith(BASE)) return SEALED ? route.fulfill({ status: 404 }) : route.fulfill({ path: QUEST, contentType: 'application/json' });
+        return u.startsWith(BASE) ? route.continue() : route.abort();
+      });
+      page.on('pageerror', e => err(tag, 'JS: ' + e.message));
+      page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::|quest\.locked\.json|\/media\//.test(m.text() + ((m.location() || {}).url || ''))) err(tag, 'консоль: ' + m.text().slice(0, 200)); });
+      await page.addInitScript(([qid, code, ver, pi]) => {
+        try {
+          if (code) localStorage.setItem('dvorami:code:' + qid, code);
+          localStorage.setItem('dvorami:play:' + qid, JSON.stringify({ v: 1, quest: qid, version: ver, phase: 'walk', p: pi, k: 0, f: 0, t_start: Date.now() - 6e5, field: false }));
+        } catch (e) {}
+        window.__goals = []; let real = null;
+        Object.defineProperty(window, 'dvoramiTrack', { configurable: true, get: () => (g, p) => { window.__goals.push([g, Object.assign({}, p)]); if (real) try { real(g, p); } catch (e) {} }, set: f => { real = f; } });
+        // сколько слежений за местом сейчас открыто (watchPosition без clearWatch)
+        window.__watch = 0;
+        const G = navigator.geolocation;
+        if (G) { const w = G.watchPosition.bind(G), c = G.clearWatch.bind(G); const live = new Set();
+          G.watchPosition = (...a) => { const id = w(...a); live.add(id); window.__watch = live.size; return id; };
+          G.clearWatch = id => { live.delete(id); window.__watch = live.size; return c(id); }; }
+      }, [QID, SEALED ? BUNDLE.code : '', RAW.version == null ? null : RAW.version, statePoint]);
+      await page.goto(`${BASE}/${PAGE}${qs}`, { waitUntil: 'load' });
+      await page.waitForSelector('#app .pl-bar, #app [data-view], #tabs:not([hidden])', { timeout: 15000 }).catch(() => {});
+      return { ctx, page };
+    };
+    const audit1 = async (page, where) => (await page.evaluate(audit)).forEach(m => err(`${tag} · ${where}`, m));
+    const jpg = async (page, name) => { if (args.shots) { fs.mkdirSync(args.shots, { recursive: true }); await page.waitForTimeout(150); await page.screenshot({ path: path.join(args.shots, `${name}-390.jpg`), type: 'jpeg', quality: 80 }); } };
+
+    // --- H-83: плашка полевого теста у запасного текста ---
+    {
+      const sep = QS ? '&' : '?';
+      let { ctx, page } = await open({}, QS + sep + 'field=1', 0);
+      const where = await page.evaluate(() => {
+        const Q = window.__dvorami.quest();
+        for (let i = 0; i < Q.points.length; i++) if (/"_fb(Gap)?"/.test(JSON.stringify(Q.points[i].walk || []))) return i;
+        return -1;
+      });
+      const total = await page.evaluate(() => (JSON.stringify(window.__dvorami.quest()).match(/"_fb(Gap)?"/g) || []).length);
+      if (where < 0) notes.push(`плашка «🔶 запасной текст»: в деле нет текста по флагам-фактам в ветке B (меток: ${total})`);
+      else {
+        await ctx.close(); ({ ctx, page } = await open({}, QS + sep + 'field=1', where));
+        let seen = false;
+        for (let i = 0; i < 40 && !seen; i++) {
+          await page.$$eval('#app details.pl-more:not([open]) > summary', ss => ss.forEach(s => s.click())).catch(() => {});
+          if (await page.$('#app .pl-fb')) { seen = true; break; }
+          const b = await page.$('#app .pl-bar [data-act="fwd"]'); if (!b) break; await b.click();
+        }
+        if (!seen) err(tag, `полевой тест: на дороге к точке ${Q.points[where].n} нет плашки «🔶 запасной текст»`);
+        else {
+          const t = await page.$eval('#app .pl-fb', e => e.textContent);
+          if (!/^🔶 (запасной текст|скрыто до подтверждения): \S+ — .{4,}/.test(t)) err(tag, `полевой тест: плашка без флага или пояснения: «${t}»`);
+          await page.$eval('#app .pl-fb', e => e.scrollIntoView({ block: 'center' }));
+          await audit1(page, 'полевой тест · плашка'); await jpg(page, 'player-field-fb');
+          notes.push(`плашка «🔶 запасной текст» в ?field=1: ${total} меток в деле, проверена на точке ${Q.points[where].n} — «${t.slice(0, 70)}…»`);
+        }
+        await ctx.close();
+        // тот же экран без ?field=1 — плашки нет (сохранение не полевое)
+        ({ ctx, page } = await open({}, QS, where));
+        for (let i = 0; i < 40; i++) {
+          if (await page.$('#app .pl-fb')) { err(tag, 'плашка «🔶 запасной текст» видна без ?field=1'); break; }
+          const b = await page.$('#app .pl-bar [data-act="fwd"]'); if (!b) break; await b.click();
+        }
+      }
+      await ctx.close();
+    }
+
+    // --- H-85: «вы здесь» на схеме ---
+    {
+      const pi = Q.points.indexOf(p0);
+      let { ctx, page } = await open({ geolocation: { latitude: p0.lat, longitude: p0.lon, accuracy: 25 }, permissions: ['geolocation'] }, QS, pi);
+      await page.click('[data-view="map"]');
+      if (!(await page.$('#app [data-act="locate"]'))) err(tag, 'карта: нет кнопки «Где я на схеме»');
+      else {
+        if (await page.evaluate(() => window.__watch)) err(tag, 'карта: геолокация включилась без нажатия');
+        await page.click('#app [data-act="locate"]');
+        const ok = await page.waitForSelector('#pl-me .pl-me-dot', { timeout: 5000 }).catch(() => null);
+        if (!ok) err(tag, 'карта: после «Где я на схеме» нет точки «вы здесь» (игрок у текущей точки)');
+        await audit1(page, 'карта · вы здесь'); await jpg(page, 'player-map-me');
+        const g = (await page.evaluate(() => window.__goals)).filter(([n]) => n === 'map_locate');
+        if (g.length !== 1 || g[0][1].res !== 'in') err(tag, `карта: ожидали одну цель map_locate (res=in), получили ${JSON.stringify(g)}`);
+        if (/\d{2}\.\d{3}/.test(JSON.stringify(g))) err(tag, 'карта: координаты ушли в параметры цели map_locate');
+        // игрок далеко за рамкой схемы — стрелка у края
+        await ctx.setGeolocation({ latitude: p0.lat + 0.03, longitude: p0.lon + 0.03, accuracy: 25 });
+        if (!(await page.waitForSelector('#pl-me .pl-me-out', { timeout: 5000 }).catch(() => null))) err(tag, 'карта: игрок за рамкой — нет стрелки-направления у края');
+        else { const r = await page.$eval('#pl-me .pl-me-out', e => { const b = e.getBoundingClientRect(), s = e.closest('svg').getBoundingClientRect(); return b.left >= s.left - 1 && b.right <= s.right + 1 && b.top >= s.top - 1 && b.bottom <= s.bottom + 1; }); if (!r) err(tag, 'карта: стрелка «вы здесь» вылезает за схему'); }
+        await audit1(page, 'карта · вы за краем'); await jpg(page, 'player-map-out');
+        // ушли с карты — слежение снято
+        await page.click('[data-view="board"]');
+        if (await page.evaluate(() => window.__watch)) err(tag, 'карта: геолокация не выключилась при уходе с карты');
+        await page.click('[data-view="map"]');
+        if (await page.$('#pl-me .pl-me-dot, #pl-me .pl-me-out')) err(tag, 'карта: «вы здесь» осталось после возврата на карту без нажатия');
+      }
+      await ctx.close();
+      // отказ в геолокации — тихая подсказка, без ошибок
+      ({ ctx, page } = await open({}, QS, pi));
+      await page.click('[data-view="map"]');
+      if (await page.$('#app [data-act="locate"]')) {
+        await page.click('#app [data-act="locate"]');
+        const note = await page.waitForFunction(() => /не разрешена|не получилось/i.test((document.getElementById('loc-note') || {}).textContent || ''), null, { timeout: 8000 }).then(() => true).catch(() => false);
+        if (!note) err(tag, 'карта: при отказе в геолокации нет подсказки');
+        if (await page.evaluate(() => window.__watch)) err(tag, 'карта: после отказа слежение не снято');
+        await audit1(page, 'карта · отказ');
+      }
+      await ctx.close();
+    }
+  }
+
   await browser.close();
   server.close();
   // у разных игроков (новое сохранение в каждом из 6 прогонов) порядок разный хотя бы у одного выбора

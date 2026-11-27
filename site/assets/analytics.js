@@ -99,6 +99,8 @@
   var FROM = (location.search.match(/[?&]from=([a-z0-9_-]{1,32})(?:&|$)/) || [])[1] || '';
   try { if (FROM) window.sessionStorage.setItem(FROM_KEY, FROM); else FROM = window.sessionStorage.getItem(FROM_KEY) || ''; } catch (e) { /* без хранилища */ }
   if (!/^[a-z0-9_-]{1,32}$/.test(FROM)) FROM = '';
+  // H-87: переход между марками несёт ?from=dvorami|sledami и ?city=<город> — город уходит тем же параметром визита
+  var FROM_CITY = FROM ? ((location.search.match(/[?&]city=([a-z-]{1,16})(?:&|$)/) || [])[1] || '') : '';
 
   function load() {
     if (loaded || !YM_ID || LOCAL) return;
@@ -122,8 +124,10 @@
     });
     if (DEBUG && window.console) console.log('[analytics] счётчик', YM_ID, 'host', HOST, 'webvisor', WEBVISOR);
     if (FROM) {
-      if (DEBUG && window.console) console.log('[analytics] params', { from: FROM });
-      try { window.ym(Number(YM_ID), 'params', { from: FROM }); } catch (e) { /* без аналитики */ }
+      var vp = { from: FROM };
+      if (FROM_CITY) vp.city = FROM_CITY;
+      if (DEBUG && window.console) console.log('[analytics] params', vp);
+      try { window.ym(Number(YM_ID), 'params', vp); } catch (e) { /* без аналитики */ }
     }
     var q = queue; queue = [];
     q.forEach(function (e) { track(e[0], e[1]); });
