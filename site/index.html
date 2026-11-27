@@ -29,6 +29,7 @@
 <link rel="preload" href="assets/fonts/golos-text-cyrillic-600-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/city.css">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
 {
@@ -139,7 +140,7 @@
   <div class="wrap hero-grid">
     <div class="hero-text">
       <p class="hand hero-hand">Город что-то прячет. Пойдём искать?</p>
-      <h1 id="h1" class="hero-h1">Квесты-прогулки по&nbsp;Москве <span class="hero-mark">без&nbsp;гида<svg class="draw" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M3 11 C 70 4, 160 5, 230 8 S 288 12, 297 6" fill="none" stroke="#FFC53D" stroke-width="4" stroke-linecap="round" style="--len:320;--delay:.3s"/></svg></span></h1>
+      <h1 id="h1" class="hero-h1">Квесты-прогулки по&nbsp;<span data-city-drum data-form="dat">Москве</span> <span class="hero-mark">без&nbsp;гида<svg class="draw" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M3 11 C 70 4, 160 5, 230 8 S 288 12, 297 6" fill="none" stroke="#FFC53D" stroke-width="4" stroke-linecap="round" style="--len:320;--delay:.3s"/></svg></span></h1>
       <p class="promise">Раскрываете дело на&nbsp;настоящих улицах — и&nbsp;узнаёте о&nbsp;районе то, мимо чего обычно проходят.</p>
       <div class="hero-cta" data-cta>
         <a class="btn btn--lg" href="#quests">Выбрать квест</a>
@@ -152,7 +153,7 @@
       </ul>
     </div>
     <a class="hero-art" href="#quests" aria-label="Семь дел в разных районах Москвы — к выбору дела">
-      <span class="hero-card hero-card--1"><img src="assets/ill/case-04.svg" width="1200" height="900" alt="Иллюстрация: Красная площадь вечером" fetchpriority="high"><span class="hero-card-tag">7 дел в&nbsp;разных районах Москвы<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow"/></svg></span></span>
+      <span class="hero-card hero-card--1"><img src="assets/ill/case-04.svg" width="1200" height="900" alt="Иллюстрация: Красная площадь вечером" fetchpriority="high"><span class="hero-card-tag"><span data-city-only="live">7 дел в&nbsp;разных районах Москвы</span><span data-city-only="soon" hidden>Пока все дела — в&nbsp;Москве</span><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow"/></svg></span></span>
     </a>
   </div>
 </section>
@@ -162,10 +163,18 @@
     <div class="quests-head">
       <div>
         <span class="hand">выбирайте дело</span>
-        <h2 id="h-quests" class="h2">Квесты по&nbsp;Москве</h2>
+        <h2 id="h-quests" class="h2">Квесты по&nbsp;<span data-city-form="dat">Москве</span></h2>
       </div>
     </div>
-    <ul class="qgrid qgrid--home" id="qgrid" data-cta>
+    <!-- Город «скоро» (site/assets/city.js): вместо карточек Москвы — честное «скоро» и путь к делам в Москве. Без JS блок скрыт -->
+    <div class="city-soon" data-city-only="soon" hidden>
+      <p><b>В&nbsp;<span data-city-form="loc">Петербурге</span> — скоро.</b> Это следующий город «Дворами». Напишем в&nbsp;Telegram, когда первое дело можно будет пройти.</p>
+      <div class="city-soon-cta">
+        <a class="btn" data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Узнать о&nbsp;старте</a>
+        <button type="button" class="link-plain" data-city-set="moscow">Пока — дела в&nbsp;Москве</button>
+      </div>
+    </div>
+    <ul class="qgrid qgrid--home" id="qgrid" data-cta data-city-only="live">
       <!-- cards:start — карточки дел собирает scripts/build_cases.py из поля card в platform/site/cases/c*.py; руками не править -->
       <li class="qcard" data-status="soon" data-case="1">
         <span class="qc-cover"><img src="assets/ill/case-01.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №1: ЗИЛАРТ"><span class="qc-rating rating" data-rating="zilart-sinyaya-ptica"></span></span>
@@ -239,7 +248,7 @@
         <a class="btn" data-tg="suggest" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Предложить район</a>
       </li>
     </ul>
-    <p class="qlane-hint" aria-hidden="true"><span class="hand">листайте вбок</span> <span class="qlane-count" id="qlane-count"></span></p>
+    <p class="qlane-hint" aria-hidden="true" data-city-only="live"><span class="hand">листайте вбок</span> <span class="qlane-count" id="qlane-count"></span></p>
   </div>
 </section>
 
@@ -262,7 +271,7 @@
   </div>
 </section>
 
-<section class="section section--flush map-sec" aria-label="Квесты на карте Москвы">
+<section class="section section--flush map-sec" aria-label="Квесты на карте Москвы" data-city-only="moscow">
   <div class="wrap">
     <div class="map-row">
       <figure class="city-map">
@@ -309,7 +318,7 @@
 </section>
 
 <svg class="skyline skyline--to-surface" viewBox="0 0 1440 130" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false"><rect class="b" x="0" y="61" width="78" height="69"/><rect class="w" x="24" y="65" width="8" height="11"/><rect class="w" x="40" y="65" width="8" height="11"/><rect class="w on" x="8" y="85" width="8" height="11" style="--d:2.5s"/><rect class="w" x="56" y="85" width="8" height="11"/><rect class="w" x="56" y="105" width="8" height="11"/><rect class="b" x="84" y="52" width="54" height="78"/><rect class="w" x="92" y="56" width="8" height="11"/><rect class="w on" x="92" y="76" width="8" height="11" style="--d:1.9s"/><rect class="w" x="92" y="96" width="8" height="11"/><rect class="b" x="144" y="8" width="54" height="122"/><rect class="w on" x="152" y="12" width="8" height="11" style="--d:4.1s"/><rect class="b" x="204" y="44" width="90" height="86"/><rect class="w on" x="228" y="48" width="8" height="11" style="--d:1.0s"/><rect class="w" x="244" y="68" width="8" height="11"/><rect class="w on" x="228" y="108" width="8" height="11" style="--d:1.6s"/><rect class="w" x="260" y="108" width="8" height="11"/><rect class="b" x="300" y="7" width="78" height="123"/><rect class="w on" x="324" y="31" width="8" height="11" style="--d:1.0s"/><rect class="w on" x="340" y="31" width="8" height="11" style="--d:4.6s"/><rect class="w on" x="356" y="31" width="8" height="11" style="--d:2.3s"/><rect class="w on" x="324" y="51" width="8" height="11" style="--d:3.3s"/><rect class="w on" x="340" y="91" width="8" height="11" style="--d:1.4s"/><rect class="w on" x="356" y="111" width="8" height="11" style="--d:2.2s"/><rect class="b" x="384" y="40" width="114" height="90"/><rect class="w" x="472" y="44" width="8" height="11"/><rect class="w" x="472" y="64" width="8" height="11"/><rect class="w on" x="392" y="84" width="8" height="11" style="--d:1.3s"/><rect class="w on" x="408" y="84" width="8" height="11" style="--d:0.3s"/><rect class="w on" x="424" y="84" width="8" height="11" style="--d:0.6s"/><rect class="w" x="456" y="84" width="8" height="11"/><rect class="w on" x="392" y="104" width="8" height="11" style="--d:2.1s"/><rect class="w" x="424" y="104" width="8" height="11"/><rect class="b" x="504" y="62" width="54" height="68"/><rect class="w on" x="512" y="66" width="8" height="11" style="--d:1.6s"/><rect class="w on" x="512" y="86" width="8" height="11" style="--d:5.7s"/><rect class="w on" x="512" y="106" width="8" height="11" style="--d:0.2s"/><rect class="b" x="564" y="47" width="54" height="83"/><rect class="b" x="624" y="50" width="66" height="80"/><rect class="w on" x="664" y="74" width="8" height="11" style="--d:1.7s"/><rect class="b" x="696" y="70" width="78" height="60"/><rect class="w on" x="736" y="74" width="8" height="11" style="--d:3.7s"/><rect class="w" x="704" y="114" width="8" height="11"/><rect class="b" x="780" y="58" width="90" height="72"/><rect class="w" x="820" y="62" width="8" height="11"/><rect class="w on" x="820" y="82" width="8" height="11" style="--d:6.0s"/><rect class="w" x="836" y="82" width="8" height="11"/><rect class="b" x="876" y="36" width="90" height="94"/><rect class="w on" x="884" y="40" width="8" height="11" style="--d:0.1s"/><rect class="w" x="932" y="40" width="8" height="11"/><rect class="w" x="884" y="60" width="8" height="11"/><rect class="w" x="900" y="60" width="8" height="11"/><rect class="w on" x="916" y="60" width="8" height="11" style="--d:3.0s"/><rect class="w" x="932" y="80" width="8" height="11"/><rect class="b" x="972" y="64" width="114" height="66"/><rect class="w on" x="1012" y="68" width="8" height="11" style="--d:1.1s"/><rect class="w" x="1028" y="68" width="8" height="11"/><rect class="w on" x="1044" y="68" width="8" height="11" style="--d:4.4s"/><rect class="w" x="1044" y="88" width="8" height="11"/><rect class="b" x="1092" y="39" width="90" height="91"/><rect class="w on" x="1148" y="103" width="8" height="11" style="--d:2.7s"/><rect class="b" x="1188" y="50" width="54" height="80"/><rect class="w on" x="1212" y="54" width="8" height="11" style="--d:0.7s"/><rect class="w on" x="1212" y="114" width="8" height="11" style="--d:4.5s"/><rect class="b" x="1248" y="30" width="54" height="100"/><rect class="w" x="1272" y="34" width="8" height="11"/><rect class="w on" x="1256" y="114" width="8" height="11" style="--d:2.0s"/><rect class="b" x="1308" y="31" width="54" height="99"/><rect class="w" x="1332" y="55" width="8" height="11"/><rect class="w on" x="1316" y="95" width="8" height="11" style="--d:0.2s"/><rect class="w on" x="1332" y="115" width="8" height="11" style="--d:5.5s"/><rect class="b" x="1368" y="29" width="78" height="101"/><rect class="w" x="1376" y="33" width="8" height="11"/><rect class="w on" x="1424" y="33" width="8" height="11" style="--d:4.1s"/><rect class="w" x="1392" y="53" width="8" height="11"/><rect class="w" x="1376" y="73" width="8" height="11"/><rect class="w" x="1392" y="73" width="8" height="11"/><rect class="w on" x="1424" y="93" width="8" height="11" style="--d:1.4s"/><rect class="w on" x="1376" y="113" width="8" height="11" style="--d:0.3s"/><rect class="w on" x="1392" y="113" width="8" height="11" style="--d:1.8s"/></svg>
-<section class="section section--surface about-sec" aria-labelledby="h-about">
+<section class="section section--surface about-sec" aria-labelledby="h-about" data-city-only="moscow">
   <div class="wrap about">
     <div class="about-head">
       <span class="hand">коротко о&nbsp;нас</span>
@@ -326,7 +335,7 @@
   </div>
 </section>
 
-<section class="section gallery-sec" aria-labelledby="h-gallery">
+<section class="section gallery-sec" aria-labelledby="h-gallery" data-city-only="moscow">
   <div class="wrap">
     <div class="gallery-head">
       <span class="hand">по&nbsp;дороге</span>
@@ -345,7 +354,7 @@
   </div>
 </section>
 
-<section class="section hook-sec" aria-labelledby="h-hook">
+<section class="section hook-sec" aria-labelledby="h-hook" data-city-only="moscow">
   <div class="wrap">
     <div class="hook-head">
       <span class="hand">мини-дело · можно начать прямо сейчас</span>
@@ -418,7 +427,7 @@
 </section>
 
 <!-- seo:start -->
-<section id="guide" class="section section--surface guide" aria-labelledby="h-seo">
+<section id="guide" class="section section--surface guide" aria-labelledby="h-seo" data-city-only="moscow">
   <div class="wrap">
     <div class="guide-top">
       <div class="guide-intro">
@@ -504,6 +513,20 @@
   </div>
 </section>
 
+<!-- Перелинковка марок (docs/sledami/concept.md, «Города и перелинковка»): о «Следами» — название, формат и 18+, без сюжетов дел -->
+<section id="other" class="section section--flush other-sec" aria-labelledby="h-other">
+  <div class="wrap">
+    <div class="other-card">
+      <div>
+        <span class="hand">другой формат</span>
+        <h2 id="h-other" class="h2">Для&nbsp;взрослых компаний — «Следами»</h2>
+        <p>Вечерние детективные прогулки по&nbsp;следам настоящих историй. Тоже без&nbsp;гида и&nbsp;расписания, но&nbsp;темы взрослые: только&nbsp;18+.</p>
+      </div>
+      <a class="btn btn--dark other-btn" href="sledami/" data-city-href data-track="brand_cross" data-track-to="sledami">Открыть «Следами» <span class="other-18" aria-label="18 плюс">18+</span></a>
+    </div>
+  </div>
+</section>
+
 <section id="contact" class="section section--flush" aria-labelledby="h-contact">
   <div class="wrap">
     <div class="contact" data-cta>
@@ -528,5 +551,6 @@
   </div>
 </footer>
 <script src="assets/site.js" defer></script>
+<script src="assets/city.js" defer></script>
 </body>
 </html>

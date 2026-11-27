@@ -13,6 +13,7 @@ on:
       - "scripts/codes.py"
       - "scripts/player_check.js"
       - "scripts/answer_check.js"
+      - "scripts/answer_match.py"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -62,7 +63,9 @@ jobs:
             id=$(basename "$d")
             if [ -f "quests/$id/quest.json" ]; then node scripts/player_check.js --quest="$id"; fi
           done
-      - name: Дела для плеера — зашифрованы кодом доступа
+      # Мастер-код ОДИН на все дела (владелец 27.11): каждое дело с quests/<id>/quest.json и страницей site/play/<id>/
+      # шифруется так, что его открывает тот же секрет QUEST_MASTER_CODE. Новое дело ничего не настраивает — достаточно двух папок.
+      - name: Дела для плеера — зашифрованы кодом доступа (мастер-код — общий)
         env:
           QUEST_MASTER_CODE: ${{ secrets.QUEST_MASTER_CODE }}
         run: |
@@ -75,6 +78,14 @@ jobs:
               echo "::warning::нет quests/$id/quest.json — плеер $id не загрузится"
             fi
           done
+          for f in quests/*/quest.json; do
+            id=$(basename "$(dirname "$f")")
+            [ -d "site/play/$id" ] || echo "::notice::дело $id: есть quest.json, нет страницы site/play/$id/ — на стенде его не пройти (скопируйте site/play/zilart/index.html и theme.css)"
+          done
+      - name: Проверка — мастер-код открывает каждое дело стенда
+        env:
+          QUEST_MASTER_CODE: ${{ secrets.QUEST_MASTER_CODE }}
+        run: python scripts/codes.py verify site
       - name: Проверка — открытого текста дел в сайте нет
         run: python scripts/codes.py leakcheck site
       - uses: actions/upload-pages-artifact@v3

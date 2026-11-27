@@ -4,6 +4,8 @@
    здесь — только то, что прощает форму, а не смысл:
    - регистр, ё/е, кавычки и знаки, дефисы и стрелки, лишние пробелы, юникод-формы (NFC);
    - числа: «3» = «три», «1 931» = «1931», «тысяча девятьсот тридцать один» = «1931» (сверяется и исходная форма, и числовая);
+   - латинская раскладка (H-70): «hfvf» = «рама» — на улице одной рукой раскладку не переключают; текст без кириллицы
+     сверяется ещё и в пересчёте с клавиш QWERTY на ЙЦУКЕН (исходная форма тоже сверяется — латинские ответы не ломаются);
    - «почти» (near): одна опечатка (расстояние Левенштейна ≤ 1) в ответе от 5 букв (у основы «~» — от 6, она короче слова),
      или все слова составного ответа есть, но вперемешку с лишними. Почти — не засчитывается, игрок видит «Почти! Проверьте написание».
    Ответы по-прежнему лежат только внутри зашифрованного дела (quest.locked.json): модуль их не хранит и не выдаёт. */
@@ -89,6 +91,23 @@
   }
   function norm(s) { return base(s); }
 
+  // Латинская раскладка → русская (те же клавиши). Только для текста, где есть латиница и нет кириллицы; иначе null.
+  var LAT = "qwertyuiop[]asdfghjkl;'zxcvbnm,.`{}:\"<>~";
+  var CYR = 'йцукенгшщзхъфывапролджэячсмитьбюёхъжэбюё';
+  function layout(s) {
+    s = String(s == null ? '' : s);
+    if (!/[a-z]/i.test(s) || /[а-яё]/i.test(s)) return null;
+    var out = '';
+    for (var i = 0; i < s.length; i++) { var c = s.charAt(i).toLowerCase(), j = LAT.indexOf(c); out += j === -1 ? c : CYR.charAt(j); }
+    return out;
+  }
+  // Все формы введённого текста: исходные и (если набран латиницей) в русской раскладке
+  function textForms(text) {
+    var ts = forms(text), alt = layout(text);
+    if (alt !== null) forms(alt).forEach(function (f) { if (ts.indexOf(f) === -1) ts.push(f); });
+    return ts;
+  }
+
   // ---------- совпадение ----------
   function hit(t, a) { // t, a — нормализованные
     if (a.charAt(0) === '~') {
@@ -120,7 +139,7 @@
     return forms(a);
   }
   function matches(text, answers) {
-    var ts = forms(text);
+    var ts = textForms(text);
     if (!ts[0]) return false;
     for (var i = 0; i < (answers || []).length; i++) {
       var as = answerForms(answers[i]);
@@ -166,11 +185,12 @@
     return false;
   }
   function near(text, answers) {
-    var t = base(text);
+    var t = base(text), alt = layout(text);
     if (!t) return false;
+    var ts = alt === null ? [t] : [t, base(alt)];
     for (var i = 0; i < (answers || []).length; i++) {
-      var a = String(answers[i]);
-      if (nearOne(t, a.charAt(0) === '~' ? '~' + base(a.slice(1)) : base(a))) return true;
+      var a = String(answers[i]), na = a.charAt(0) === '~' ? '~' + base(a.slice(1)) : base(a);
+      for (var k = 0; k < ts.length; k++) if (nearOne(ts[k], na)) return true;
     }
     return false;
   }
@@ -195,5 +215,5 @@
     return { ok: false };
   }
 
-  return { norm: norm, forms: forms, numeric: numeric, matches: matches, near: near, lev1: lev1, checkText: checkText, NEAR_TEXT: NEAR_TEXT };
+  return { norm: norm, forms: forms, layout: layout, numeric: numeric, matches: matches, near: near, lev1: lev1, checkText: checkText, NEAR_TEXT: NEAR_TEXT };
 }));

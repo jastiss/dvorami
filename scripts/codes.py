@@ -125,7 +125,10 @@ def load_registry(quest, path=None):
     p = pathlib.Path(path) if path else registry_path(quest)
     if p.exists():
         return json.loads(p.read_text(encoding="utf-8"))
-    return {"quest": quest, "kdf": {"salt": b64(secrets.token_bytes(16)), "iter": ITER}, "issuer": None, "codes": []}
+    # Новое дело: своя соль; ключ выпуска — тот же, что у других дел (он выводится из единого мастер-кода QUEST_MASTER_CODE)
+    issuer = next((r.get("issuer") for r in (json.loads(f.read_text(encoding="utf-8")) for f in sorted((ROOT / "quests").glob("*/codes.json")))
+                   if r.get("issuer")), None)
+    return {"quest": quest, "kdf": {"salt": b64(secrets.token_bytes(16)), "iter": ITER}, "issuer": issuer, "codes": []}
 
 
 def save_registry(reg, path=None):
@@ -332,6 +335,8 @@ def main(argv=None):
     s = sub.add_parser("list"); s.add_argument("--quest", default="zilart")
     s = sub.add_parser("seal"); s.add_argument("--quest", default="zilart"); s.add_argument("--out", required=True)
     s.add_argument("--registry")
+    s = sub.add_parser("verify", help="мастер-код (QUEST_MASTER_CODE) открывает каждое зашифрованное дело в site/play/<id>/")
+    s.add_argument("site", nargs="?", default=str(ROOT / "site"))
     s = sub.add_parser("leakcheck"); s.add_argument("site", nargs="?", default=str(ROOT / "site")); s.add_argument("--quest", action="append")
     s = sub.add_parser("selftest-bundle"); s.add_argument("--quest", default="zilart"); s.add_argument("--out", required=True)
     s.add_argument("--data")
@@ -393,6 +398,19 @@ def main(argv=None):
         out = pathlib.Path(a.out)
         out.write_text(json.dumps(locked, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"{a.quest}: зашифровано → {out} ({out.stat().st_size // 1024} КБ, кодов в таблице: {len(locked['keys'])})")
+    elif a.cmd == "verify":
+        # Мастер-код один на все дела (владелец 27.11): проверяем, что он открывает каждое собранное дело. Сам код не печатаем.
+        m = env_master()
+        files = sorted(pathlib.Path(a.site).glob("play/*/quest.locked.json"))
+        if not files:
+            sys.exit("verify: в site/play/*/ нет ни одного quest.locked.json")
+        if not m:
+            print(f"::warning::verify: секрета QUEST_MASTER_CODE нет — проверить мастер-код нельзя (дел на стенде: {len(files)})")
+            return
+        bad = [f.parent.name for f in files if open_locked(json.loads(f.read_text(encoding="utf-8")), m) is None]
+        if bad:
+            sys.exit(f"verify: мастер-код не открывает: {', '.join(bad)}")
+        print(f"verify: мастер-код открывает все дела стенда ({', '.join(f.parent.name for f in files)})")
     elif a.cmd == "leakcheck":
         quests = a.quest or [p.parent.name for p in (ROOT / "quests").glob("*/quest.json")]
         problems = leakcheck(a.site, quests)

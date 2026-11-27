@@ -378,6 +378,32 @@ async function mapTaps() {
         // порог поднят 26.11 (1688 → 1800): владелец вернул обложкам 4:3 — его указание важнее H-9
         if (y >= 1800) err(rel, vp.width, `блок «Как это выглядит» начинается на ${y} px (нужно выше 1800): лента каталога выросла`);
       }
+      // владелец 27.11: город в заголовке витрины (site/assets/city.js) — барабан переключает город, тексты меняются вместе с ним,
+      // выбор запоминается, ссылка на вторую марку несёт город; блок «Другой формат» ведёт на вторую марку
+      if (vp.width === 390 && await page.$('[data-city-drum]')) {
+        const vis = () => page.evaluate(() => [...document.querySelectorAll('h1, h2')].filter(e => e.offsetParent !== null).map(e => { const c = e.cloneNode(true); c.querySelectorAll('.city-reel, .city-pop').forEach(x => x.remove()); return c.textContent.replace(/\s+/g, ' '); }).join(' | '));
+        if (!(await page.$('.city-btn[aria-haspopup="listbox"]'))) err(rel, vp.width, 'город: нет кнопки-барабана в заголовке');
+        else {
+          await page.click('.city-btn'); await page.waitForTimeout(150);
+          const opts = await page.$$eval('.city-pop:not([hidden]) [role="option"]', o => o.map(x => x.dataset.id));
+          if (opts.length < 2 || !opts.includes('spb')) err(rel, vp.width, `город: в списке городов ${JSON.stringify(opts)}`);
+          if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) err(rel, vp.width, 'город: открытый список даёт горизонтальный скролл');
+          await page.click('.city-pop [data-id="spb"]'); await page.waitForTimeout(700);
+          const h = await vis();
+          if (await page.evaluate(() => document.documentElement.dataset.city) !== 'spb') err(rel, vp.width, 'город: выбор Петербурга не применился');
+          if (/Москв/.test(h) || !/Петербург/.test(h)) err(rel, vp.width, `город: в заголовках после выбора Петербурга — «${h.slice(0, 160)}»`);
+          if (!(await page.$('.city-soon:not([hidden])'))) err(rel, vp.width, 'город «скоро»: нет блока «скоро»');
+          if (await page.$$eval('[data-city-only="live"]', e => e.some(x => x.offsetParent !== null))) err(rel, vp.width, 'город «скоро»: видны блоки открытого города (дела Москвы)');
+          const cross = await page.$eval('#other a[data-city-href]', a => a.getAttribute('href')).catch(() => null);
+          if (!cross || !/[?&]city=spb/.test(cross)) err(rel, vp.width, `«Другой формат»: ссылка на вторую марку без города (${cross})`);
+          await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(400);
+          if (await page.evaluate(() => document.documentElement.dataset.city) !== 'spb') err(rel, vp.width, 'город: выбор не запомнился после перезагрузки');
+          await page.click('.city-soon [data-city-set="moscow"]'); await page.waitForTimeout(700);
+          if (!/Москв/.test(await page.$eval('h1', e => e.textContent).catch(() => '')) && rel === '') err(rel, vp.width, 'город: «Пока — дела в Москве» не вернул Москву');
+          if (await page.evaluate(() => document.documentElement.dataset.city) !== 'moscow') err(rel, vp.width, 'город: кнопка возврата в Москву не сработала');
+          await page.evaluate(() => { try { localStorage.removeItem('dvorami:city'); } catch (e) {} });
+        }
+      }
       // владелец 25–26.11: обложки карточек не уменьшать — на любой ширине высота ≥ 0,74 ширины (4:3); и никаких «Новое дело»
       (await page.evaluate(() => [...document.querySelectorAll('.qgrid .qcard .qc-cover')].map(c => { const b = c.getBoundingClientRect(); return b.width ? b.height / b.width : 1; })))
         .forEach((k, i) => { if (k < 0.74) err(rel, vp.width, `обложка карточки ${i + 1} сплющена: высота/ширина ${k.toFixed(2)} (нужно 4:3)`); });

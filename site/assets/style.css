@@ -1501,3 +1501,14 @@ img.is-broken { visibility: hidden; }
 
 /* Владелец 26.11: «Новое дело» не показываем — пустой блок рейтинга не занимает места */
 .qc-rating:empty, .c-rating:empty { display: none; }
+
+/* ---------- Города и вторая марка (site/assets/city.js, city.css) ---------- */
+:root { --city-accent: var(--accent); --city-pop-bg: var(--surface); --city-pop-fg: var(--text); --city-line: var(--line); --city-font: var(--font-text); }
+.city-soon { background: var(--surface); }
+.city-soon .link-plain { font-size: 19px; }
+/* «Другой формат» — карточка как «Связаться»; кнопка ведёт на «Следами», отметка 18+ — плашкой, а не цветом */
+.other-card { display: grid; gap: 20px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 18px; padding: 28px 22px; }
+.other-card p { margin-top: 12px; max-width: 52ch; color: var(--text-2); }
+.other-btn { justify-self: start; gap: 10px; }
+.other-18 { display: inline-grid; place-items: center; min-width: 40px; height: 26px; padding: 0 6px; border: 2px solid currentColor; border-radius: 6px; font-size: 15px; font-weight: 700; line-height: 1; }
+@media (min-width: 900px) { .other-card { grid-template-columns: 1fr auto; align-items: center; padding: 36px 40px; } .other-btn { justify-self: end; } }

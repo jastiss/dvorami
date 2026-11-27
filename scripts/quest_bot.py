@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tg  # noqa: E402
 import telegram_inbox  # noqa: E402
 import fire_team  # noqa: E402
+from answer_match import matches, norm  # noqa: E402,F401
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 MSK = ZoneInfo("Europe/Moscow")
@@ -67,36 +68,7 @@ def ts():
     return now().strftime("%H:%M:%S")
 
 
-def norm(s):
-    s = s.lower().replace("ё", "е")
-    s = s.replace("→", " ").replace("->", " ").replace("-", " ")
-    s = re.sub(r"[^\w\s]", " ", s)
-    return re.sub(r"\s+", " ", s).strip()
-
-
-def matches(text, answers):
-    t = norm(text)
-    if not t:
-        return False
-    tokens = t.split()
-    for a in answers:
-        if a.startswith("~"):
-            if norm(a[1:]) and norm(a[1:]) in t:
-                return True
-            continue
-        na = norm(a)
-        if not na:
-            continue
-        if t == na:
-            return True
-        at = na.split()
-        # ответ целиком встречается в сообщении как последовательность слов: «это ржавчина»
-        for i in range(len(tokens) - len(at) + 1):
-            if tokens[i:i + len(at)] == at:
-                # однобуквенные ответы засчитываем только если сообщение короткое
-                if len(na) > 1 or len(tokens) <= 2:
-                    return True
-    return False
+# Проверка ответа — общая с плеером (site/play/answer.js): scripts/answer_match.py, сверку делает answer_check.js
 
 
 class Bot:

@@ -21,6 +21,7 @@
 <link rel="preload" href="../assets/fonts/caveat-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../assets/fonts.css">
 <link rel="stylesheet" href="sledami.css">
+<link rel="stylesheet" href="../assets/city.css">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
 {
@@ -78,9 +79,9 @@
 <section class="hero" id="top">
  <div class="wrap">
   <div class="hero-text">
-   <p class="hand">Бюро остывших дел</p>
+   <p class="hand">Бюро остывших дел · <span data-city-drum data-form="name">Москва</span></p>
    <h1>Детективные прогулки по&nbsp;следам <em>настоящих</em> преступлений</h1>
-   <p class="hero-lead">В&nbsp;Париже продали Эйфелеву башню. Из&nbsp;Лувра вынесли «Джоконду». У&nbsp;таких дел есть московские двойники&nbsp;— вечером вы приходите по&nbsp;адресу и&nbsp;раскрываете дело сами.</p>
+   <p class="hero-lead">В&nbsp;Париже продали Эйфелеву башню. Из&nbsp;Лувра вынесли «Джоконду». У&nbsp;таких дел есть <span data-city-form="adj">московские</span> двойники&nbsp;— вечером вы приходите по&nbsp;адресу и&nbsp;раскрываете дело сами.</p>
    <div class="hero-cta" data-cta>
     <a class="btn" href="#cases">Выбрать дело</a>
     <a class="link-more" href="#how">Как идёт расследование</a>
@@ -149,10 +150,15 @@
  <div class="wrap">
   <div class="cases-head">
    <div><p class="hand">Картотека</p>
-   <h2 class="h2">Семь дел, с&nbsp;которых начинает бюро</h2></div>
-   <p class="lead">У&nbsp;каждого&nbsp;— след в&nbsp;Москве, у&nbsp;большинства&nbsp;— ещё и&nbsp;знаменитый образец из&nbsp;мировой хроники. Образец читаете, по&nbsp;следу идёте.</p>
+   <h2 class="h2"><span data-city-only="live">Семь дел, с&nbsp;которых начинает бюро</span><span data-city-only="soon" hidden>Картотека: <span data-city-form="name">Петербург</span></span></h2></div>
+   <p class="lead" data-city-only="live">У&nbsp;каждого&nbsp;— след в&nbsp;Москве, у&nbsp;большинства&nbsp;— ещё и&nbsp;знаменитый образец из&nbsp;мировой хроники. Образец читаете, по&nbsp;следу идёте.</p>
   </div>
-  <ul class="s-grid">
+  <!-- Город «скоро» (../assets/city.js): дел не выдумываем — честное «скоро» и путь к делам в Москве -->
+  <div class="city-soon" data-city-only="soon" hidden>
+   <p><b>Петербургскую картотеку бюро только открывает.</b> Дела там будут такие&nbsp;же: настоящее преступление, адрес и&nbsp;вечер, чтобы разобраться. О&nbsp;первом напишем в&nbsp;Telegram.</p>
+   <div class="city-soon-cta"><button type="button" class="link-more" data-city-set="moscow">Пока — дела в&nbsp;Москве</button></div>
+  </div>
+  <ul class="s-grid" data-city-only="live">
 
    <li class="s-case s-case--lead rise" data-case="1">
     <div class="s-cover"><svg viewBox="0 0 400 300" role="img" aria-label="Обложка дела №1: башня с ценником и дом с колоннами">
@@ -356,7 +362,7 @@
    <svg class="rules-stamp" viewBox="0 0 200 200" aria-hidden="true">
     <defs><path id="ring" d="M100 100m-74 0a74 74 0 1 1 148 0a74 74 0 1 1-148 0"/></defs>
     <g fill="none" stroke="#F07A66"><circle cx="100" cy="100" r="94" stroke-width="5"/><circle cx="100" cy="100" r="56" stroke-width="2.5"/></g>
-    <text fill="#F07A66" font-family="Oswald, 'Oswald Fallback', sans-serif" font-weight="700" font-size="19" letter-spacing="4"><textPath href="#ring">БЮРО ОСТЫВШИХ ДЕЛ · МОСКВА · СЛЕДАМИ ·</textPath></text>
+    <text fill="#F07A66" font-family="Oswald, 'Oswald Fallback', sans-serif" font-weight="700" font-size="19" letter-spacing="4"><textPath href="#ring">БЮРО ОСТЫВШИХ ДЕЛ · <tspan data-city-form="up">МОСКВА</tspan> · СЛЕДАМИ ·</textPath></text>
     <g fill="#F07A66"><use href="#print" x="74" y="66" width="22" height="48" transform="rotate(-14 85 90)"/><use href="#print" x="104" y="86" width="22" height="48" transform="rotate(12 115 110)"/></g>
    </svg>
   </div>
@@ -366,6 +372,20 @@
    <li><h3>Без крови крупным планом</h3><p>Убийство здесь&nbsp;— вопрос, на&nbsp;который вы ищете ответ, а&nbsp;не&nbsp;зрелище.</p></li>
    <li><h3>Не&nbsp;раскрыто&nbsp;— так и&nbsp;скажем</h3><p>Тогда вердикт выносите вы, а&nbsp;в&nbsp;конверте&nbsp;— решение суда.</p></li>
   </ol>
+ </div>
+</section>
+
+<!-- Перелинковка марок (docs/sledami/concept.md, «Города и перелинковка») -->
+<section class="other" id="other" aria-labelledby="h-other">
+ <div class="wrap">
+  <div class="other-card">
+   <div>
+    <p class="hand">Другой формат</p>
+    <h2 class="h2" id="h-other">Гуляете с&nbsp;детьми? Есть «Дворами»</h2>
+    <p class="lead">Семейные квесты-прогулки по&nbsp;районам: сюжет без&nbsp;крови, загадки на&nbsp;фасадах, старт в&nbsp;любой день.</p>
+   </div>
+   <a class="btn btn--ghost" href="../" data-city-href data-track="brand_cross" data-track-to="dvorami">Открыть «Дворами»</a>
+  </div>
  </div>
 </section>
 
@@ -398,5 +418,6 @@
 
 <script src="../assets/site.js" defer></script>
 <script src="sledami.js" defer></script>
+<script src="../assets/city.js" defer></script>
 </body>
 </html>

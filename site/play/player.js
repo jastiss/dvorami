@@ -41,6 +41,7 @@
     sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
     back: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
     list: '<path d="M9 7h11M9 12h11M9 17h11"/><path d="M4.5 7h.1M4.5 12h.1M4.5 17h.1"/>',
+    chev: '<path d="m7 10 5 5 5-5"/>',
     play: '<path d="M8.5 5.5v13l10-6.5Z"/>'
   };
   function ico(name) { return '<svg class="pl-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + ICONS[name] + '</svg>'; }
@@ -262,7 +263,9 @@
 
   // ---------- аналитика: события прохождения → цели Метрики ----------
   var GOALS = { start: 'quest_start', arrive: 'point_arrive', done: 'point_done', hint: 'hint_open',
-    reveal: 'answer_reveal', skip: 'step_skip', finish: 'quest_finish', stop: 'quest_pause', resume: 'quest_resume' };
+    reveal: 'answer_reveal', skip: 'step_skip', finish: 'quest_finish', stop: 'quest_pause', resume: 'quest_resume',
+    // H-68: неверный ответ — где застревают и сколько ловит «почти»; текст ответа в Метрику не уходит (только в журнал на телефоне)
+    wrong: 'answer_wrong' };
   function track(goal, params) {
     try { if (typeof window.dvoramiTrack === 'function') window.dvoramiTrack(goal, params || {}); } catch (e) { /* без аналитики */ }
   }
@@ -398,6 +401,7 @@
       if (e.point) gp.point = e.point;
       if (e.step) gp.step = e.step;
       if (e.level) gp.level = e.level;
+      if (kind === 'wrong') { gp.near = e.near ? 1 : 0; gp.kind = e.kind_of || 'text'; }
       if (kind === 'finish' && S.t_start) gp.minutes = Math.round((S.t_end - S.t_start) / 60000);
       track(GOALS[kind], gp);
     }
@@ -581,7 +585,7 @@
       log('correct', { step: lbl, text: opt.label || id, hints: o.hint });
       return ctxDone(ctx, { st: 'ok', text: opt.label || id });
     }
-    log('wrong', { step: lbl, text: opt.label || id });
+    log('wrong', { step: lbl, text: opt.label || id, kind_of: 'choice' });
     o.wrong = opt.label || id; o.reply = opt.reply || '';
     commit('same', '.pl-wrong');
   }
@@ -617,7 +621,7 @@
       if (!ok) reply = extra.length ? (extra[0].reply || 'Кое-кого вы вычеркнули зря.') : (miss[0].reply || 'Кто-то ещё ушёл с поста.');
     }
     if (ok) { log('correct', { step: lbl, text: label, hints: o.hint }); return ctxDone(ctx, { st: 'ok', text: label }); }
-    log('wrong', { step: lbl, text: label || '—' });
+    log('wrong', { step: lbl, text: label || '—', kind_of: st.type === 'pick' ? 'pick' : 'strike' });
     o.wrong = label || '—'; o.reply = reply;
     commit('same', '.pl-wrong');
   }
@@ -985,13 +989,22 @@
     return h + boardLetters(!byYear, b).replace(/<p class="pl-small"[\s\S]*$/, '') +
       '<div class="pl-board">' + b.map(function (c) { return clueCard(c, false); }).join('') + '</div>';
   }
-  // Карта: схема по настоящим координатам. Показываем только пройденные точки и текущую — маршрут вперёд не раскрываем
+  // Карта: схема по настоящим координатам, без тайлов и внешних сервисов — работает офлайн.
+  // Показываем только пройденные точки и текущую — маршрут вперёд не раскрываем.
+  // Подложка — из данных дела (docs/quest-format.md, поле "map"):
+  //   "image" + "bounds" [[юг, запад], [север, восток]] — своя картинка-подложка (рисунок или схема района, файл рядом с делом);
+  //   "landmarks" — ориентиры простыми формами с подписью: {"kind": "water|park|river|metro|place", "label": "Пруд",
+  //     "at": [lat, lon] или "point": N, "r": метры (круг) | "area": [[lat, lon]…] (контур) | "line": [[lat, lon]…] (река, улица),
+  //     "from": N — показывать начиная с точки N (чтобы ориентир не подсказывал дорогу вперёд)}.
+  // Нет ни картинки, ни ориентиров — схема всё равно не пустая: север, масштаб, пройденный путь.
+  var LM_KINDS = { water: 1, park: 1, river: 1, metro: 1, place: 1 };
   function mapView() {
     var n = Q.points.length, all = S.phase === 'done';
     var upto = all ? n - 1 : (S.phase === 'intro' ? 0 : S.p);
     var arrived = S.phase === 'step' || S.phase === 'point_done';
     var known = Q.points.slice(0, upto + 1);
     var cur = all ? null : Q.points[upto];
+    var M = Q.map || {};
     var k = Math.cos(Q.points[0].lat * Math.PI / 180);
     // рамка схемы — по известным точкам, а не по всему маршруту: пустое место не подсказывает, куда идёт путь дальше
     var xs = known.map(function (p) { return p.lon * k; }), ys = known.map(function (p) { return -p.lat; });
@@ -1000,6 +1013,9 @@
     var MIN = .004; // ≈ 400 м: первые точки рядом не растягиваются на всю схему
     var sc = Math.min((W - 2 * pad) / Math.max(x1 - x0, MIN), (H - 2 * pad) / Math.max(y1 - y0, MIN));
     var ox = (W - (x1 - x0) * sc) / 2, oy = (H - (y1 - y0) * sc) / 2;
+    var proj = function (lat, lon) { return [(lon * k - x0) * sc + ox, (-lat - y0) * sc + oy]; };
+    var mpx = sc / 111320;   // пикселей схемы на метр (градус широты ≈ 111,3 км)
+    var f1 = function (v) { return v.toFixed(1); };
     var pos = known.map(function (p, i) { return [(xs[i] - x0) * sc + ox, (ys[i] - y0) * sc + oy]; });
     // соседние точки ближе диаметра кружка раздвигаем, чтобы номера не слипались
     for (var it = 0; it < 8; it++) for (var a = 0; a < pos.length; a++) for (var b = a + 1; b < pos.length; b++) {
@@ -1010,6 +1026,93 @@
       pos[a][0] -= dx / d * push; pos[a][1] -= dy / d * push; pos[b][0] += dx / d * push; pos[b][1] += dy / d * push;
     }
     var xy = function (i) { return pos[i]; };
+    // подложка-картинка
+    var under = '';
+    var img = M.image ? mediaSrc(M.image) : '';
+    if (img && Array.isArray(M.bounds) && M.bounds.length === 2) {
+      var sw = proj(+M.bounds[0][0], +M.bounds[0][1]), ne = proj(+M.bounds[1][0], +M.bounds[1][1]);
+      under += '<image class="pl-map-img" href="' + esc(img) + '" x="' + f1(sw[0]) + '" y="' + f1(ne[1]) + '" width="' + f1(ne[0] - sw[0]) + '" height="' + f1(sw[1] - ne[1]) + '" preserveAspectRatio="none"/>';
+    }
+    // ориентиры: формы — под маршрутом, подписи — поверх, не на точках и не друг на друге
+    var shapes = '', labels = [], taken = pos.map(function (c) { return [c[0] - 13, c[1] - 13, c[0] + 13, c[1] + 13]; });
+    var LH = 13, CW = 7.6;   // высота подписи и средняя ширина знака в единицах схемы (подпись 13 — как номера точек)
+    var free = function (r) {
+      if (r[0] < 4 || r[2] > W - 4 || r[1] < 4 || r[3] > H - 4) return false;
+      for (var q = 0; q < taken.length; q++) { var t = taken[q]; if (r[0] < t[2] && t[0] < r[2] && r[1] < t[3] && t[1] < r[3]) return false; }
+      return true;
+    };
+    // подпись: ближайшее свободное место у ориентира (у реки — у любого изгиба), не на точках, значках и других подписях
+    var GRID = [];
+    [0, 1, -1, 2, -2, 3, -3, 4, -4].forEach(function (i) { [0, 1, -1, 2, -2].forEach(function (j) { GRID.push([i * 18, j * 14]); }); });
+    GRID.sort(function (u, v) { return (Math.abs(u[0]) + Math.abs(u[1]) * 1.3) - (Math.abs(v[0]) + Math.abs(v[1]) * 1.3); });
+    var place = function (txt, anchors, rad, inside) {
+      var w = txt.length * CW;
+      for (var g = 0; g < GRID.length; g++) for (var q = 0; q < anchors.length; q++) {
+        var x = anchors[q][0] + GRID[g][0], y = anchors[q][1] + GRID[g][1];
+        if (!inside && rad && Math.abs(GRID[g][1]) < (rad + LH / 2) && Math.abs(GRID[g][0]) < (rad + w / 2) && GRID[g][1] === 0 && GRID[g][0] === 0) continue;
+        var r = [x - w / 2, y - LH / 2, x + w / 2, y + LH / 2];
+        if (free(r)) { taken.push(r); labels.push('<text class="pl-map-lbl" x="' + f1(x) + '" y="' + f1(y) + '" style="text-anchor:middle">' + esc(txt) + '</text>'); return true; }
+      }
+      return false;
+    };
+    // значок ориентира не ложится на точку маршрута: сдвигаем в ближайшее свободное место
+    var nudge = function (c, r) {
+      var offs = [[0, 0], [0, -24], [24, 0], [-24, 0], [0, 24], [20, -20], [-20, -20], [20, 20], [-20, 20]];
+      for (var o = 0; o < offs.length; o++) { var x = c[0] + offs[o][0], y = c[1] + offs[o][1]; if (free([x - r, y - r, x + r, y + r])) return [x, y]; }
+      return null;
+    };
+    // контур парка или воды — сглаженный (углы скруглены), с запасом pad метров от центра, чтобы точки внутри не лежали на краю
+    var blob = function (pts, padPx) {
+      var cx = 0, cy = 0; pts.forEach(function (q) { cx += q[0]; cy += q[1]; }); cx /= pts.length; cy /= pts.length;
+      var P = pts.map(function (q) { var dx = q[0] - cx, dy = q[1] - cy, d = Math.sqrt(dx * dx + dy * dy) || 1; return [q[0] + dx / d * padPx, q[1] + dy / d * padPx]; });
+      var mid = function (u, v) { return [(u[0] + v[0]) / 2, (u[1] + v[1]) / 2]; };
+      var m0 = mid(P[P.length - 1], P[0]), d = 'M' + f1(m0[0]) + ' ' + f1(m0[1]);
+      for (var i = 0; i < P.length; i++) { var m = mid(P[i], P[(i + 1) % P.length]); d += 'Q' + f1(P[i][0]) + ' ' + f1(P[i][1]) + ' ' + f1(m[0]) + ' ' + f1(m[1]); }
+      return { d: d + 'Z', c: [cx, cy] };
+    };
+    var reached = all ? n : upto + 1;
+    var lms = (Array.isArray(M.landmarks) ? M.landmarks : []).filter(function (L) {
+      return L && LM_KINDS[L.kind] && (L.from == null || +L.from <= reached) && passes(L['if']);
+    });
+    var later = [];
+    lms.forEach(function (L) {
+      var at = L.at || null;
+      if (!at && L.point != null) { var P = Q.points.filter(function (p) { return p.n === +L.point; })[0]; if (P) at = [P.lat, P.lon]; }
+      var cls = 'pl-map-lm pl-map-lm--' + L.kind, c = null, rad = 0;
+      if (Array.isArray(L.line) && L.line.length > 1) {
+        var pts = L.line.map(function (g) { return proj(+g[0], +g[1]); });
+        shapes += '<path class="' + cls + '" d="' + pts.map(function (c2, i) { return (i ? 'L' : 'M') + f1(c2[0]) + ' ' + f1(c2[1]); }).join('') + '"' + (L.width ? ' style="stroke-width:' + Math.max(3, Math.min(40, +L.width * mpx)).toFixed(1) + '"' : '') + '/>';
+        c = pts; rad = 8;
+      } else if (Array.isArray(L.area) && L.area.length > 2) {
+        var bl = blob(L.area.map(function (g) { return proj(+g[0], +g[1]); }), (+L.pad || 0) * mpx);
+        shapes += '<path class="' + cls + '" d="' + bl.d + '"/>';
+        c = bl.c; rad = 6;
+      } else if (at) {
+        c = proj(+at[0], +at[1]);
+        if (L.kind === 'metro' || L.kind === 'place') {
+          c = nudge(c, L.kind === 'metro' ? 9 : 5);
+          if (!c) return;   // некуда поставить, не закрыв точку маршрута, — ориентир не рисуем
+          rad = L.kind === 'metro' ? 9 : 4;
+          taken.push([c[0] - rad, c[1] - rad, c[0] + rad, c[1] + rad]);
+          var mk = L.kind === 'metro'
+            ? '<g class="pl-map-metro" transform="translate(' + f1(c[0]) + ' ' + f1(c[1]) + ')"><circle r="8"/><path d="M-4.5 3.5V-3.5L0 1.5L4.5-3.5V3.5"/></g>'
+            : '<circle class="' + cls + '" cx="' + f1(c[0]) + '" cy="' + f1(c[1]) + '" r="3.5"/>';
+          // значок метро понятен и без подписи; точка «место» без подписи — нет
+          if (L.kind === 'metro' || !L.label) later.push(mk); else { later.push({ txt: plain(L.label), c: [c], rad: rad, mark: mk }); return; }
+        } else {
+          rad = Math.max(6, Math.min(60, (+L.r || 40) * mpx));
+          shapes += '<ellipse class="' + cls + '" cx="' + f1(c[0]) + '" cy="' + f1(c[1]) + '" rx="' + f1(rad * 1.25) + '" ry="' + f1(rad * .8) + '"/>';
+        }
+      }
+      if (c && L.label) later.push({ txt: plain(L.label), c: Array.isArray(c[0]) ? c : [c], rad: L.kind === 'water' ? rad * 1.25 : rad, inside: L.kind === 'park' });
+    });
+    // север и масштаб: схема читается и без подложки
+    var steps = [50, 100, 200, 500, 1000], m100 = steps[0];
+    for (var si = 0; si < steps.length; si++) if (steps[si] * mpx <= 90) m100 = steps[si];
+    var sl = m100 * mpx;
+    taken.push([W - 30, 4, W - 4, 40], [8, H - 26, 16 + sl, H - 4]);
+    var deco = '<g class="pl-map-n" transform="translate(' + (W - 17) + ' 20)"><path d="M0-12 5 2H-5Z"/><text y="13">С</text></g>' +
+      '<g class="pl-map-scale" transform="translate(10 ' + (H - 10) + ')"><path d="M0-4V0H' + f1(sl) + 'V-4"/><text x="' + f1(sl + 5) + '" y="-1">' + (m100 >= 1000 ? m100 / 1000 + ' км' : m100 + ' м') + '</text></g>';
     var path = known.map(function (p, i) { var c = xy(i); return (i ? 'L' : 'M') + c[0].toFixed(1) + ' ' + c[1].toFixed(1); }).join('');
     var dots = known.map(function (p, i) {
       var c = xy(i), isCur = cur && i === upto;
@@ -1017,10 +1120,15 @@
         '<circle class="pl-map-dot' + (isCur ? ' pl-map-dot--cur' : '') + '" cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" r="11"/>' +
         '<text' + (isCur ? ' class="cur"' : '') + ' x="' + c[0].toFixed(1) + '" y="' + c[1].toFixed(1) + '">' + p.n + '</text>';
     }).join('');
+    var marks = later.filter(function (x) { return typeof x === 'string'; }).join('');
+    later.forEach(function (x) { if (typeof x === 'object' && place(x.txt, x.c, x.rad, x.inside) && x.mark) marks += x.mark; });
+    var lmNames = lms.filter(function (L) { return L.label; }).map(function (L) { return plain(L.label); });
     var done = all ? n : upto + (S.phase === 'point_done' ? 1 : 0);
     var h = head(caseName(), 'Карта', all ? 'Маршрут пройден: ' + n + ' из ' + n + ' точек' : 'Пройдено точек: ' + done + ' из ' + n, 0) +
-      '<figure class="pl-map"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Схема пути: ' + (all ? 'все точки' : 'точки с 1 по ' + (upto + 1)) + '">' +
-      (known.length > 1 ? '<path class="pl-map-path" d="' + path + '"/>' : '') + dots + '</svg></figure>';
+      '<figure class="pl-map' + (img ? ' pl-map--img' : '') + '"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Схема пути: ' + (all ? 'все точки' : 'точки с 1 по ' + (upto + 1)) +
+      (lmNames.length ? '; ориентиры: ' + esc(lmNames.join(', ')) : '') + '">' +
+      under + shapes + deco + (known.length > 1 ? '<path class="pl-map-path" d="' + path + '"/>' : '') + marks + dots + labels.join('') + '</svg>' +
+      '<figcaption class="pl-small">Схема: север сверху, расстояния в масштабе, улиц нет — дорогу ведёт текст точки.</figcaption></figure>';
     if (cur) h += '<a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + esc(mapLink(cur)) + '" target="_blank" rel="noopener" data-track="map_open" data-track-point="' + cur.n + '">' + ico('out') + 'Точка ' + cur.n + ' в Яндекс Картах</a>';
     h += '<ol class="pl-stops">' + known.map(function (p, i) {
       var isCur = cur && i === upto;
@@ -1304,6 +1412,19 @@
   }
   // H-47: оценка со звёзд финала едет в ссылку бота (done_<дело>_<1–5>) — бот не спрашивает её второй раз
   function reviewLink(v) { return botLink('done_' + QID + (v >= 1 && v <= 5 ? '_' + v : '')); }
+  // Что дальше после финала: другие дела марки и второй формат (перелинковка «Дворами» ↔ «Следами», docs/sledami/concept.md, «Города и перелинковка»).
+  // Марка плеера — <body data-brand>, по умолчанию «Дворами». В «Дворами» о «Следами» — одна строка: название, формат, 18+, без сюжетов.
+  var BRAND = document.body.dataset.brand === 'sledami' ? 'sledami' : 'dvorami';
+  var CROSS = {
+    dvorami: { home: '../../#quests', homeText: 'Другие дела «Дворами»', other: '../../sledami/', otherName: '«Следами»', otherNote: 'вечерние детективные прогулки для взрослых, 18+' },
+    sledami: { home: '../../sledami/#cases', homeText: 'Другие дела «Следами»', other: '../../', otherName: '«Дворами»', otherNote: 'семейные квесты-прогулки по районам' }
+  };
+  function nextHtml() {
+    var x = CROSS[BRAND];
+    return '<section class="pl-card pl-next"><h2 class="pl-rate-q">Что дальше</h2>' +
+      '<div class="pl-actions"><a class="pl-btn pl-btn--ghost pl-btn--sm" href="' + x.home + '" data-track="next_case">' + esc(x.homeText) + '</a></div>' +
+      '<p class="pl-small">Другой формат: <a href="' + x.other + '" data-track="brand_cross" data-track-to="' + (BRAND === 'dvorami' ? 'sledami' : 'dvorami') + '">' + esc(x.otherName) + '</a> — ' + esc(x.otherNote) + '.</p></section>';
+  }
   function closedHtml() {
     warmPostcard();
     var hints = S.events.filter(function (e) { return e.kind === 'hint' || e.kind === 'reveal'; }).length;
@@ -1325,6 +1446,7 @@
       '<div class="pl-stars" role="radiogroup" aria-label="Оценка дела, от 1 до 5">' + starsHtml(rated) + '</div>' +
       '<p class="pl-small" id="rate-note" role="status">' + rateNote(rated) + '</p>' +
       '<div class="pl-actions"><a class="pl-btn pl-btn--ghost pl-btn--sm" id="rate-bot" href="' + esc(reviewLink(rated)) + '" target="_blank" rel="noopener" data-track="review_click" data-track-quest="' + esc(QID) + '">' + ico('send') + 'Оставить отзыв в Telegram</a></div></section>' +
+      nextHtml() +
       (S.field ? '<section class="pl-field"><span class="pl-label">Полевой тест окончен</span><p class="pl-small">Напишите заметку с впечатлениями: что понравилось больше всего, где застряли, где было скучно. Потом нажмите «Отправить отчёт» и перешлите его в Telegram.</p>' +
         '<div class="pl-actions"><button class="pl-btn pl-btn--ghost" type="button" data-act="note">Заметка</button><button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт</button></div></section>' : '');
   }
@@ -1375,18 +1497,25 @@
     return top + voiceHtml(fr.lines, fr.audio) + '<section class="pl-lines pl-beat">' + linesHtml(fr.lines) + '</section>' + (fr.board ? '<div class="pl-beat-board">' + boardLetters(false) + '</div>' : '');
   }
   // Строка над экраном: «назад», где мы, линия мини-шагов точки; нажатие — оглавление
+  // Строка над экраном: «назад» и где мы. Нажатие на название — оглавление пройденного (стрелка ▾ это показывает).
+  // Отдельной линии мини-шагов здесь нет (владелец 27.11: «прогресс-бар под прогресс-баром»): ход внутри точки
+  // показывает текущий отрезок общей полосы в шапке (pointPart), а не вторая полоса.
   function crumbHtml(pos, F, fr) {
-    var live = liveSec(), seen = pos.sec === live && S.phase !== 'done' ? S.f : F.length - 1;
-    var segs = F.map(function (x, i) { return '<i class="' + (i === pos.f ? 'cur' : i <= seen ? 'done' : '') + '"></i>'; }).join('');
-    var open = pos.sec === live && (S.phase === 'walk' || S.phase === 'step');
     var name = fr.kind === 'road' ? 'Точка ' + Q.points[pos.sec].n + ' · дорога' : fr.kind === 'arrive' ? 'Точка ' + Q.points[pos.sec].n + ' · на месте' : secName(pos.sec);
     var canBack = !(pos.sec < 0 && pos.f === 0);
     return '<div class="pl-crumb">' +
       '<button type="button" class="pl-back" data-act="back" aria-label="Назад, к предыдущему шагу"' + (canBack ? '' : ' hidden') + '>' + ico('back') + '</button>' +
-      '<button type="button" class="pl-crumb-btn" data-act="toc" aria-label="Оглавление. ' + esc(secName(pos.sec)) + ', шаг ' + (pos.f + 1) + '">' +
-      '<span class="pl-crumb-t">' + esc(name) + '</span>' +
-      '<span class="pl-minis" aria-hidden="true">' + segs + (open ? '<i class="more"></i>' : '') + '</span></button>' +
-      '<button type="button" class="pl-toc-btn" data-act="toc" aria-label="Оглавление">' + ico('list') + '</button></div>';
+      '<button type="button" class="pl-crumb-btn" data-act="toc" aria-haspopup="dialog" aria-label="Оглавление. ' + esc(secName(pos.sec)) + ', экран ' + (pos.f + 1) + '">' +
+      '<span class="pl-crumb-t">' + esc(name) + '</span>' + ico('chev') + '</button></div>';
+  }
+  // Доля пройденного в текущей точке (0…1) — для текущего отрезка полосы в шапке: дорога — первая пятая, дальше — шаги
+  function pointPart() {
+    if (S.phase === 'walk') {
+      var F = framesOf(S.p), f = Math.max(0, S.f);
+      return 0.2 * Math.min(1, (f + 1) / Math.max(1, F.length));
+    }
+    if (S.phase === 'step') { var ns = pt().steps.length || 1; return 0.2 + 0.8 * Math.min(S.k, ns) / ns; }
+    return S.phase === 'point_done' ? 1 : 0;
   }
   function barHtml(fr, c) {
     var btn = function (act, label, ghost) { return '<button class="pl-btn' + (ghost ? ' pl-btn--ghost' : '') + '" type="button" data-act="' + act + '">' + esc(label) + '</button>'; };
@@ -1414,9 +1543,9 @@
       return head('Обновление', 'Вышла новая версия дела', '', 1) +
         '<section class="pl-card pl-ver"><p>Вы начали дело' + (S.ver_from ? ' в версии ' + esc(S.ver_from) : '') + ', сейчас — версия ' + esc(String(Q.version)) + '. ' +
         'Тексты, загадки или маршрут могли измениться.</p>' +
-        '<p class="pl-small">Начать заново — с обложки, улики и записи на этом телефоне сотрутся. Продолжить — с того же места (' + esc(whereNow) + '), но кое-что может не совпасть с тем, что вы уже видели.</p></section>' +
-        '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="vernew">Начать заново</button>' +
-        '<button class="pl-btn pl-btn--ghost" type="button" data-act="verkeep">Продолжить</button>' +
+        '<p class="pl-small">Новая версия начнётся с обложки: улики и записи старой на этом телефоне сотрутся. Можно и доиграть старую с того же места (' + esc(whereNow) + '), но кое-что может не совпасть с тем, что вы уже видели.</p></section>' +
+        '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="vernew">Начать новую версию</button>' +
+        '<button class="pl-btn pl-btn--ghost" type="button" data-act="verkeep">Доиграть старую</button>' +
         (S.field ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт старой версии</button>' : '') + '</div>';
     }
     if (S.paused) {
@@ -1476,16 +1605,17 @@
     var where = document.getElementById('where');
     where.innerHTML = esc(CASE_NO ? caseName() : '') + (shown ? (CASE_NO ? ' · ' : '') + '<b>' + shown + ' из ' + n + '</b>' : '');
     where.setAttribute('aria-label', (CASE_NO ? caseName() : '') + (shown ? ', точка ' + shown + ' из ' + n : ''));
-    var prog = '', passed = 0;
+    // Один индикатор прогресса: отрезок на точку; текущий заполняется по ходу точки (дорога → шаги)
+    var prog = '', passed = 0, part = playing || S.paused ? pointPart() : 0;
     for (var i = 0; i < n; i++) {
       var done = S.phase === 'done' || i < S.p || (i === S.p && S.phase === 'point_done');
       var cur = !done && i === S.p && (S.phase === 'walk' || S.phase === 'step');
       if (done) passed++;
-      prog += '<i class="' + (done ? 'done' : cur ? 'cur' : '') + '"></i>';
+      prog += cur ? '<i class="cur" style="--part:' + Math.round(part * 100) + '%"></i>' : '<i class="' + (done ? 'done' : '') + '"></i>';
     }
     var bar = document.getElementById('progress');
     bar.innerHTML = S.phase === 'idle' ? '' : prog;
-    bar.setAttribute('aria-label', 'Пройдено точек: ' + passed + ' из ' + n);
+    bar.setAttribute('aria-label', 'Пройдено точек: ' + passed + ' из ' + n + (S.phase === 'walk' || S.phase === 'step' ? '; точка ' + pt().n + ' — пройдено около ' + Math.round(part * 100) + '%' : ''));
     // навигация
     var nav = document.getElementById('tabs');
     nav.hidden = !playing;
@@ -2254,6 +2384,17 @@
     try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
   }
   var LOCKED = null, codeBusy = false;
+  // Мастер-код один на все дела (владелец 27.11, docs/codes.md): введён в одном деле — следующее дело на этом телефоне
+  // пробует его само, без экрана кода. Берём только код длины мастер-кода (12 знаков); не подошёл — обычный экран кода, без ошибки.
+  function otherMaster() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('dvorami:code:') === 0 && k !== CODE_KEY) { var v = localStorage.getItem(k); if (normCode(v).length === 12) return v; }
+      }
+    } catch (e) { /* хранилище недоступно */ }
+    return null;
+  }
   var menuBtn = document.querySelector('.pl-menu-btn');
   function codeError(raw, why) {
     var n = normCode(raw);
@@ -2306,11 +2447,12 @@
     unlock(LOCKED, raw).then(function (q) {
       codeBusy = false;
       if (!q) {
+        if (source === 'master') return codeView('');   // мастер-код другого дела не подошёл — молча показываем экран кода
         if (source === 'saved') store.del(CODE_KEY);
         return codeView(source === 'saved' ? '' : showCode(raw), codeFail(raw, source, source === 'saved' ? 'saved' : ''));
       }
       // сохранённый код открывает дело при каждом заходе — это не новый ввод, цель не шлём
-      if (source !== 'saved') track('code_ok', { quest: QID, source: source });
+      if (source !== 'saved' && source !== 'master') track('code_ok', { quest: QID, source: source });
       store.set(CODE_KEY, normCode(raw));
       if (menuBtn) menuBtn.hidden = false;
       begin(q);
@@ -2358,6 +2500,8 @@
       var saved = store.get(CODE_KEY);
       if (fromLink) { codeView(showCode(fromLink)); return tryCode(fromLink, 'link'); }
       if (saved) { codeView(''); return tryCode(saved, 'saved'); }
+      var other = otherMaster();
+      if (other) { codeView(''); return tryCode(other, 'master'); }
       codeView('');
     }).catch(function (err) {
       app.innerHTML = '<section class="pl-card" id="top"><span class="pl-label">Не загрузилось</span><p>Нет связи или файл квеста недоступен (' + esc(err.message) + '). Проверьте интернет и попробуйте ещё раз.</p>' +

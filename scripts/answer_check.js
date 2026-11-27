@@ -2,6 +2,8 @@
 /* Тест проверки ответов загадок (site/play/answer.js): node scripts/answer_check.js [--quest=zilart] [--data=путь/quest.json]
  *   1) нормализация: регистр, ё/е, кавычки, дефисы, пробелы, числа цифрой и словом («3» = «три», «1 931» = «1931»);
  *   2) «почти»: одна опечатка в ответе от 5 букв или верные слова вперемешку с лишними — не засчитывается, мягкая подсказка;
+ *   2б) латинская раскладка (H-70): «hfvf» = «рама», и в «почти»; кириллица и латинские ответы не ломаются;
+ *   2в) бот (scripts/answer_match.py, quest_bot) засчитывает то же, что плеер: сверка matches() на наборе случаев (нужен python3);
  *   3) каждая загадка дела (шаги ask, вопросы на ходу walk_ask, финал; обе ветки А/Б) принимает свой эталон, все свои
  *      допустимые формы из данных (answers) и их написание с ошибками формы, а явно неверный ответ — нет (ни «верно», ни «почти»).
  * Без зависимостей; вызывается и из scripts/player_check.js (красный — сборка стенда падает). Выход: 0 — чисто, 1 — ошибки.
@@ -65,6 +67,39 @@ function unit() {
   eq(A.checkText(st2, 'лехачев').reply, 'R', 'replies раньше «почти»');
   eq(A.checkText(st2, 'лихачев').reply, 'M2', '«половина верна» раньше «почти»');
   eq(A.checkText(st2, 'лихачев и гдр').ok, true, 'ответ из частей');
+  // латинская раскладка (H-70)
+  eq(A.layout('hfvf'), 'рама', 'раскладка: hfvf → рама');
+  eq(A.layout('рама'), null, 'раскладка: кириллицу не трогаем');
+  eq(A.matches('hfvf', ['рама']), true, 'ответ латиницей принят');
+  eq(A.matches('HFVF UHEPJDBRF', ['рама грузовика']), true, 'латиницей, заглавными, два слова');
+  eq(A.matches('ktnfnkby', ['~летатлин']), true, 'основа «~» латиницей');
+  eq(A.matches('zil', ['ZIL']), true, 'латинский ответ латиницей — как был');
+  eq(A.matches('zzzz', ['рама']), false, 'латинская чушь не принимается');
+  eq(A.checkText(st, 'ktnfnkty').near, true, '«почти» в латинской раскладке');
+  return err;
+}
+
+// Бот и плеер засчитывают одно и то же: те же случаи — в scripts/answer_match.py (через python3)
+const PARITY = [
+  ['  «ТЮФЕЛЁВА»  роща! ', ['тюфелева роща']], ['рама—грузовика', ['рама грузовика']], ['три', ['3']], ['3', ['три']],
+  ['Это было в 1 931 году', ['1931']], ['тысяча девятьсот тридцать один', ['1931']], ['две тысячи двадцать шесть', ['2026']],
+  ['сорока', ['~сорок']], ['ни одного', ['~ни одно']], ['ни 10', ['~ни одно']], ['11 корня', ['~одного корня']],
+  ['1 корня', ['~одного корня']], ['Ё', ['е']], ['это е и ещё много слов', ['е']], ['hfvf', ['рама']],
+  ['HFVF UHEPJDBRF', ['рама грузовика']], ['ktnfnkby', ['~летатлин']], ['zil', ['ZIL']], ['zzzz', ['рама']],
+  ['в 1931г', ['1931']], ['банан', ['рама']], ['рама', ['рама']], ['это ржавчина', ['ржавчина']], ['не знаю', ['~зна']]
+];
+function parity() {
+  const err = [];
+  let py;
+  try {
+    py = JSON.parse(require('child_process').execFileSync('python3', ['-c',
+      'import sys, json; sys.path.insert(0, sys.argv[1]); from answer_match import matches; ' +
+      'print(json.dumps([matches(t, a) for t, a in json.load(sys.stdin)]))', __dirname],
+    { input: JSON.stringify(PARITY), encoding: 'utf8' }));
+  } catch (e) {
+    return ['сверка с ботом не запустилась (python3, scripts/answer_match.py): ' + String(e.message || e).split('\n')[0]];
+  }
+  PARITY.forEach(([t, a], i) => { const js = A.matches(t, a); if (js !== py[i]) err.push(`бот и плеер расходятся, случай №${i + 1}: плеер ${js}, бот ${py[i]}`); });
   return err;
 }
 
@@ -142,7 +177,7 @@ function run(opts) {
   opts = opts || {};
   const qid = opts.quest || 'zilart';
   const file = opts.data || path.join(REPO, 'quests', qid, 'quest.json');
-  const err = unit().map(e => 'нормализация — ' + e);
+  const err = unit().map(e => 'нормализация — ' + e).concat(parity());
   const q = JSON.parse(fs.readFileSync(file, 'utf8'));
   const r = questCheck(q, path.relative(REPO, file));
   return { errors: err.concat(r.err), asks: r.n };

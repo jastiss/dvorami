@@ -17,6 +17,7 @@
  *   - код доступа (docs/codes.md): дело шифруется на лету тестовыми кодами (scripts/codes.py selftest-bundle, в репозиторий
  *     не попадают); экран кода проходит аудит, неверный и отозванный код — понятная ошибка, верный (мастер, выпущенный,
  *     из ссылки #code=) открывает дело, код запоминается и переживает перезагрузку;
+ *   - мастер-код один на все дела: введён в другом деле — это открывается без экрана кода (выпущенный код другого дела — нет);
  *   - цели Метрики экрана кода (T-69): code_fail с причиной (wrong, bad_chars, length…) на каждую ошибку, code_ok (typed/link)
  *     после верного кода; сам код в параметры целей не попадает;
  *   - на 390 главная кнопка шага видна без прокрутки и не закрыта навигацией (T-60);
@@ -26,6 +27,9 @@
  *     «К текущему шагу» возвращает; в оглавлении нет ни одного непройденного экрана и названий точек впереди;
  *     у каждого свёрнутого блока — треугольная стрелка; режим «Читаю» убирает плеер реплик, «Слушаю и читаю» — показывает;
  *     при prefers-reduced-motion ни одна анимация не идёт; место в точке переживает перезагрузку;
+ *   - H-68: неверный ответ — цель answer_wrong (point, step, near 0/1), текста ответа в параметрах нет;
+ *   - один индикатор прогресса (владелец 27.11): полоса по точкам в шапке, текущий отрезок заполняется по ходу точки;
+ *     второй полосы (мини-шагов) и отдельной кнопки оглавления под меню нет — оглавление открывается по названию экрана;
  *   - финал: карточка «Дело № N · РАСКРЫТО» без слов-ответов, пять звёзд (оценка сохраняется на телефоне), отзыв в Telegram (done_<дело>);
  *   - формат 5 (docs/quest-format.md): реплики, варианты (choice), выбор карточек доски (pick), «вычеркни лишнее» (strike),
  *     ответ из частей (all) и «почти» (replies), вопросы на ходу (walk_ask), письмо-улика в шторке, задание для детей,
@@ -428,6 +432,17 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         if ((await goals()).some(([, p]) => codes.some(c => JSON.stringify(p).toUpperCase().replace(/-/g, '').includes(c)))) err(tag, 'код доступа ушёл в параметры цели Метрики');
       }
       if (SEALED && !(await page.evaluate(k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, 'dvorami:code:' + QID))) err(tag, 'код не запомнился на устройстве');
+      // мастер-код один на все дела (владелец 27.11): введён в другом деле — это дело открывается без экрана кода;
+      // выпущенный код другого дела не пробуется. Один раз на прогон (390, тёмная тема)
+      if (SEALED && vp.width === 390 && theme === 'dark') {
+        const swap = (other) => page.evaluate(([k, o]) => { localStorage.removeItem(k); localStorage.removeItem('dvorami:code:__other'); if (o) localStorage.setItem('dvorami:code:__other', o); }, ['dvorami:code:' + QID, other]);
+        await swap(BUNDLE.code); await page.reload({ waitUntil: 'load' });
+        if (!(await page.waitForSelector('#code', { timeout: 15000 }).then(() => true, () => false))) err(tag, 'выпущенный код другого дела открыл это дело — пробовать можно только мастер-код');
+        await swap(BUNDLE.master.toLowerCase()); await page.reload({ waitUntil: 'load' });
+        if (!(await page.waitForSelector('[data-act="start"]', { timeout: 15000 }).then(() => true, () => false))) err(tag, 'мастер-код, введённый в другом деле, не открыл это дело');
+        else if (!(await page.evaluate(k => localStorage.getItem(k), 'dvorami:code:' + QID))) err(tag, 'мастер-код другого дела не запомнился для этого');
+        await page.evaluate(() => localStorage.removeItem('dvorami:code:__other'));
+      }
       // скриншоты — JPEG q80 (team/std/site-check.md)
       const shot = async name => { if (args.shots && theme === 'dark') { fs.mkdirSync(args.shots, { recursive: true }); await page.waitForTimeout(150); await page.screenshot({ path: path.join(args.shots, `${name}-${vp.width}.jpg`), type: 'jpeg', quality: 80 }); } };
 
@@ -484,7 +499,9 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         const shown = await page.waitForSelector('[data-act="verkeep"]', { timeout: 15000 }).then(() => true, () => false);
         if (!shown) err(tag, `сохранение версии ${old}: нет экрана «Вышла новая версия дела»`);
         else {
-          if (!(await page.$('[data-act="vernew"]'))) err(tag, 'новая версия: нет кнопки «Начать заново»');
+          if (!(await page.$('[data-act="vernew"]'))) err(tag, 'новая версия: нет кнопки «Начать новую версию»');
+          // H-74: главная кнопка — новая версия; доиграть старую — второстепенная
+          if (await page.$eval('[data-act="vernew"]', b => b.classList.contains('pl-btn--ghost') || !/новую версию/i.test(b.textContent)).catch(() => true)) err(tag, 'новая версия: главная кнопка должна быть «Начать новую версию»');
           if (!(await page.$eval('#tabs', n => n.hidden).catch(() => true))) err(tag, 'новая версия: навигация видна до выбора');
           await fresh('новая версия дела');
           const keep = theme === 'dark';
@@ -520,7 +537,9 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       }
       await click('[data-act="start"]');
       if (!readMode && Q.format >= 5 && !(await page.$('#frame .pl-voice.is-soon'))) err(tag, 'вступление: в режиме «Слушаю и читаю» нет плеера реплики с плашкой «Аудио скоро»');
-      if (!(await page.$('#app .pl-crumb .pl-minis'))) err(tag, 'вступление: нет линии мини-шагов');
+      // владелец 27.11: один индикатор прогресса (полоса по точкам в шапке), оглавление — по названию точки, без отдельной иконки
+      if (await page.$('.pl-minis, .pl-toc-btn')) err(tag, 'вступление: вторая полоса прогресса или отдельная кнопка оглавления под меню');
+      if (!(await page.$('#app .pl-crumb .pl-crumb-btn[data-act="toc"]'))) err(tag, 'вступление: нет кнопки оглавления (название экрана)');
       await flip('вступление', '[data-act="go"]');
       await fresh('вступление · конец');
       await click('[data-act="go"]');
@@ -528,6 +547,10 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       for (const [pi, p] of Q.points.entries()) {
         const at = `точка ${p.n}`;
         if ((await state()).phase !== 'walk') { err(tag, `${at}: нет экрана дороги`); break; }
+        {
+          const pg = await page.evaluate(() => { const b = document.querySelectorAll('.pl-progress, .pl-minis'), c = document.querySelector('#progress i.cur'); return { bars: b.length, cur: c ? getComputedStyle(c).getPropertyValue('--part').trim() : null, n: document.querySelectorAll('#progress i').length }; });
+          if (pg.bars !== 1 || pg.n !== Q.points.length || !pg.cur) err(tag, `${at}: ждали одну полосу прогресса из ${Q.points.length} отрезков с текущим (--part), получили ${JSON.stringify(pg)}`);
+        }
         await fresh(at + ' · дорога');
         if (pi === 1) {
           await click('[data-view="map"]'); await check(at + ' · карта');
@@ -642,8 +665,13 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           // загадка: неверный ответ не проходит; поле не перерисовывается — фокус и набранное остаются
           if (si % 2 === 0) {
             await page.evaluate(() => { document.getElementById('ans').dataset.same = '1'; });
+            const g0 = (await goals()).length;
             await page.fill('#ans', 'заведомо неверно'); await click('#active button[type="submit"]');
             if ((await state()).k !== si) err(tag, `${sat}: принят неверный ответ`);
+            // H-68: цель answer_wrong — место (point, step) и near=0; текста ответа в параметрах нет
+            const gw = (await goals()).slice(g0).filter(([n]) => n === 'answer_wrong');
+            if (gw.length !== 1 || gw[0][1].step == null || gw[0][1].point !== p.n || gw[0][1].near !== 0) err(tag, `${sat}: ждали одну цель answer_wrong (point, step, near=0), получили ${JSON.stringify(gw)}`);
+            if (gw.some(([, prm]) => JSON.stringify(prm).includes('неверно'))) err(tag, `${sat}: текст ответа ушёл в параметры цели answer_wrong`);
             if (!(await page.$('.pl-wrong'))) err(tag, `${sat}: нет сообщения о неверном ответе`);
             if (!(await page.evaluate(() => { const i = document.getElementById('ans'); const r = i && i.getBoundingClientRect(), w = document.querySelector('#active .pl-wrong').getBoundingClientRect(); return i && i.dataset.same === '1' && document.activeElement === i && r.top >= 56 && w.bottom <= innerHeight; }))) err(tag, `${sat}: неверный ответ перерисовал поле (фокус потерян) или поле с сообщением ушли с экрана`);
             await check(sat + ' · неверный ответ');
@@ -651,8 +679,12 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
             const typo = !nearSeen && nearTypo(st);
             if (typo) {
               nearSeen = true;
+              const g1 = (await goals()).length;
               await page.fill('#ans', typo); await click('#active button[type="submit"]');
               if ((await state()).k !== si) err(tag, `${sat}: опечатка засчитана как верный ответ`);
+              const gn = (await goals()).slice(g1).filter(([n]) => n === 'answer_wrong');
+              if (gn.length !== 1 || gn[0][1].near !== 1) err(tag, `${sat}: на опечатку ждали цель answer_wrong с near=1, получили ${JSON.stringify(gn)}`);
+              if (gn.some(([, prm]) => JSON.stringify(prm).includes(typo))) err(tag, `${sat}: текст опечатки ушёл в параметры цели`);
               const msg = await page.$eval('#active .pl-wrong', el => el.textContent).catch(() => '');
               if (msg.indexOf(ANS.NEAR_TEXT) === -1) err(tag, `${sat}: на опечатку нет подсказки «${ANS.NEAR_TEXT}»`);
             }
