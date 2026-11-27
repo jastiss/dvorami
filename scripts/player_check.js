@@ -37,6 +37,10 @@
  *   - T-105: варианты выбора перемешаны (постоянно для игрока, верный не всегда первый, без внутренних id на кнопках);
  *     сохранение старой версии дела — экран «Вышла новая версия дела» (продолжить / заново); последняя подсказка поля с вводом
  *     засчитывается как ответ (поля «любой вариант» — пропуск с пометкой); доля полей «с места» по пометке src (H-72, предупреждение).
+ *   - данные: детское задание не на первой точке; «на картинке / на рисунке» в детском задании или вопросе — только при картинке у точки;
+ *     предупреждение, если у верного варианта выбора первое слово не такое, как у всех остальных;
+ *   - доска формата 5: на 390 в конце дела первая улика — на первом экране доски; опровергнутые версии — строкой, раскрываются;
+ *     переключатель «Все · Версии · Улики» показывает своё; развилка (fork): кнопки, выбор меняет ветку дела и пишется в сохранение.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
 'use strict';
@@ -154,6 +158,36 @@ const anyChoice = st => st.type === 'choice' && optIds(st).length > 0 && optIds(
     if (r.length === 1 && w.length && len(r[0]) > 1.4 * Math.max(...w.map(len)) && len(r[0]) - Math.max(...w.map(len)) >= 12) warn('данные', `${where}: верный вариант заметно длиннее остальных (${len(r[0])} знаков против ${Math.max(...w.map(len))}) — угадывается по длине (H-73)`);
   }
 })(RAW);
+
+// Верный вариант не должен выделяться первым словом: у всех неверных одно первое слово, у верного — другое
+// («Главная аллея» против трёх «Проезд …») — угадывается без места (предупреждение: правит автор)
+(function optionFirstWord(q) {
+  const first = o => String(o.label || o.id).replace(/<[^>]+>/g, '').replace(/[«»"„“”]/g, '').trim().split(/[\s,.:;—-]+/)[0].toLowerCase().replace(/ё/g, 'е');
+  for (const [st, where] of fieldsOf(q)) {
+    if (st.type !== 'choice' || anyChoice(st)) continue;
+    const right = [].concat(st.answer || []).map(String);
+    const r = (st.options || []).filter(o => right.includes(String(o.id))), w = (st.options || []).filter(o => !right.includes(String(o.id)));
+    if (r.length !== 1 || w.length < 2) continue;
+    const ws = new Set(w.map(first));
+    if (ws.size === 1 && !ws.has(first(r[0]))) warn('данные', `${where}: у верного варианта первое слово «${first(r[0])}», у всех остальных — «${[...ws][0]}»: угадывается по форме`);
+  }
+})(RAW);
+
+// Детские задания (team/std/riddles.md, «Детские задания»): не на первой точке дела; «на картинке / на рисунке» — только если у точки есть картинка
+(function kidsRules(q) {
+  const p0 = (q.points || [])[0];
+  if (p0 && p0.kids && [].concat(p0.kids).length) err('данные', `точка ${p0.n}: детское задание на первой точке — дело ещё не началось (первое — со следующей точки)`);
+  const PIC = /на\s+(картинке|рисунке)/i;
+  const hasPic = x => Array.isArray(x) ? x.some(hasPic) : (x && typeof x === 'object') ? Object.entries(x).some(([k, v]) => ((k === 'img' && typeof v === 'string' && v) || (k === 'layers' && Array.isArray(v) && v.length)) || (k !== 'if' && typeof v === 'object' && hasPic(v))) : false;
+  const textOf = x => typeof x === 'string' ? x : Array.isArray(x) ? x.map(textOf).join(' ') : (x && typeof x === 'object') ? [x.text, textOf(x.lines)].filter(Boolean).join(' ') : '';
+  for (const p of q.points || []) {
+    const pic = hasPic(p);
+    if (pic) continue;
+    for (const k of [].concat(p.kids || [])) if (PIC.test(textOf(k))) err('данные', `точка ${p.n}: детское задание ссылается на картинку, а картинки у точки нет (img null)`);
+    for (const [i, st] of (p.steps || []).entries()) if (st && st.type && !['info', 'say', 'board'].includes(st.type) && PIC.test(textOf(st))) err('данные', `точка ${p.n} шаг ${i + 1}: вопрос ссылается на картинку, а картинки у точки нет (img null)`);
+    for (const [i, w] of [].concat(p.walk_ask || []).entries()) if (w && PIC.test(textOf(w))) err('данные', `точка ${p.n} на ходу ${i + 1}: вопрос ссылается на картинку, а картинки у точки нет (img null)`);
+  }
+})(Q);
 
 // H-72: доля полей «с места». Пометка у поля: "src": "place" — ответ можно получить только на месте; "text" — из текста дела,
 // доски или письма; "both" — нужны оба. Считается по ветке, которую проходит тест (флаги по умолчанию / --flags).
@@ -709,9 +743,50 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         if (s1.phase !== 'point_done') { err(tag, `${at}: точка не закрылась (${s1.phase}/${s1.k})`); break; }
         await flip(at + ' · разбор', '[data-act="nextpoint"]');
         await fresh(at + ' · пройдена');
+        // развилка (поле fork): кнопки на последнем экране «точка пройдена»; выбор меняет ветку дела, возврат — восстанавливает
+        if (p.fork && p.fork.flag) {
+          const fk = p.fork, cur = flag(fk.flag);
+          const btns = await page.$$eval('#app [data-act="fork"]', bs => bs.map(b => ({ v: b.dataset.v, on: b.getAttribute('aria-pressed') === 'true' })));
+          if (btns.length !== (fk.options || []).length) err(tag, `${at}: развилка — кнопок ${btns.length} из ${(fk.options || []).length}`);
+          else if (!btns.some(b => b.on && b.v === cur)) err(tag, `${at}: развилка — не отмечен текущий выбор «${cur}»`);
+          const other = (fk.options || []).map(o => String(o.value)).find(v => v !== cur);
+          if (other && btns.length) {
+            await shot('player-fork');
+            const idsFor = v => { const keep = FLAGS[fk.flag]; FLAGS[fk.flag] = v; const ids = prune(RAW).points.map(x => x.id); FLAGS[fk.flag] = keep; return ids.join(','); };
+            const qids = () => page.evaluate(() => window.__dvorami.quest().points.map(x => x.id).join(','));
+            await click(`#app [data-act="fork"][data-v="${other}"]`); await check(at + ' · развилка');
+            if (await qids() !== idsFor(other)) err(tag, `${at}: развилка «${other}» не сменила ветку дела`);
+            if (((await state()).fl || {})[fk.flag] !== other) err(tag, `${at}: развилка — выбор не записан в сохранение`);
+            if (!(await page.$('#app [data-act="nextpoint"]'))) err(tag, `${at}: после выбора на развилке нет кнопки к следующей точке`);
+            await click(`#app [data-act="fork"][data-v="${cur}"]`);
+            if (await qids() !== idsFor(cur)) err(tag, `${at}: развилка — возврат к «${cur}» не восстановил ветку`);
+          }
+        }
         if (pi === 3 || (Q.letter && pi === Q.points.length - 2)) {
           await shot('player-clue');
           await click('[data-view="board"]'); await check(at + ' · улики'); await shot('player-board');
+          // доска: первая улика — на первом экране (на 390, в конце дела: опровергнутые версии — строкой внизу, не сверху)
+          if (pi === Q.points.length - 2) {
+            const b = await page.evaluate(() => {
+              const nav = document.getElementById('tabs'), bottom = nav && !nav.hidden ? nav.getBoundingClientRect().top : innerHeight;
+              const clue = [...document.querySelectorAll('#app .pl-cardx')].find(e => !e.closest('.pl-vers, .pl-verx'));
+              return { clue: clue ? Math.round(clue.getBoundingClientRect().top) : null, bottom: Math.round(bottom), rows: document.querySelectorAll('#app .pl-verx').length, seg: !!document.querySelector('#app [data-act="bmode"]') };
+            });
+            if (vp.width === 390 && b.clue != null && b.clue > b.bottom - 60) err(tag, `${at} · улики: первая улика не на первом экране доски (${b.clue} px, видно до ${b.bottom})`);
+            if (b.seg) {
+              for (const m of ['vers', 'clues', 'all']) {
+                await click(`#app [data-act="bmode"][data-mode="${m}"]`); await check(`${at} · улики · ${m}`);
+                const v = await page.evaluate(() => ({ vers: document.querySelectorAll('#app .pl-vers').length, clues: [...document.querySelectorAll('#app .pl-cardx')].filter(e => !e.closest('.pl-vers, .pl-verx')).length }));
+                if (m === 'vers' && v.clues) err(tag, `${at} · улики: в режиме «Версии» видны улики`);
+                if (m === 'clues' && v.vers) err(tag, `${at} · улики: в режиме «Улики» видны версии`);
+              }
+            }
+            if (b.rows) {
+              await click('#app .pl-verx > summary'); await check(at + ' · улики · версия открыта');
+              if (!(await page.$('#app .pl-verx[open] .pl-cardx'))) err(tag, `${at} · улики: опровергнутая версия не раскрывается по нажатию`);
+              await click('#app .pl-verx > summary');
+            }
+          }
           if (await page.$('[data-act="letter"]')) {
             await click('[data-act="letter"]'); await check(at + ' · письмо'); await shot('player-letter-' + pi); await click('[data-act="close"]');
           }

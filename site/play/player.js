@@ -77,6 +77,9 @@
   // Ветки А/Б: элемент любого списка с полем "if" остаётся, только если флаг совпал. Флаги — Q.flags (по умолчанию «A»),
   // для проверки на месте их можно переключить ссылкой ?flags=st4:B,st10:B (дело уже открыто кодом — тайны в этом нет).
   var FLAGS = {}, URL_FLAGS = {};
+  // Развилка (поле "fork" у точки, docs/quest-format.md, раздел 6б): ветку выбирает игрок кнопкой на экране «точка пройдена».
+  // Выбор хранится в сохранении (S.fl) и важнее флагов дела и ссылки ?flags=; дело заново отбирается по веткам (RAW_Q → Q).
+  var FORK_FL = {}, RAW_Q = null;
   // Ветки «по часам» (H-45, docs/quest-format.md, раздел 6а): Q.clock = {"zum": {"label": "ТЦ «ЗУМ»", "open": "10:00", "close": "22:00"}}.
   // Флаг такой ветки — "open" / "closed": по местному времени Москвы на подходе к точке или кнопкой «Двери закрыты».
   // Отбор по таким флагам — не при загрузке, а при показе (реплики дороги, сцены, итога точки и walk_m); ?flags=zum:closed — для проверки.
@@ -90,6 +93,7 @@
       try { raw = decodeURIComponent(raw); } catch (e) { /* как есть */ }
       raw.split(',').forEach(function (p) { var kv = p.split(/[:=]/); if (kv[0] && kv[1]) { f[kv[0].trim()] = kv[1].trim(); URL_FLAGS[kv[0].trim()] = kv[1].trim(); } });
     }
+    for (var fk in FORK_FL) if (Object.prototype.hasOwnProperty.call(FORK_FL, fk) && !CLOCK[fk]) f[fk] = String(FORK_FL[fk]);
     return f;
   }
   // Минуты от полуночи по Москве; ?at=21:30 — подставное время для проверки
@@ -287,6 +291,12 @@
     var s = String(src || '').replace(PICT, '');
     s = s.replace(/&(?!(?:[a-z]+|#\d+);)/gi, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     s = s.replace(/&lt;(\/?)(b|i|u|s|code)&gt;/g, '<$1$2>');
+    // ссылка: <a href="https://…"> или относительная (без схемы и без «//»); остальное остаётся текстом. Внешняя — в новой вкладке
+    s = s.replace(/&lt;a\s+href=(["'])([^"'<>\s]+)\1\s*&gt;([\s\S]*?)&lt;\/a&gt;/g, function (m, q, href, text) {
+      var ext = /^https:\/\/[^\/\s]/i.test(href), rel = !/^[a-z][a-z0-9+.-]*:/i.test(href) && !/^\/\//.test(href) && !/^\\/.test(href);
+      if (!ext && !rel) return text;
+      return '<a href="' + href.replace(/"/g, '&quot;') + '"' + (ext ? ' target="_blank"' : '') + ' rel="noopener">' + text + '</a>';
+    });
     s = s.split('\n').map(function (l) { return l.replace(/^[ \t]+/, '').replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+$/, ''); }).join('\n');
     return s.trim();
   }
@@ -353,7 +363,7 @@
       // формат 5: карточки доски [{id, n}], вычеркнутые {id: true}, состояние письма, увиденные «стрелки», вопросы на ходу
       cards: [], struck: {}, letter: null, arrows: {}, wa: [], reply: '', sel: [],
       // мини-шаги: f — экран, на котором игрок сейчас (в пределах точки); hist — ответы пройденных точек, чтобы их можно было пересмотреть
-      f: 0, hist: {}, clk: {},
+      f: 0, hist: {}, clk: {}, fl: {},
       // seed — порядок вариантов выбора для этого игрока (H-73): постоянный, переживает перезагрузку
       seed: newSeed() };
   }
@@ -364,7 +374,8 @@
     if (s.letter === undefined) s.letter = null;
     if (s.reply === undefined) s.reply = '';
     s.hist = s.hist || {};
-    s.clk = s.clk || {};   // ветки «по часам»: {номер раздела: {ключ: {v: "open"|"closed", by: "time"|"hand"}}}
+    s.clk = s.clk || {};
+    s.fl = s.fl && typeof s.fl === 'object' ? s.fl : {};   // выбор игрока на развилках: {флаг: значение}   // ветки «по часам»: {номер раздела: {ключ: {v: "open"|"closed", by: "time"|"hand"}}}
     if (typeof s.f !== 'number') s.f = -1;   // сохранение до мини-шагов: место подберёт fixCursor()
     if (typeof s.seed !== 'number') s.seed = newSeed();   // сохранение до перемешивания вариантов
     return s;
@@ -408,8 +419,14 @@
   }
 
   // ---------- ход квеста ----------
+  // Выбор на развилке из сохранения — до отбора веток (load() идёт после prepare, ему нужно уже отобранное дело)
+  function savedFork() {
+    try { var s = JSON.parse(store.get(KEY) || 'null'); return s && s.quest === QID && s.fl && typeof s.fl === 'object' ? s.fl : {}; } catch (e) { return {}; }
+  }
+  function reflag() { FORK_FL = (S && S.fl) || {}; if (RAW_Q) Q = prepare(RAW_Q); }
   function start() {
     S = fresh();
+    reflag();
     S.phase = 'intro';
     S.t_start = Date.now();
     addCards(Q.cards, 0);
@@ -687,7 +704,7 @@
     var prev = null;
     return src.map(function (l) {
       // подряд у одного говорящего имя подписано один раз (для чтения с экрана — у каждой реплики)
-      var who = l && typeof l === 'object' && !l.arrow && l.text != null ? (l.who || 'zilya') : null;
+      var who = l && typeof l === 'object' && !l.arrow && l.text != null ? (l.who || null) : null;
       var out = lineHtml(l, who && who === prev);
       if (!(l && typeof l === 'object' && l.arrow)) prev = who;
       return out;
@@ -701,7 +718,9 @@
     if (l.doc === 'card') return CARDS[l.id] ? cardHtml(l.id, { full: true }) : '';
     if (l.img !== undefined || l.layers) return figureHtml(l);
     if (l.audio && !l.text) return typeof l.audio === 'string' && mediaSrc(l.audio) ? voiceStrip([mediaSrc(l.audio)], true) : '';
-    var sp = speaker(l.who || 'zilya');
+    // реплика без говорящего — абзац рассказчика, без имени (не «zilya» по умолчанию)
+    if (!l.who) return '<div class="pl-prose">' + proseFold(l.text) + '</div>' + (typeof l.audio === 'string' && mediaSrc(l.audio) ? voiceStrip([mediaSrc(l.audio)], true) : '');
+    var sp = speaker(l.who);
     var paper = sp.style === 'note' || sp.style === 'letter' || sp.style === 'card';
     var body = (sp.style === 'letter' || l.mono) ? '<div class="pl-prose pl-hand">' + prose(l.text) + '</div>' : '<div class="pl-prose">' + proseFold(l.text) + '</div>';
     // место под портрет героя: пока портрета нет — плитка с фигурой его роли (speakers.<id>.img — путь к портрету)
@@ -955,25 +974,52 @@
     return h;
   }
   var sortMode = 'found';
+  // Доска формата 5: фильтр «Все · Версии · Улики» — когда карточек много (BOARD_SEG и больше) и есть и версии, и улики
+  var boardMode = 'all', BOARD_SEG = 8;
   function cardCount() { return S.cards.length + (S.letter && Q.letter ? 1 : 0); }
-  // Доска улик формата 5: письмо (всегда сверху) и карточки по остановкам; вычеркнутые — штампом, не только цветом
+  // Опровергнутая версия — одной строкой со штампом; полный текст и причина — по нажатию
+  function verRowHtml(id) {
+    var c = CARDS[id];
+    if (!c) return '';
+    return '<details class="pl-more pl-verx" data-card="' + esc(id) + '"><summary><span class="pl-verx-title"><span class="visually-hidden">Вычеркнуто: </span>' + esc(plain(c.title)) + '</span>' +
+      '<span class="pl-stamp pl-stamp--ans pl-verx-x" aria-hidden="true">Вычеркнуто</span></summary><div class="pl-more-body">' + cardHtml(id) + '</div></details>';
+  }
+  // Доска улик формата 5: письмо и карточки по остановкам (новые первыми); версии — отдельной группой.
+  // Живые версии — сверху; опровергнутые сворачиваются в строку и уходят вниз доски (в режиме «Версии» — под живыми),
+  // чтобы первая улика была на первом экране и в конце дела (player_check: 390 px, предпоследняя точка).
   function cardsBoardView() {
     var n = cardCount();
     var h = head(caseName(), 'Доска улик', n ? 'На доске: ' + n : '', 2);
     if (S.board.length) h += boardLetters(true);
     if (!n) return h + '<p class="pl-empty">' + esc(plain(Q.board_empty || 'Доска пока пуста. Всё, что найдёте, будет ложиться сюда.')) + '</p>';
-    h += '<!--vers-->';
-    if (S.letter && Q.letter) {
-      h += '<section class="pl-card pl-card--letter"><span class="pl-label">' + esc(plain(Q.letter.title || 'Письмо')) + '</span>' + letterHtml(S.letter) +
-        '<button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="letter">Рассмотреть крупно</button></section>';
-    }
     var list = S.cards.slice().reverse();
     var isVer = function (c) { return CARDS[c.id] && CARDS[c.id].kind === 'version'; };
     var vers = list.filter(isVer), clues = list.filter(function (c) { return !isVer(c); });
-    // версии — над письмом и уликами (доска версий: неверное зачёркивается с причиной)
-    var vh = vers.length ? '<section class="pl-vers"><span class="pl-label">Версии</span><div class="pl-cards">' + vers.map(function (c) { return cardHtml(c.id); }).join('') + '</div></section>' : '';
-    h = h.replace('<!--vers-->', vh);
-    return h + (clues.length ? (vers.length ? '<span class="pl-label">Улики</span>' : '') + '<div class="pl-cards">' + clues.map(function (c) { return cardHtml(c.id); }).join('') + '</div>' : '');
+    var live = vers.filter(function (c) { return !S.struck[c.id]; }), gone = vers.filter(function (c) { return !!S.struck[c.id]; });
+    var hasLetter = !!(S.letter && Q.letter);
+    var seg = n >= BOARD_SEG && vers.length && (clues.length || hasLetter);
+    var mode = seg ? boardMode : 'all';
+    if (seg) {
+      var b = function (m, label, k) { return '<button type="button" data-act="bmode" data-mode="' + m + '" aria-pressed="' + (mode === m) + '">' + label + (k != null ? ' <small>' + k + '</small>' : '') + '</button>'; };
+      h += '<div class="pl-seg pl-bseg" role="group" aria-label="Что показать на доске">' + b('all', 'Все') + b('vers', 'Версии', vers.length) + b('clues', 'Улики', clues.length + (hasLetter ? 1 : 0)) + '</div>';
+    }
+    var label = function (t) { return '<span class="pl-label">' + t + '</span>'; };
+    var liveH = live.length ? '<section class="pl-vers">' + label(gone.length ? 'Версии в работе' : 'Версии') + '<div class="pl-cards">' + live.map(function (c) { return cardHtml(c.id); }).join('') + '</div></section>' : '';
+    var goneH = gone.length ? '<section class="pl-vers pl-vers--gone">' + label('Отпавшие версии · ' + gone.length) + '<div class="pl-verxs">' + gone.map(function (c) { return verRowHtml(c.id); }).join('') + '</div></section>' : '';
+    var letterH = hasLetter ? '<section class="pl-card pl-card--letter"><span class="pl-label">' + esc(plain(Q.letter.title || 'Письмо')) + '</span>' + letterHtml(S.letter) +
+      '<button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="letter">Рассмотреть крупно</button></section>' : '';
+    // в «Все» при большой доске письмо — строкой: целиком оно в «Улики» и крупно по кнопке (иначе улики уходят со второго экрана)
+    if (seg && mode === 'all' && hasLetter) {
+      var ls = letterState(S.letter) || {};
+      var note = plain(ls.caption || ls.stamp || '');
+      letterH = '<section class="pl-card pl-card--letter pl-letter-mini"><span class="pl-label">' + esc(plain(Q.letter.title || 'Письмо')) + '</span>' +
+        (note ? '<p class="pl-small">' + esc(clip(note, 120)) + '</p>' : '') +
+        '<button type="button" class="pl-btn pl-btn--ghost pl-btn--sm" data-act="letter">Открыть письмо</button></section>';
+    }
+    var cluesH = clues.length ? (vers.length && mode === 'all' ? label('Улики') : '') + '<div class="pl-cards">' + clues.map(function (c) { return cardHtml(c.id); }).join('') + '</div>' : '';
+    if (mode === 'vers') return h + liveH + goneH;
+    if (mode === 'clues') return h + letterH + cluesH;
+    return h + liveH + letterH + cluesH + goneH;
   }
   function boardView() {
     if (usesCards()) return cardsBoardView();
@@ -998,6 +1044,30 @@
   //     "from": N — показывать начиная с точки N (чтобы ориентир не подсказывал дорогу вперёд)}.
   // Нет ни картинки, ни ориентиров — схема всё равно не пустая: север, масштаб, пройденный путь.
   var LM_KINDS = { water: 1, park: 1, river: 1, metro: 1, place: 1 };
+  // С какой точки показывать ориентир: явный "from" — как есть; без него — номер первой точки, в тексте которой встречается
+  // его подпись (без кавычек и регистра, ё = е). Не встречается нигде — показывается сразу, как раньше
+  var LM_TEXT = null, LM_TEXT_Q = null;
+  var LM_SKIP = { id: 1, n: 1, lat: 1, lon: 1, img: 1, audio: 1, walk_audio: 1, 'if': 1, who: 1, kind: 1, check: 1, answers: 1, all: 1, doc: 1, state: 1, arrow: 1, src: 1, flag: 1, value: 1, answer: 1 };
+  function lmNorm(t) { return plain(t).toLowerCase().replace(/ё/g, 'е').replace(/[«»"„“”'’]/g, '').replace(/\s+/g, ' ').trim(); }
+  function lmFrom(L) {
+    if (L.from != null && L.from !== '') return +L.from;
+    var lab = lmNorm(L.label || '');
+    if (!lab) return null;
+    if (LM_TEXT_Q !== Q) {
+      LM_TEXT_Q = Q;
+      LM_TEXT = Q.points.map(function (p) {
+        var out = [];
+        (function walk(x) {
+          if (typeof x === 'string') out.push(x);
+          else if (Array.isArray(x)) x.forEach(walk);
+          else if (x && typeof x === 'object') for (var k in x) if (!LM_SKIP[k]) walk(x[k]);
+        })(p);
+        return { n: p.n, text: ' ' + lmNorm(out.join(' \n ')) + ' ' };
+      });
+    }
+    for (var i = 0; i < LM_TEXT.length; i++) if (LM_TEXT[i].text.indexOf(lab) !== -1) return +LM_TEXT[i].n;
+    return null;
+  }
   function mapView() {
     var n = Q.points.length, all = S.phase === 'done';
     var upto = all ? n - 1 : (S.phase === 'intro' ? 0 : S.p);
@@ -1072,7 +1142,8 @@
     };
     var reached = all ? n : upto + 1;
     var lms = (Array.isArray(M.landmarks) ? M.landmarks : []).filter(function (L) {
-      return L && LM_KINDS[L.kind] && (L.from == null || +L.from <= reached) && passes(L['if']);
+      var from = L ? lmFrom(L) : null;
+      return L && LM_KINDS[L.kind] && (from == null || from <= reached) && passes(L['if']);
     });
     var later = [];
     lms.forEach(function (L) {
@@ -1286,6 +1357,7 @@
     if (stage === 2) {
       F.push({ id: 'd', kind: 'done', end: true });
       beatsOf(clockPick(p.outro, pi)).forEach(function (b, i) { F.push({ id: 'o' + i, kind: 'beat', lines: b, end: true }); });
+      if (p.fork && p.fork.flag) F.push({ id: 'fk', kind: 'fork', end: true });   // развилка — последним экраном точки
     }
     return F;
   }
@@ -1320,6 +1392,7 @@
     if (fr.kind === 'wask') return 'Вопрос на ходу';
     if (fr.kind === 'arrive') return 'На месте';
     if (fr.kind === 'done') return 'Точка пройдена';
+    if (fr.kind === 'fork') return 'Куда дальше';
     if (fr.kind === 'closed') return 'Дело раскрыто';
     if (fr.kind === 'facts') return 'Что здесь правда';
     if (fr.kind === 'result') return 'Разбор';
@@ -1334,7 +1407,8 @@
       if (l.doc === 'letter') return 'Письмо';
       if (l.doc === 'card') return 'Карточка';
       if (l.img !== undefined || l.layers) return 'Картинка';
-      if (l.text != null) { var sp = speaker(l.who || 'zilya'); return (sp.style === 'titr' ? '' : sp.name + ': ') + clip(l.text, 38); }
+      if (l.text != null && !l.who) return clip(l.text, 44);
+      if (l.text != null) { var sp = speaker(l.who); return (sp.style === 'titr' ? '' : sp.name + ': ') + clip(l.text, 38); }
     }
     return fr.title ? plain(fr.title) : 'Сцена';
   }
@@ -1350,7 +1424,7 @@
     while ((m = re.exec(s))) { var at = m.index + 1; if (at > 260) break; if (at >= 90) cut = at; }
     if (cut < 0) return prose(s);
     var a = s.slice(0, cut), b = s.slice(cut);
-    var open = (a.match(/<(b|i|u|s|code)>/g) || []).length, shut = (a.match(/<\/(b|i|u|s|code)>/g) || []).length;
+    var open = (a.match(/<(b|i|u|s|code|a)[\s>]/g) || []).length, shut = (a.match(/<\/(b|i|u|s|code|a)>/g) || []).length;
     if (open !== shut) return prose(s);
     return prose(a) + moreHtml('Подробнее', prose(b), 'pl-more--text');
   }
@@ -1487,6 +1561,7 @@
       return h + kidsHtml(p.kids);
     }
     if (fr.kind === 'closed') return closedHtml();
+    if (fr.kind === 'fork') return forkHtml(p, c);
     if (fr.kind === 'facts') {
       return '<section class="pl-facts">' + factsHtml() + '</section>' +
         '<div class="pl-actions"><button class="pl-btn pl-btn--ghost pl-btn--sm" type="button" data-act="back">К карточке дела и оценке</button>' +
@@ -1571,6 +1646,23 @@
       '<div class="pl-step" id="frame" tabindex="-1" data-sec="' + pos.sec + '" data-f="' + pos.f + '" data-frame="' + esc(fr.id) + '" data-kind="' + esc(fr.kind) + '" data-dir="' + moveDir + '">' +
       (headed ? '' : '<h1 class="visually-hidden">' + esc(secName(pos.sec)) + '</h1>') + frameHtml(fr, c) + '</div>' +
       (/^(road|go|arrive|task|wask|done)$/.test(fr.kind) ? issueBtn() : '') + barHtml(fr, c);
+  }
+  // Развилка: последний экран точки; выбрать можно, пока игрок не ушёл к следующей точке, потом — только посмотреть выбор
+  function forkHtml(p, c) {
+    var fk = p.fork, cur = FLAGS[fk.flag] || 'A';
+    if (!(c.live && S.phase === 'point_done' && c.sec === S.p)) {
+      var pick = (fk.options || []).filter(function (o) { return String(o.value) === cur; })[0];
+      return '<section class="pl-card pl-fork"><h2 class="pl-fork-q">' + inline(fk.title || 'Куда дальше?') + '</h2>' +
+        (pick ? '<p><span class="pl-stamp pl-stamp--ans">Выбрано</span> ' + inline(pick.label) + '</p>' : '') + '</section>';
+    }
+    return '<section class="pl-card pl-fork" aria-labelledby="fork-q"><h2 class="pl-fork-q" id="fork-q">' + inline(fk.title || 'Куда дальше?') + '</h2>' +
+      (fk.text ? '<div class="pl-prose">' + prose(fk.text) + '</div>' : '') +
+      '<div class="pl-fork-opts" role="group" aria-labelledby="fork-q">' + (fk.options || []).map(function (o) {
+        var on = String(o.value) === cur;
+        return '<button type="button" class="pl-opt pl-fork-opt" data-act="fork" data-v="' + esc(String(o.value)) + '" aria-pressed="' + on + '">' +
+          '<span class="pl-opt-label"><b>' + inline(o.label) + '</b>' + (o.note ? '<small>' + inline(o.note) + '</small>' : '') + '</span>' +
+          (on ? '<span class="pl-fork-on">Выбрано</span>' : '') + '</button>';
+      }).join('') + '</div></section>';
   }
   // Оглавление: всё пройденное по точкам и мини-шагам; того, что впереди, в нём нет — только число точек
   function tocHtml() {
@@ -1848,6 +1940,7 @@
     if (S.version && S.version !== Q.version) out.push('Внимание: начато на версии ' + S.version + ', сейчас загружена ' + Q.version + '.');
     var status = S.phase === 'done' ? 'пройден до финала' : (S.phase === 'idle' ? 'не начат' : 'сейчас точка ' + pt().n + ' из ' + Q.points.length);
     out.push('Статус: ' + status + '.');
+    Object.keys(S.fl || {}).forEach(function (k) { out.push('Развилка: ' + k + ' = ' + S.fl[k] + ' (выбрал игрок).'); });
     out.push('');
     out.push('ТАЙМИНГ ПО ТОЧКАМ (вышли → на месте → закончили)');
     var totals = { hint: 0, wrong: 0, reveal: 0, skip: 0 };
@@ -2009,6 +2102,17 @@
       el.setAttribute('aria-label', el.getAttribute('aria-label').replace(/Слой \d+ из/, 'Слой ' + (i + 1) + ' из'));
     },
     nextpoint: nextPoint,
+    fork: function (el) {
+      var p = pt(), fk = p && p.fork;
+      if (!fk || !fk.flag || S.phase !== 'point_done' || peek) return;
+      var v = String(el.dataset.v), ok = (fk.options || []).some(function (o) { return String(o.value) === v; });
+      if (!ok || FLAGS[fk.flag] === v) return;
+      S.fl[fk.flag] = v;
+      reflag();
+      log('fork', { key: fk.flag, value: v });
+      S.f = framesOf(S.p).length - 1;
+      commit(null, '[data-act="fork"][data-v="' + v + '"]');
+    },
     clock: function (el) {
       var k = el.dataset.k, v = el.dataset.v === 'closed' ? 'closed' : 'open', sec = liveSec();
       if (!CLOCK[k] || S.phase !== 'walk') return;
@@ -2037,6 +2141,7 @@
     issuecopy: function () { copyText(issueLast).then(function (ok) { toast(ok ? 'Скопировано — вставьте в Telegram' : 'Не получилось скопировать'); }); },
     close: closeSheet,
     sort: function (el) { sortMode = el.dataset.mode; render(); },
+    bmode: function (el) { boardMode = el.dataset.mode === 'vers' || el.dataset.mode === 'clues' ? el.dataset.mode : 'all'; render(); refocus('#app [data-act="bmode"][data-mode="' + boardMode + '"]'); },
     theme: function () {
       var r = document.documentElement;
       var sun = r.dataset.theme !== 'sun';
@@ -2052,7 +2157,7 @@
     },
     resume: function () { S.paused = false; log('resume'); commit('top'); },
     // H-74: новая версия дела поверх старого сохранения
-    vernew: function () { var from = S.ver_from; S = fresh(); log('version', { from: from, to: Q.version, choice: 'new' }); commit('top'); },
+    vernew: function () { var from = S.ver_from; S = fresh(); reflag(); log('version', { from: from, to: Q.version, choice: 'new' }); commit('top'); },
     verkeep: function () {
       var from = S.ver_from; delete S.ver_from; S.version = Q.version;
       log('version', { from: from, to: Q.version, choice: 'keep' });
@@ -2472,6 +2577,8 @@
 
   // ---------- запуск ----------
   function begin(q) {
+    RAW_Q = q;
+    FORK_FL = savedFork();
     Q = prepare(q);
     indexCards(q);
     S = load();

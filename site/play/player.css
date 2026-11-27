@@ -585,6 +585,19 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-vers .pl-cardx { border-left: 4px dashed var(--control); }
 .pl-vers + * { margin-top: 16px; }
 .pl-cardx-x { white-space: normal; transform: none; text-transform: none; letter-spacing: 0; font: 600 15px/1.3 var(--font-text); }
+/* Опровергнутые версии — строкой со штампом, полный текст по нажатию; фильтр «Все · Версии · Улики» при большом числе карточек */
+* + .pl-vers, .pl-cards + .pl-vers--gone { margin-top: 16px; }
+.pl-bseg { margin: 0 0 14px; }
+.pl-bseg small { font: inherit; font-size: 14px; }
+.pl-verxs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.pl-letter-mini .pl-small { margin: 0; }
+.pl-verx { min-width: 0; padding: 0 12px; background: var(--surface); border-left: 4px dashed var(--control); border-radius: min(var(--radius), 8px); }
+.pl-verx > summary { min-width: 0; }
+.pl-verx-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: line-through; text-decoration-thickness: 2px; color: var(--text-2); }
+.pl-verx .pl-verx-x { flex: none; margin: 0; transform: none; padding: 4px 8px 3px; }
+.pl-verx > .pl-more-body { padding: 0 0 12px; }
+.pl-verx .pl-cardx { padding: 0; background: none; border: 0; }
+.pl-verx .pl-cardx-title { display: none; }
 .pl-tip.has-note { width: 88px; position: relative; }
 .pl-tip-note { position: absolute; top: 6px; left: 0; right: 0; display: block; text-align: center; font: 600 13px/1.2 var(--font-doc); letter-spacing: .04em; color: var(--ink-hand); }
 
@@ -720,3 +733,15 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 /* H-74: экран «Вышла новая версия дела» */
 .pl-ver p + p { margin-top: 10px; }
 .pl-next .pl-small { margin-top: 12px; }
+
+/* Развилка (поле fork): игрок выбирает ветку на экране «точка пройдена» */
+.pl-fork { display: grid; gap: 10px; }
+.pl-fork-q { font: 600 20px/1.25 var(--font-display); }
+.pl-fork-opts { display: grid; gap: 8px; }
+.pl-fork-opt { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 10px 14px; text-align: left; cursor: pointer;
+  background: var(--bg); border: 2px solid var(--control); border-radius: min(var(--radius), 12px); }
+.pl-fork-opt .pl-opt-label { flex: 1; display: grid; gap: 2px; }
+.pl-fork-opt .pl-opt-label b { font: 600 17px/1.3 var(--font-text); color: var(--text); }
+.pl-fork-opt small { font-size: 15px; color: var(--text-2); }
+.pl-fork-opt[aria-pressed="true"] { border-color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-text); }
+.pl-fork-on { flex: none; font: var(--tag-font); text-transform: uppercase; letter-spacing: var(--tag-track); color: var(--accent-text); }
