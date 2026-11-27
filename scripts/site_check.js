@@ -17,7 +17,10 @@
  *   - карточка дела: первая фраза тизера — вопрос (H-31/H-38); на карточке нет «Один код — вся компания» ни в каком виде (владелец 25.11) и обложка не затемнена полосой;
  *   - ошибки в консоли и ошибки JS; предупреждения о неиспользованном preload шрифтов.
  *   - без браузера (--sync — только они): цифры страницы и карточки дела = quests/<id>/quest.json (точки без эпилога, км, часы,
- *     финиш; T-127) и OG-картинка дела = её данным (platform/site/og-manifest.json, scripts/make_og.py; T-121).
+ *     финиш; T-127) и OG-картинка дела = её данным (platform/site/og-manifest.json, scripts/make_og.py; T-121, шрифт ≥ 11 px на 600 px — H-114);
+ *     site/llms*.txt = делам (номер, название, точки, км, часы, статус, ссылки) и без спойлеров (H-108); временные объекты
+ *     (scripts/temporary_check.js, H-111): за 30 дней до срока — предупреждение, после — ошибка ([--today=ГГГГ-ММ-ДД]);
+ *     предупреждением — длина <title> > 60 и description > 160 на страницах дел (H-108).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
  */
@@ -308,6 +311,7 @@ function lockedFor(id) {
  *  - возраст: в quest.json его нет — не сверяется (появится поле — добавить сюда).
  * Тексты сценария с веткой («if»: "ext=B") сверяются с маршрутом этой ветки (Коломенское: «9 остановок … около 3 км»). */
 const EPILOGUE = p => p.id === 'epilogue';
+const QF = {}; // slug страницы дела → цифры из quest.json (точки, км, часы) — их же сверяет llmsSync (H-108)
 function questSync() {
   const out = [];
   const QDIR = path.resolve(__dirname, '..', 'quests');
@@ -360,6 +364,7 @@ function questSync() {
     }
     const N = stops(defaults);
     let kmMain = null, hoursMain = null, finish = null, startMetro = null;
+    QF[slug] = { where, N };
     for (const tx of texts) {
       if (!tx.fl) continue;
       const t = plain(tx.t);
@@ -388,6 +393,7 @@ function questSync() {
     }
     const kf = facts.find(f => /км/.test(f.n));
     const kmQ = kmMain != null ? num(kmMain) : Math.round(walkM(defaults) / 500) / 2;
+    Object.assign(QF[slug], { km: kmQ, hours: hoursMain });
     if (kf) {
       const kmP = num(kf.n.replace(/[^\d,]/g, ''));
       const viaMetro = /метро/.test(kf.label) && kmP > kmQ && body.includes(`${String(kmQ).replace('.', ',')} км`);
@@ -463,6 +469,88 @@ function toneCheck() {
   return out;
 }
 
+/* H-108: site/llms.txt (и прочие site/llms*.txt) — пересказ витрины для ИИ-поиска. Пишется руками, поэтому сверяется с данными:
+ *  - ссылки https://dvorami.ru/… ведут на существующие страницы и якоря; каждое дело из site/moscow/ упомянуто строкой;
+ *  - «Дело №N «Название»» = табличке страницы дела («Дело №N · Название»);
+ *  - цифры строки дела — первые «N точек», «около X км», «A–B часа» — = quest.json (QF, как questSync; эпилог не считается)
+ *    или, у дела без quest.json, цифрам страницы; км — ±0,3 от сценария или от цифры страницы («4 км с дорогой от метро»);
+ *  - «Статус: …» = статусу страницы дела;
+ *  - спойлеры (scripts/site_spoilers.json): «*» — во всём файле, ключ страницы дела — в её строке.
+ * Красное: ИИ-ответ «12 точек» или разгадка в llms.txt — та же ошибка, что на витрине. */
+function llmsSync(spoilers) {
+  const out = [];
+  const files = fs.readdirSync(ROOT).filter(f => /^llms.*\.txt$/.test(f)).sort();
+  const plain = s => String(s).replace(/<[^>]*>/g, ' ').replace(/&nbsp;| /g, ' ').replace(/&laquo;/g, '«').replace(/&raquo;/g, '»').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
+  const num = s => parseFloat(String(s).replace(',', '.'));
+  const dash = s => s.replace(/\s/g, '').replace(/-/g, '–');
+  const caseDir = path.join(ROOT, 'moscow');
+  const cases = {};
+  for (const slug of fs.readdirSync(caseDir)) {
+    const f = path.join(caseDir, slug, 'index.html');
+    if (!fs.existsSync(f)) continue;
+    const h = fs.readFileSync(f, 'utf8');
+    const plaque = plain((h.match(/class="c-plaque"[^>]*>([\s\S]*?)<\/(?:p|div|span|a)>/) || [])[1] || '');
+    if (!plaque) continue;
+    const facts = [...(h.match(/<section id="facts"[\s\S]*?<\/section>/) || [''])[0].matchAll(/<li><span class="n">([\s\S]*?)<\/span>([\s\S]*?)<\/li>/g)].map(m => ({ n: plain(m[1]), label: plain(m[2]) }));
+    cases[slug] = { plaque, status: plain((h.match(/class="c-status"[^>]*>([\s\S]*?)<\/(?:p|div|span)>/) || [])[1] || ''), facts };
+  }
+  const anchorsOf = rel => { const f = path.join(ROOT, rel, 'index.html'); return fs.existsSync(f) ? new Set([...fs.readFileSync(f, 'utf8').matchAll(/\sid="([^"]+)"/g)].map(m => m[1])) : null; };
+  for (const file of files) {
+    const t = fs.readFileSync(path.join(ROOT, file), 'utf8');
+    for (const m of t.matchAll(/https:\/\/dvorami\.ru\/([^)\s#]*)(?:#([\w-]+))?/g)) {
+      const ids = anchorsOf(m[1]);
+      if (!ids) out.push(`${file}: ссылка на несуществующую страницу https://dvorami.ru/${m[1]}`);
+      else if (m[2] && !ids.has(m[2])) out.push(`${file}: ссылка на несуществующий якорь https://dvorami.ru/${m[1]}#${m[2]}`);
+    }
+    for (const w of spoilers['*'] || []) if (t.toLowerCase().includes(w.toLowerCase())) out.push(`${file}: спойлер «${w}»`);
+    const lines = t.split('\n');
+    for (const [slug, c] of Object.entries(cases)) {
+      const ln = lines.find(l => l.includes(`dvorami.ru/moscow/${slug}/`) && /Дело\s*№/.test(l));
+      const pg = `moscow/${slug}/`;
+      if (!ln) { if (file === 'llms.txt') out.push(`${file}: нет строки дела ${pg} («${c.plaque}»)`); continue; }
+      const tag = `${file}, ${c.plaque}`;
+      const tm = ln.match(/Дело\s*№\s*(\d+)\s*«([^»]+)»/);
+      if (!tm || `Дело №${tm[1]} · ${tm[2]}` !== c.plaque) out.push(`${tag}: в строке «${tm ? `Дело №${tm[1]} «${tm[2]}»` : ln.slice(0, 50)}», на странице дела «${c.plaque}»`);
+      const qf = QF[slug] || {};
+      const pf = c.facts.find(f => /точ|останов|загад/.test(f.label)), kf = c.facts.find(f => /км/.test(f.n)), hf = c.facts.find(f => /ч$/.test(f.n));
+      const n = ln.match(/(\d+)\s+(?:точ[а-я]*|останов[а-я]*)/), N = qf.N != null ? qf.N : pf ? +pf.n : null;
+      if (n && N != null && +n[1] !== N) out.push(`${tag}: «${n[0]}», а ${qf.where ? `в ${qf.where} ${N} точек основного маршрута (эпилог не считается)` : `на странице ${N}`}`);
+      const k = ln.match(/около\s+(\d+(?:,\d+)?)\s*км/);
+      if (k) {
+        const ok = [qf.km, kf ? num(kf.n.replace(/[^\d,]/g, '')) : null].filter(v => v != null && !isNaN(v));
+        const okU = [...new Set(ok)]; if (okU.length && !okU.some(v => Math.abs(num(k[1]) - v) <= 0.3)) out.push(`${tag}: «${k[0]}», а в данных дела ${okU.map(v => String(v).replace('.', ',') + ' км').join(' / ')}`);
+      }
+      const hh = ln.match(/(\d+(?:,\d+)?\s*[–-]\s*\d+(?:,\d+)?)\s*час/);
+      const H = qf.hours || (hf ? hf.n.replace(/\s*ч$/, '') : null);
+      if (hh && H && dash(hh[1]) !== dash(H)) out.push(`${tag}: «${hh[0]}…», а ${qf.hours ? 'в ' + qf.where : 'на странице'} «${H} часа»`);
+      const st = ln.match(/Статус:\s*([^.]+)/);
+      if (st && !c.status.toLowerCase().startsWith(st[1].trim().toLowerCase())) out.push(`${tag}: «Статус: ${st[1].trim()}», на странице дела «${c.status.split('.')[0]}»`);
+      for (const [key, words] of Object.entries(spoilers)) {
+        if (key.startsWith('_') || key === '*' || !pg.startsWith(key)) continue;
+        for (const w of words) if (ln.toLowerCase().includes(w.toLowerCase())) out.push(`${tag}: спойлер «${w}»`);
+      }
+    }
+  }
+  return out;
+}
+
+/* H-108: длина <title> ≤ 60 и meta description ≤ 160 знаков на страницах дел — иначе поисковик обрежет сниппет.
+ * Пока ПРЕДУПРЕЖДЕНИЕ (Маркетолог сокращает, данные — platform/site/cases/c*.py → build_cases.py); станет пусто — сделать ошибкой. */
+const TITLE_MAX = 60, DESC_MAX = 160;
+function seoLengths() {
+  const out = [];
+  const ent = { nbsp: ' ', laquo: '«', raquo: '»', quot: '"', amp: '&', mdash: '—', ndash: '–', hellip: '…', apos: "'", lt: '<', gt: '>' };
+  const decode = t => t.replace(/&(#x?[0-9a-f]+|\w+);/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1].toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : +e.slice(1)) : (ent[e] ?? m)).replace(/\s+/g, ' ').trim();
+  for (const pg of listPages().filter(p => CASE_RE.test(p))) {
+    const h = fs.readFileSync(path.join(ROOT, pg, 'index.html'), 'utf8');
+    const title = decode((h.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '');
+    const desc = decode((h.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '');
+    if ([...title].length > TITLE_MAX) out.push(`${pg}: <title> ${[...title].length} знаков (нужно ≤ ${TITLE_MAX}) — «${title}»`);
+    if ([...desc].length > DESC_MAX) out.push(`${pg}: description ${[...desc].length} знаков (нужно ≤ ${DESC_MAX}) — «${desc.slice(0, 80)}…»`);
+  }
+  return out;
+}
+
 /* T-121 (H-96): OG-картинка дела = его данные. OG рисует scripts/make_og.py из card (название, вопрос, цифры) и пишет
  * в platform/site/og-manifest.json, что нарисовано, и хеш файла. Здесь: og:image страницы дела есть в site/assets/og/;
  * если это не общий main.png — запись в манифесте, её текст = карточке дела в каталоге (/moscow/) и og:title страницы,
@@ -499,6 +587,8 @@ function ogSync() {
     const e = man[f];
     if (!e) { out.push(`${pg}: OG ${f} нарисован не make_og.py (нет в platform/site/og-manifest.json) — python3 scripts/make_og.py`); continue; }
     if (e.file_sha !== sha(path.join(ogDir, f))) out.push(`${pg}: OG ${f} заменён мимо make_og.py (хеш ≠ манифесту) — python3 scripts/make_og.py`);
+    // H-114: мелкий текст OG на превью 600 px — не меньше 11 px (замер make_og.py)
+    if (!(e.min_px_600 >= 11)) out.push(`${pg}: OG ${f} — ${e.min_px_600 == null ? 'нет замера мелкого текста на превью 600 px' : `мелкий текст на превью 600 px ${e.min_px_600} px (< 11)`} — python3 scripts/make_og.py (H-114)`);
     const card = Object.values(cards).find(k => k.href === slug + '/');
     const title = plain((h.match(/<meta property="og:title" content="([^"]+)"/) || [])[1] || '').split(' — ')[0];
     const inp = e.input || {};
@@ -559,11 +649,21 @@ async function mapTaps() {
   }
   questSync().forEach(m => err('сценарий ↔ витрина', '', m));
   ogSync().forEach(m => err('OG-картинки', '', m));
+  llmsSync(spoilers).forEach(m => err('llms.txt ↔ дела', '', m));
+  // предупреждения — не красное: печатаются в конце, выкладку не блокируют
+  const warns = seoLengths().map(w => 'длина сниппета: ' + w);
+  // H-111: временные объекты маршрута — за 30 дней предупреждение, после срока ошибка; сначала самопроверка на фикстуре
+  const TMP = require('./temporary_check.js');
+  TMP.selftest().forEach(m => err('временные объекты (самопроверка)', '', m));
+  const tj = TMP.judge(TMP.allQuests(), args.today, true);
+  tj.errors.forEach(m => err('временные объекты', '', m));
+  tj.warns.forEach(w => warns.push('временный объект: ' + w));
+  const warnReport = () => { if (warns.length) { console.log(`\n ! предупреждения (не красное): ${warns.length}`); warns.forEach(w => console.log('   ! ' + w)); } };
   const tone = toneCheck(); // T-65: штампы машинного текста — ошибка (красная проверка с 27.11)
   tone.forEach(t => err('тон текста', '', t));
   const toneReport = () => { if (tone.length) { console.log(`\n ✗ штампы машинного текста (ОШИБКА, правит Автор; ложные — в scripts/tone_stamps.json → site_exceptions): ${tone.length}`); tone.forEach(t => console.log('   ✗ ' + t)); } };
   if ('sync' in args) { // --sync: только сверка цифр со сценарием, без браузера
-    stop(); toneReport(); errors.forEach(e => console.log(' ✗ ' + e)); console.log(errors.length ? `site_check --sync: ${errors.length} ошибок` : `site_check --sync: OK${tone.length ? ` (штампов тона: ${tone.length})` : ''}`); process.exit(errors.length ? 1 : 0);
+    stop(); toneReport(); warnReport(); errors.forEach(e => console.log(' ✗ ' + e)); console.log(errors.length ? `site_check --sync: ${errors.length} ошибок` : `site_check --sync: OK${tone.length ? ` (штампов тона: ${tone.length})` : ''}`); process.exit(errors.length ? 1 : 0);
   }
 
   let pages = listPages();
@@ -729,6 +829,7 @@ async function mapTaps() {
 
   stop();
   toneReport();
+  warnReport();
   const uniq = [...new Set(errors)];
   if (uniq.length) {
     console.log(`site_check: ${uniq.length} ошибок на ${pages.length} страницах\n`);

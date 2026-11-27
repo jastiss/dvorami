@@ -14,6 +14,9 @@ OG рисуется у дела, чей og_image лежит в /assets/og/ и э
 Учёт — platform/site/og-manifest.json: что нарисовано (текст), хеш входа и хеш файла. site_check сверяет его с карточкой
 дела и с файлом: правка card.meta без перерисовки или подмена картинки руками — красная проверка.
 Почему не руками: OG ЗИЛАРТа неделю показывал «12 точек · 2,8 км · от 7 лет», а витрина уже говорила другое.
+Читаемость (H-114): превью в мессенджере на телефоне — около 600 px шириной, вдвое меньше шаблона. Самый мелкий текст OG
+на 600 px — не меньше 11 px (в шаблоне 1200 — 22 px); мельче — ошибка с подсказкой сократить строку, а не уменьшать шрифт.
+Замер пишется в манифест (min_px_600); --check и site_check краснеют, если его нет или он меньше порога.
 """
 import base64
 import hashlib
@@ -33,6 +36,7 @@ MANIFEST = os.path.join(REPO, 'platform', 'site', 'og-manifest.json')
 TEMPLATE_VERSION = 3  # сменили шаблон — поднять, и все OG перерисуются
 MAX_BYTES = 300 * 1024
 W, H = 1200, 630
+PREVIEW_W, MIN_PX = 600, 11  # H-114: текст превью шириной 600 px — не мельче 11 px
 
 
 def plain(s):
@@ -286,9 +290,27 @@ def stale(cases=None, manifest=None):
         m = man.get(f)
         path = os.path.join(OG_DIR, f)
         if (not m or m.get('input_sha') != input_hash(og_input(c)) or not os.path.exists(path)
-                or sha(open(path, 'rb').read()) != m.get('file_sha')):
+                or sha(open(path, 'rb').read()) != m.get('file_sha') or not readable(m)):
             out.append(c)
     return out
+
+
+def readable(m):
+    """H-114: в манифесте есть замер мелкого текста на превью 600 px и он не меньше порога."""
+    v = (m or {}).get('min_px_600')
+    return isinstance(v, (int, float)) and v >= MIN_PX
+
+
+# самый мелкий текст страницы OG: [размер в px шаблона, текст, класс] — по элементам со своим текстом
+SMALLEST_JS = """() => { let best = null;
+  for (const el of document.querySelectorAll('body *')) {
+    if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
+    const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    if (cs.display === 'none' || cs.visibility === 'hidden' || !r.width) continue;
+    const px = parseFloat(cs.fontSize);
+    if (!best || px < best[0]) best = [px, el.textContent.trim().replace(/\\s+/g, ' ').slice(0, 60), String(el.className || el.tagName)];
+  }
+  return best; }"""
 
 
 def render(cases):
@@ -314,6 +336,11 @@ def render(cases):
                 raise SystemExit(f'make_og: дело №{c["no"]} — текст не помещается в 1200×630 (сократить title/ask/meta)')
             if missing:  # любой шрифт темы не встал — снимок с запасным шрифтом не выпускаем
                 raise SystemExit(f'make_og: не загрузились шрифты {missing}')
+            px, txt, cls = page.evaluate(SMALLEST_JS)
+            px600 = round(px * PREVIEW_W / W, 1)
+            if px600 < MIN_PX:  # H-114: мелкий текст на превью в мессенджере не читается
+                raise SystemExit(f'make_og: дело №{c["no"]} — «{txt}» (.{cls}) на превью {PREVIEW_W} px будет {px600} px '
+                                 f'(нужно ≥ {MIN_PX}): сократите строку в card (title/ask/meta) или where_po, а не уменьшайте шрифт')
             path = os.path.join(OG_DIR, f)
             if f.endswith('.jpg'):
                 page.screenshot(path=path, type='jpeg', quality=88)
@@ -331,8 +358,9 @@ def render(cases):
             size = os.path.getsize(path)
             if size > MAX_BYTES:
                 raise SystemExit(f'make_og: {f} — {size // 1024} КБ > 300 КБ')
-            man[f] = {'slug': c['slug'], 'input': inp, 'input_sha': input_hash(inp), 'file_sha': sha(open(path, 'rb').read())}
-            print(f'→ site/assets/og/{f} ({size // 1024} КБ, заголовок в {used["lines"]} стр.): {inp["meta"]}')
+            man[f] = {'slug': c['slug'], 'input': inp, 'input_sha': input_hash(inp), 'file_sha': sha(open(path, 'rb').read()),
+                      'min_px_600': px600}
+            print(f'→ site/assets/og/{f} ({size // 1024} КБ, заголовок в {used["lines"]} стр., мелкий текст на 600 px — {px600} px): {inp["meta"]}')
         browser.close()
     keep = {og_file(c) for c in load_cases()}  # переименовали OG (zilart.png → zilart-v2.png) — старая запись уходит
     man = {f: v for f, v in man.items() if f in keep}
@@ -345,8 +373,10 @@ def main():
     cases = load_cases()
     if '--check' in sys.argv:
         s = stale(cases)
+        man = load_manifest()
         for c in s:
-            print(f'make_og: OG дела №{c["no"]} ({og_file(c)}) устарел — python3 scripts/make_og.py')
+            why = 'без замера мелкого текста на 600 px (H-114)' if not readable(man.get(og_file(c))) else 'устарел'
+            print(f'make_og: OG дела №{c["no"]} ({og_file(c)}) {why} — python3 scripts/make_og.py')
         sys.exit(1 if s else 0)
     todo = [c for c in cases if og_file(c)] if '--all' in sys.argv else stale(cases)
     if not todo:

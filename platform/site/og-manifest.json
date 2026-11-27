@@ -13,7 +13,8 @@
    "art": "0a1f9a6009849d12"
   },
   "input_sha": "7253e36952034c712abaa576ae5521fff36a49ed909c85e42c9dec68801b37df",
-  "file_sha": "a00a29672bb0dd183c1625e4cfbfc5ff7d809f14bd34514a47e7197be5b3450e"
+  "file_sha": "a00a29672bb0dd183c1625e4cfbfc5ff7d809f14bd34514a47e7197be5b3450e",
+  "min_px_600": 13.0
  },
  "chistye.png": {
   "slug": "chistye-prudy-bashnya",
@@ -29,7 +30,8 @@
    "art": "71426484b64a39a0"
   },
   "input_sha": "fb00369a404f11bc71668e05c03815e1dc0ce05864b25713fc14351d4fcdd799",
-  "file_sha": "f804dcc92ce032830c0347c1608a62efc933c9f048e5a10f1e7c4521a906138a"
+  "file_sha": "f804dcc92ce032830c0347c1608a62efc933c9f048e5a10f1e7c4521a906138a",
+  "min_px_600": 12.5
  },
  "kitay.png": {
   "slug": "kitay-gorod-list",
@@ -45,7 +47,8 @@
    "art": "84ac81737aab6271"
   },
   "input_sha": "39dedf95e9cc34f3ca415613b544b681c1e2e4297b2ad23c7f75b1f9897f17af",
-  "file_sha": "6c85e55b6469907a74979fd7ada7e181e28fe9fedb4eae9e7590ebdca18f2271"
+  "file_sha": "6c85e55b6469907a74979fd7ada7e181e28fe9fedb4eae9e7590ebdca18f2271",
+  "min_px_600": 13.0
  },
  "kolomenskoe.png": {
   "slug": "kolomenskoe-tuman",
@@ -60,7 +63,8 @@
    "template": 3
   },
   "input_sha": "d98efcaa9dfe0ed7e24e3ba91e4f64ea629d66ee41464ebabd92fd25294acc46",
-  "file_sha": "130e9998c738373fd2449c4298679c325cbaa4b5d2f0c5e650df1def9d27d459"
+  "file_sha": "130e9998c738373fd2449c4298679c325cbaa4b5d2f0c5e650df1def9d27d459",
+  "min_px_600": 14.0
  },
  "krasnaya.png": {
   "slug": "krasnaya-ploshchad-imena",
@@ -76,7 +80,8 @@
    "art": "f1293f207f3efccc"
   },
   "input_sha": "ab267ebe48cbcb91946db83b2ecf64d2c2adad1e766157fc05ac7f6753d3ca4e",
-  "file_sha": "27c7b45edfa27b777059fa6d474137fbabee1434f47bbb1822c35e31de11c739"
+  "file_sha": "27c7b45edfa27b777059fa6d474137fbabee1434f47bbb1822c35e31de11c739",
+  "min_px_600": 12.5
  },
  "vdnh.png": {
   "slug": "vdnh-sestra",
@@ -92,7 +97,8 @@
    "art": "467aa86054126f59"
   },
   "input_sha": "eae7f478ffc7d7be8c25547be580df5e4bea17864eaeff22fa8c246a74c28043",
-  "file_sha": "a9aed0bb299acbf946c2ffa84d9db01b8d941a79f90cd50ed95156d5e028997d"
+  "file_sha": "a9aed0bb299acbf946c2ffa84d9db01b8d941a79f90cd50ed95156d5e028997d",
+  "min_px_600": 12.5
  },
  "zilart-v2.png": {
   "slug": "zilart-sinyaya-ptica",
@@ -107,6 +113,7 @@
    "template": 3
   },
   "input_sha": "7a669063e139a8885fdadb14d0044e621b058ad95ed583b63af2df0a5161b0af",
-  "file_sha": "6a243c50c88fb4629ba3e4b9c3f5da768cc4abfbbed58dc3c4204956d2dc7b17"
+  "file_sha": "6a243c50c88fb4629ba3e4b9c3f5da768cc4abfbbed58dc3c4204956d2dc7b17",
+  "min_px_600": 13.0
  }
 }

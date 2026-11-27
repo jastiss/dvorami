@@ -802,12 +802,16 @@
     if (l.arrow) return arrowOff(l) ? '' : arrowHtml(l.arrow, l.text);
     if (l.doc === 'letter') return letterHtml(l.state || LETTER_CTX || S.letter, { reveal: l.reveal });
     if (l.doc === 'card') return CARDS[l.id] ? cardHtml(l.id, { full: true }) : '';
-    if (l.img !== undefined || l.layers) return figureHtml(l);
+    // картинка с текстом или звуком (T-134): под картинкой — реплика (data-say, её отмечает плеер) или звуковая улика,
+    // а не тихо выброшенный текст: плеер экрана считает такую реплику озвученной (voiceHtml)
+    if (l.img !== undefined || l.layers) return (l.text ? figureHtml(l).replace('<figure class="pl-fig"', '<figure class="pl-fig" data-text="1"') : figureHtml(l)) +
+      (l.text || l.audio ? lineHtml0(Object.assign({}, l, { img: undefined, layers: undefined }), cont) : '');
     // H-62: звуковая улика без реплики — под плеером её текст (transcript, иначе caption): на шумной улице и без звука смысл не теряется
-    // (запись ещё не готова — audio: true — текст всё равно на экране, а плашка «Аудио скоро» — по правилам T-93)
+    // (запись ещё не готова — audio: true — текст всё равно на экране, а плашка «Аудио скоро» — по правилам T-93).
+    // Плеер улики помечен data-clue: без текста под ним player_check в ?field=1 красный (T-134), а не засчитывает реплику выше
     if (l.audio && !l.text) {
       var sub = l.transcript || l.caption || '', src = typeof l.audio === 'string' ? mediaSrc(l.audio) : '';
-      return (src ? voiceStrip([src], true, sub ? 1 : 0) : sub ? voiceStrip([], false, 1) : '') + (sub ? '<p class="pl-sub" data-say="clue">' + inline(sub) + '</p>' : '');
+      return voiceStrip(src ? [src] : [], !!src, sub ? 1 : 0, false, true) + (sub ? '<p class="pl-sub" data-say="clue">' + inline(sub) + '</p>' : '');
     }
     // реплика без говорящего — абзац рассказчика, без имени (не «zilya» по умолчанию)
     if (!l.who) return '<div class="pl-prose" data-say>' + proseFold(l.text) + '</div>' + (typeof l.audio === 'string' && mediaSrc(l.audio) ? voiceStrip([mediaSrc(l.audio)], true) : '');
@@ -855,10 +859,11 @@
   var WAVE = [5, 9, 14, 8, 12, 18, 10, 6, 13, 17, 9, 5, 11, 15, 8, 12, 6, 10, 16, 9, 7, 13, 5, 9];
   // H-62: n — сколько реплик экрана (data-say) озвучивает плеер; whole — одна запись на все n. Пока звучит реплика, она отмечена
   // на экране (is-speaking), а свёрнутый хвост («Подробнее») раскрывается, когда голос до него дошёл: звук без текста не играет
-  function voiceStrip(srcs, force, n, whole) {
+  // clue — плеер звуковой улики ({audio} без text): её текст — следующий за плеером .pl-sub
+  function voiceStrip(srcs, force, n, whole, clue) {
     if ((MODE !== 'listen' || !voiceOn()) && !force) return '';
     var ready = srcs.length > 0;
-    return '<div class="pl-voice' + (ready ? '' : ' is-soon') + '" data-arrow-at="sound"' + (ready ? ' data-srcs="' + esc(srcs.join('|')) + '"' : '') +
+    return '<div class="pl-voice' + (ready ? '' : ' is-soon') + '" data-arrow-at="sound"' + (clue ? ' data-clue="1"' : '') + (ready ? ' data-srcs="' + esc(srcs.join('|')) + '"' : '') +
       (n ? ' data-n="' + n + '"' + (whole ? ' data-whole="1"' : '') : '') + '>' +
       '<button type="button" class="pl-voice-btn" data-act="voice" aria-label="' + (ready ? 'Слушать' : 'Слушать: аудио скоро') + '"' + (ready ? ' aria-pressed="false"' : ' aria-disabled="true"') + '>' + ico('play') + ico('pause') + '</button>' +
       '<span class="pl-voice-wave" aria-hidden="true">' + WAVE.map(function (h) { return '<i style="height:' + h + 'px"></i>'; }).join('') + '</span>' +
@@ -866,7 +871,8 @@
   }
   // lines — реплики экрана; whole — одна запись на весь блок (audio у точки, шага, дороги)
   function voiceHtml(lines, whole) {
-    var spoken = asLines(lines).filter(function (l) { return l && typeof l === 'object' && !l.arrow && l.text != null; });
+    // звуковая улика ({audio, text: ""}) — не реплика: у неё свой плеер и текст под ним
+    var spoken = asLines(lines).filter(function (l) { return l && typeof l === 'object' && !l.arrow && l.text != null && !(l.audio && !l.text); });
     if (!spoken.length) return '';
     if (typeof whole === 'string' && mediaSrc(whole)) return voiceStrip([mediaSrc(whole)], false, spoken.length, true);
     var list = spoken.map(function (l) { return typeof l.audio === 'string' ? mediaSrc(l.audio) : ''; });
@@ -1508,7 +1514,7 @@
     if (l.arrow) return arrowOff(l) ? 0 : 64 + textPx(l.text, w - 32);
     if (l.doc === 'letter') return letterPx(l);
     if (l.doc === 'card') return 260;
-    if (l.img !== undefined || l.layers) return figPx(l, w);
+    if (l.img !== undefined || l.layers) return figPx(l, w) + (l.text || l.audio ? 8 + linePx(Object.assign({}, l, { img: undefined, layers: undefined, caption: undefined }), cont) : 0);
     if (l.audio && !l.text) return 60 + (l.transcript || l.caption ? 10 + textPx(l.transcript || l.caption, w) : 0);
     if (!l.who) return textPx(l.text, w);
     var sp = speaker(l.who), paper = sp.style === 'note' || sp.style === 'letter' || sp.style === 'card';

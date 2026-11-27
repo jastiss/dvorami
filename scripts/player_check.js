@@ -49,7 +49,10 @@
  *   - T-93: у дела без записей нет плашки «Аудио скоро» и выбора «Слушаю/Читаю», в ?field=1 — есть; цель flip (how: button,
  *     tap, swipe) — одна на точку и способ.
  *   - H-62 (субтитры): у звуковой улики без реплики есть transcript; в ?field=1 на каждом экране у плеера реплики все его реплики
- *     с текстом на экране, голос отмечает звучащую и раскрывает её свёрнутый хвост, когда до него дошёл.
+ *     с текстом на экране, голос отмечает звучащую и раскрывает её свёрнутый хвост, когда до него дошёл; T-134: плеер звуковой
+ *     улики (data-clue) засчитывается только её текстом сразу под ним, реплика с картинкой и текстом — текстом под картинкой;
+ *   - H-111: временные объекты ("temporary", scripts/temporary_check.js) — за 30 дней до срока предупреждение, после — ошибка
+ *     ([--today=ГГГГ-ММ-ДД] — проверить на другую дату).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
 'use strict';
@@ -127,13 +130,21 @@ let nearSeen = false;
     if (x.type === 'choice') { const ids = (x.options || []).map(o => o.id); for (const a of [].concat(x.answer || x.answers || [])) if (!ids.includes(a)) err('данные', `${where}: верный вариант «${a}» не среди вариантов`); }
     if (x.type === 'ask' && !(x.answers || []).length && !(x.all || []).length) err('данные', `${where}: у загадки нет answers и all`);
     // H-62: звук без реплики (звуковая улика) — текст под плеером из transcript (или caption); без него на шумной улице смысла нет
-    if (x.audio && x.text == null && !x.transcript && !x.caption && !x.n && !x.steps && !x.type && !x.scene && !x.ask)
+    if (x.audio && !x.text && !x.transcript && !x.caption && !x.n && !x.steps && !x.type && !x.scene && !x.ask)
       err('данные', `${where}: звук без текста на экране — добавьте "transcript" (что слышно), H-62`);
     for (const [k, v] of Object.entries(x)) if (k !== 'if' && typeof v === 'object') walk(v, x.id && x.n ? `точка ${x.n}` : where);
   };
   walk(q, 'дело');
   for (const [id, where] of refs) if (!defs.has(id)) err('данные', `${where}: карточка «${id}» нигде не определена`);
 })(RAW);
+
+// H-111: временные объекты маршрута ("temporary" в деле, quests/<id>/temporary.json) — за 30 дней предупреждение, после срока ошибка
+(function temporary() {
+  const T = require('./temporary_check.js');
+  const r = T.judge(args.data ? T.forQuest(null, QUEST) : T.forQuest(QID), args.today, false);
+  r.errors.forEach(e => err('временные объекты', e));
+  r.warns.forEach(w => warn('временные объекты', w));
+})();
 
 // Поля дела (шаги и вопросы на ходу с заданием) — с местом для сообщений; обе ветки А/Б (RAW) или только текущая (Q)
 const fieldsOf = q => {
@@ -1129,12 +1140,20 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
             const out = [], fr = document.getElementById('frame');
             if (!fr) return { out, s: 0 };
             const boxes = [...fr.querySelectorAll('.pl-voice[data-n]')];
-            for (const b of boxes) {
-              const nx = b.nextElementSibling;
-              if (nx && nx.matches('.pl-sub') && !nx.textContent.trim()) out.push('звуковая улика без текста под плеером');
+            // T-134: плеер звуковой улики (data-clue) засчитывается только своим текстом сразу под ним (.pl-sub из transcript),
+            // а не любой репликой рядом: раньше улика без transcript под репликой героя проходила проверку
+            for (const v of fr.querySelectorAll('.pl-voice[data-clue]')) {
+              const nx = v.nextElementSibling;
+              if (!(nx && nx.matches('.pl-sub') && nx.textContent.trim())) out.push('звуковая улика без transcript: под плеером нет её текста (H-62)');
             }
-            for (const v of fr.querySelectorAll('.pl-voice:not([data-n])')) if (!(v.nextElementSibling && v.nextElementSibling.matches('.pl-sub')) && !(v.previousElementSibling && v.previousElementSibling.matches('[data-say]')))
-              out.push('плеер без текста на экране (звуковая улика без transcript?)');
+            // плеер реплики рассказчика со своим audio — сразу после её текста (data-say); прочие плееры без data-n — без текста
+            for (const v of fr.querySelectorAll('.pl-voice:not([data-n]):not([data-clue])')) {
+              const pv = v.previousElementSibling;
+              if (!(pv && pv.matches('[data-say]') && pv.textContent.trim())) out.push('плеер без текста на экране');
+            }
+            // реплика с картинкой и текстом (T-134): текст — под картинкой и отмечается плеером (data-say)
+            for (const f of fr.querySelectorAll('figure.pl-fig')) if (f.dataset.text === '1' && !(f.nextElementSibling && f.nextElementSibling.matches('[data-say]')))
+              out.push('реплика с картинкой: текста под картинкой нет (data-say)');
             const first = boxes[0];
             if (!first) return { out, s: 0 };
             const n0 = +first.dataset.n, whole = first.dataset.whole === '1';
