@@ -13,6 +13,7 @@ on:
       - "quests/**/temporary.json"   # H-117: сроки временных объектов попадают в зашифрованное дело (codes.py seal)
       - "scripts/codes.py"
       - "scripts/player_check.js"
+      - "scripts/sw_version.js"
       - "scripts/answer_check.js"
       - "scripts/answer_match.py"
       - "scripts/site_check.js"
@@ -108,6 +109,10 @@ jobs:
         run: python scripts/codes.py verify site
       - name: Проверка — открытого текста дел в сайте нет
         run: python scripts/codes.py leakcheck site
+      # Офлайн плеера: версия кеша service worker — хеш файлов плеера (плейбук Инженера: каждый выпуск меняет версию кеша).
+      # Новый хеш → новый sw.js → у игрока старые кеши dvorami-play-* удаляются, новый заполняется (player_check, блок «офлайн»)
+      - name: Версия офлайн-кеша плеера (sw.js)
+        run: node scripts/sw_version.js --write
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

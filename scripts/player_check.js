@@ -54,7 +54,8 @@
  *   - H-111: временные объекты ("temporary", scripts/temporary_check.js) — за 30 дней до срока предупреждение, после — ошибка
  *     ([--today=ГГГГ-ММ-ДД] — проверить на другую дату).
  *   - 27.11, офлайн: первый заход с service worker (sw.js) — страница, player.js и дело попадают в кеш (warmCache), без связи
- *     перезагрузка открывает то же место;
+ *     перезагрузка открывает то же место; кеш назван по версии выпуска (dvorami-play-<хеш>, scripts/sw_version.js), новый выпуск
+ *     sw.js удаляет старые кеши (и прежний dvorami-play-v1) и заполняет новый (install + controllerchange → warmCache);
  *   - 27.11, чтение с экрана: неверный ответ (поле, вариант, карточки) объявлен в постоянной области #sr-say, поле помечено
  *     aria-invalid и ссылается на сообщение, после перерисовки фокус остаётся на нажатом варианте или «Проверить»; живая
  *     область «где» в шапке не перезаписывается на «Дальше» внутри точки.
@@ -242,10 +243,19 @@ const SRC = (function srcShare(q) {
   return line;
 })(Q);
 
+// Версия кеша офлайна (scripts/sw_version.js): сервер отдаёт sw.js с ней, как его выкладывает pages.yml; офлайн-прогон
+// меняет её на «следующий выпуск» и проверяет, что старые кеши удалены, а новый заполнен
+const SWV = require('./sw_version.js');
+const SW_PATH = '/' + path.posix.join(PAGE, '../sw.js');
+let SW_VER = SWV.version();
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p.endsWith('/')) p += 'index.html';
   let f = path.join(REPO, p);
+  if (p === SW_PATH && fs.existsSync(f)) {
+    res.writeHead(200, { 'Content-Type': TYPES['.js'], 'Cache-Control': 'no-cache' });
+    return res.end(SWV.stamp(fs.readFileSync(f, 'utf8'), SW_VER));
+  }
   // офлайн-прогон (sw.js): service worker берёт дело с сервера мимо page.route — сервер отдаёт то же, что route у остальных прогонов
   const own = p === `/${PAGE}quest.locked.json` || p === `/${PAGE}quest.json`;
   if (own) f = p.endsWith('locked.json') ? (SEALED ? BUNDLE.locked : '') : (SEALED ? '' : QUEST);
@@ -1265,12 +1275,40 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       if (!(await page.waitForSelector('#tabs:not([hidden])', { timeout: 15000 }).then(() => true, () => false))) err(tag, 'офлайн: плеер с service worker не открылся');
       else {
         const ctl = await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 10000 }).then(() => true, () => false);
-        const warm = ctl && await page.waitForFunction(pg => caches.keys().then(ns => Promise.all(ns.map(n => caches.open(n).then(c => c.keys())))).then(all => {
+        // проверки кеша асинхронные: waitForFunction не ждёт Promise (любой Promise для него «истина» — до 27.11 проверка
+        // «warm» проходила всегда), поэтому — опрос через evaluate, который результат дожидается
+        const until = async (fn, arg, ms) => {
+          for (const t0 = Date.now(); Date.now() - t0 < ms; await page.waitForTimeout(300)) if (await page.evaluate(fn, arg).catch(() => false)) return true;
+          return false;
+        };
+        const warm = ctl && await until(pg => caches.keys().then(ns => Promise.all(ns.map(n => caches.open(n).then(c => c.keys())))).then(all => {
           const u = [].concat(...all).map(r => r.url.split('?')[0]);
           return u.some(x => x.endsWith(pg)) && u.some(x => /\/quest\.(locked\.)?json$/.test(x)) && u.some(x => /\/player\.js$/.test(x));
-        }), `/${PAGE}`, { timeout: 10000, polling: 300 }).then(() => true, () => false);
+        }), `/${PAGE}`, 10000);
         if (!ctl) err(tag, 'офлайн: sw.js не взял страницу плеера под управление');
         else if (!warm) err(tag, 'офлайн: после первого захода в кеше нет страницы плеера, player.js или дела (warmCache → sw.js)');
+        // версия кеша — от выпуска (плейбук Инженера: «каждый релиз меняет версию кеша»): имя кеша = dvorami-play-<хеш файлов плеера>
+        const ours = () => page.evaluate(() => caches.keys().then(ns => ns.filter(n => n.indexOf('dvorami-play-') === 0)));
+        const v1 = SW_VER;
+        if (ctl) {
+          const n1 = await ours();
+          if (n1.join() !== 'dvorami-play-' + v1) err(tag, `офлайн: кеш плеера не по версии выпуска — ${JSON.stringify(n1)}, ждали dvorami-play-${v1} (sw.js, BUILD)`);
+          // следующий выпуск: новый sw.js с другой версией; старые кеши (и прежний dvorami-play-v1) удаляются при activate,
+          // новый заполнен каркасом (install) и тем, что плеер дошлёт по controllerchange (warmCache)
+          await page.evaluate(() => caches.open('dvorami-play-v1').then(c => c.put('/old-release-marker', new Response('old'))));
+          SW_VER = v1.slice(0, 6) + 'next' + Date.now().toString(36).slice(-4);
+          await page.evaluate(() => navigator.serviceWorker.getRegistration().then(r => r && r.update())).catch(() => null);
+          const up = await until(([v, pg]) => caches.keys().then(ns => {
+            const mine = ns.filter(n => n.indexOf('dvorami-play-') === 0);
+            if (mine.join() !== 'dvorami-play-' + v) return false;
+            return caches.open('dvorami-play-' + v).then(c => c.keys()).then(ks => {
+              const u = ks.map(r => r.url.split('?')[0]);
+              return u.some(x => x.endsWith(pg)) && u.some(x => /\/quest\.(locked\.)?json$/.test(x)) && u.some(x => /\/player\.js$/.test(x)) && u.some(x => /\/player\.css$/.test(x));
+            });
+          }), [SW_VER, `/${PAGE}`], 15000);
+          if (!up) err(tag, `офлайн: новый выпуск sw.js не сменил кеш — ${JSON.stringify(await ours())}, ждали только dvorami-play-${SW_VER} со страницей, player.js, player.css и делом (install/activate в sw.js, controllerchange → warmCache)`);
+          else notes.push(`офлайн: кеш по версии выпуска (dvorami-play-${v1}); новый выпуск — старые кеши удалены, новый заполнен`);
+        }
         const before = await where();
         await ctx.setOffline(true);
         const back = await page.reload({ waitUntil: 'load' }).then(() => page.waitForSelector('#tabs:not([hidden])', { timeout: 15000 })).then(() => true, () => false);

@@ -3210,6 +3210,8 @@
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
     navigator.serviceWorker.register('../sw.js').catch(function () { /* без офлайна */ });
+    // Новый выпуск (sw.js с новой версией кеша) взял страницу: старый кеш он уже удалил — досылаем ему загруженное (warmCache)
+    try { navigator.serviceWorker.addEventListener('controllerchange', function () { warmCache(); }); } catch (e) { /* без офлайна */ }
   }
   boot();
 })();
