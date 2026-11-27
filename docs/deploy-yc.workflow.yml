@@ -66,6 +66,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Сверка витрины без браузера (как в pages.yml) — красная блокирует выкладку
+        # в ветке production (GITHUB_REF_NAME) строже: зачёркнутая цена price_old — только с решением владельца (T-161, A-86)
+        run: node scripts/site_check.js --sync
       - name: Кэш браузера Playwright (экономит ~1 мин на каждом запуске)
         if: steps.diff.outputs.play == 'yes'
         uses: actions/cache@v4

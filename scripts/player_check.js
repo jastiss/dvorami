@@ -260,6 +260,7 @@ const SRC = (function srcShare(q) {
 const SWV = require('./sw_version.js');
 const SW_PATH = '/' + path.posix.join(PAGE, '../sw.js');
 let SW_VER = SWV.version();
+SWV.selftest().forEach(m => err('офлайн, версия кеша', m)); // T-160: медиа дела меняют версию, шифрование дела — нет
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p.endsWith('/')) p += 'index.html';

@@ -487,6 +487,47 @@ async function ctaAlwaysThere(page) {
 // С JS — настоящий путь клавиатуры: Tab с последнего элемента перед пробой попадает на кнопку света (ссылка в скрытом
 // ответе — tabindex=-1), Enter проявляет ответ, фокус остаётся в пробе (на следующем шаге, если он есть), ссылка ответа снова в Tab.
 // Блок пробы на 390 — не выше 700 px (Продюсер 27.11: проба не должна отодвигать каталог больше чем на экран).
+// A-81: «проявил ответ» — ровно одна цель probe_reveal с { brand, how }; «Выбрать дело» из пробы — probe_pick с { brand }.
+// Текст ответа, вопроса и ссылка ответа в параметры не попадают. Обратная проверка: убрать reveal(...) из lamp.js — красное.
+function probeGoals(goals, hasNext, picked) {
+  const out = [], rev = goals.filter(g => /probe_reveal/.test(g)), pick = goals.filter(g => /probe_pick/.test(g));
+  if (!picked) {
+    if (rev.length !== 1) out.push(`«Проба»: цель probe_reveal после света ${rev.length ? rev.length + ' раза (нужна одна)' : 'не отправлена'} (A-81)`);
+    else if (!/brand/.test(rev[0]) || !/how/.test(rev[0])) out.push(`«Проба»: у probe_reveal нет параметров brand и how: ${rev[0]}`);
+    if (pick.length) out.push('«Проба»: probe_pick отправлена без нажатия «Выбрать дело»');
+  } else if (pick.length !== 1) out.push(`«Проба»: «Выбрать дело» из пробы ${pick.length ? 'отправило probe_pick ' + pick.length + ' раза' : 'не отправило цель probe_pick'} (A-81)`);
+  // page и href (адрес кнопки) analytics.js добавляет к любой цели data-track сам; текст пробы — нет
+  for (const g of goals) if (/[А-Яа-яЁё]{3,}|https?:\/\/(?!127\.0\.0\.1|localhost)/.test(g.replace(/^\[analytics\] \S+/, ''))) out.push(`«Проба»: в параметрах цели текст пробы или ссылка ответа — только обезличенные метки: ${g.slice(0, 120)}`);
+  return out;
+}
+
+/* T-161 (A-86): зачёркнутая «прежняя» цена (price_old в platform/site/cases/c*.py, build_cases.py → price_old_html).
+ * Цена, по которой не продавали, названная «прежней», — недостоверная реклама (38-ФЗ, ст. 5). На стенде — можно (пробуем вид);
+ * в сборке боевого сайта (ветка production: GITHUB_REF_NAME=production, или --target=prod) — только с полем
+ * approved: 'A-N', и A-N стоит в «Решено» APPROVALS.md; иначе красное. На любой сборке: approved не по форме или решения
+ * в «Решено» нет — красное. Обратная проверка: node scripts/site_check.js --sync --target=prod (дело №1 без approved — красное);
+ * --cases=папка — копия данных дел. */
+function priceOldCheck() {
+  const prod = args.target === 'prod' || process.env.GITHUB_REF_NAME === 'production';
+  const dir = path.resolve(args.cases || path.join(__dirname, '..', 'platform', 'site', 'cases'));
+  const py = "import json,os,re,sys\nsys.dont_write_bytecode=True\nsys.path.insert(0,sys.argv[1])\nimport build_cases as b\n" +
+    "d=sys.argv[2]\nprint(json.dumps([{'no':c.get('no'),'po':c.get('price_old')} for c in (b.load(os.path.join(d,f)) for f in sorted(os.listdir(d)) if re.match(r'c\\d+_.*\\.py$',f))]))";
+  let rows;
+  try { rows = JSON.parse(require('child_process').execFileSync('python3', ['-c', py, __dirname, dir], { encoding: 'utf8' }).trim().split('\n').pop()); }
+  catch (e) { return [`данные дел не читаются (${String(e.message).split('\n')[0].slice(0, 120)}) — price_old не проверен`]; }
+  const ap = fs.readFileSync(path.join(__dirname, '..', 'APPROVALS.md'), 'utf8'), i = ap.indexOf('## Решено');
+  const solved = i < 0 ? '' : ap.slice(i);
+  const out = [];
+  for (const r of rows) {
+    if (!r.po) continue;
+    const a = r.po.approved, where = `дело №${r.no}: price_old ${r.po.rub} ₽`;
+    if (a !== undefined && a !== null && !/^A-\d+$/.test(String(a))) { out.push(`${where}: approved «${a}» — нужен номер решения вида «A-86»`); continue; }
+    if (a && !new RegExp('\\*\\*' + a + '[.*\\s(]').test(solved)) { out.push(`${where}: решения ${a} нет в «Решено» APPROVALS.md — зачёркнутую цену не включаем`); continue; }
+    if (!a && prod) out.push(`${where} без решения владельца (поле approved: 'A-N') — в боевой сайт нельзя: «прежняя» цена, по которой не продавали, — недостоверная реклама (38-ФЗ, ст. 5; A-86). Уберите price_old или дождитесь решения`);
+  }
+  return out;
+}
+
 async function lampCheck(browser, url) {
   const out = [];
   const state = p => p.evaluate(() => {
@@ -504,7 +545,14 @@ async function lampCheck(browser, url) {
     const ctx = await browser.newContext(Object.assign({ viewport: VIEWPORTS[0], deviceScaleFactor: 1 }, opt));
     const p = await ctx.newPage();
     await p.route('**/*', r => r.request().url().startsWith(BASE) ? r.continue() : r.abort());
-    await p.goto(url, { waitUntil: 'load' }); await p.waitForTimeout(300);
+    // A-81: цели пробы видны в консоли с ?debug=analytics (на localhost счётчик не грузится; согласие — consent_check.js)
+    const goals = [];
+    p.on('console', async m => {
+      if (!/^\[analytics\] probe_/.test(m.text())) return;
+      const a = await Promise.all(m.args().map(h => h.jsonValue().catch(() => '?')));
+      goals.push('[analytics] ' + a[1] + ' ' + JSON.stringify(a[2] || {}));
+    });
+    await p.goto(name === 'с JS' ? url + (url.includes('?') ? '&' : '?') + 'debug=analytics' : url, { waitUntil: 'load' }); await p.waitForTimeout(300);
     const s = await state(p);
     if (!s.ink) { out.push('«Проба»: нет строки ответа (.lamp-a .ink / .sheet-a .ink)'); await ctx.close(); break; }
     if (s.height > 700) out.push(`«Проба» ${name}: блок высотой ${s.height} px на 390 (нужно ≤ 700) — сократите текст, а не шрифт`);
@@ -534,6 +582,8 @@ async function lampCheck(browser, url) {
         if (!a.focusIn) out.push('«Проба»: после кнопки света фокус потерялся (ушёл со страницы пробы)');
         if (a.hasNext && !(a.next && a.focusNext)) out.push('«Проба»: после кнопки света следующий шаг не виден или фокус не на нём');
         if (a.linkTab.some(t => t < 0)) out.push('«Проба»: после света ссылка в ответе так и не вернулась в Tab');
+        out.push(...probeGoals(goals, a.hasNext));
+        if (a.hasNext && a.next) { await p.keyboard.press('Enter'); await p.waitForTimeout(200); out.push(...probeGoals(goals, a.hasNext, true)); }
       }
     }
     await ctx.close();
@@ -941,6 +991,7 @@ async function mapTaps() {
   ldSync().forEach(m => err('JSON-LD', '', m));
   accountSync().forEach(m => err('«Мои дела» ↔ дела', '', m));
   lineSelftest().forEach(m => err('линии (самопроверка)', '', m));
+  priceOldCheck().forEach(m => err('зачёркнутая цена', '', m));
   // предупреждения — не красное: печатаются в конце, выкладку не блокируют
   const warns = seoLengths().map(w => 'длина сниппета: ' + w);
   // H-111: временные объекты маршрута — за 30 дней предупреждение, после срока ошибка; сначала самопроверка на фикстуре
@@ -956,6 +1007,11 @@ async function mapTaps() {
   const al = LEAKS.check(LEAKS.allIds());
   al.errors.forEach(m => err('ответ загадки на витрине', '', m));
   al.warns.concat(al.info).forEach(w => warns.push('ответы на витрине: ' + w));
+  // T-159: alt, подписи и имена файлов картинок quest.json — без ответов загадок, которые ещё впереди (игрок видит картинку до ответа)
+  const qids = fs.readdirSync(path.join(__dirname, '..', 'quests')).filter(id => !id.startsWith('_') && fs.existsSync(path.join(__dirname, '..', 'quests', id, 'quest.json')));
+  const ai = LEAKS.checkImages(qids);
+  ai.errors.forEach(m => err('ответ загадки в картинке сценария до загадки', '', m));
+  ai.warns.forEach(w => warns.push('картинки сценария: ' + w));
   // владелец 27.11 (в сетке «художники» ЗИЛАРТа у двух карточек из восьми нет года): поле, которое есть у большинства карточек
   // сетки витрины дела (год, источник, картинка, снимок), — у всех; исключение — явное year_none/…: «почему» в данных дела;
   // снимок или репродукция в карточке — с подписью-атрибуцией, width/height, lazy (scripts/card_grid_check.js)

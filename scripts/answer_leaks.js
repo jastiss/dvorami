@@ -291,6 +291,8 @@ function check(ids, opts = {}) {
     if (!opts.parts && !opts.html) corp.parts = corp.parts.concat(extraParts(corp.slug, opts));
     const exc = new Map(Object.entries(ok[id] || {}).map(([k, v]) => [norm(k.replace(/^~/, '')), v]));
     const used = new Set();
+    // исключения только для картинок сценария ("only": "quest.json") витрину не касаются — их ведёт checkImages
+    for (const [k, v] of [...exc]) if (v && typeof v === 'object' && String(v.only || '').includes('quest.json')) exc.delete(k);
     for (const f of T.fields) {
       const hit = f.terms.map(t => ({ t, ps: corp.parts.filter(p => t.re.test(p.n)) })).filter(h => h.ps.length);
       if (!hit.length) continue;
@@ -398,8 +400,119 @@ function checkProbes(opts = {}) {
   return errors;
 }
 
+// ---------- T-159: картинки сценария до загадки ----------
+// Подпись, alt и имя файла картинки (и записи) в quest.json не содержат ответа загадки, которая ещё впереди: игрок видит
+// картинку до ответа (рецензент 28.11: alt s18 «…рамы…» стоял перед загадкой т.10 с ответом «рама»). Порядок — порядок
+// показа в quest.json (вступление → точки → шаги → финал); блок ok шага — после его ответа (там можно называть ответ этого
+// шага, но не следующих); картинки вариантов choice не проверяются ответом своего же поля (вариант и так на экране).
+// Здесь — канонический ответ, ВСЕ варианты answers (это слова, которые игрок впишет: «рамы» у ответа «рама») и основы «~».
+// Не проверяются: подсказки (hints — ведут к ответу намеренно), kids, replies, check (служебное).
+// Исключения — answer_leaks.json → ok (как у витрины; только для картинок — "only": "quest.json"). Нашли настоящую утечку —
+// правит Автор (alt, подпись, имя файла), не исключение «чтобы позеленело».
+const IMG_KEYS = ['alt', 'caption', 'img', 'image', 'audio', 'src'];
+// имена файлов — латиницей (s02-amo-1931.webp): ответ ищем и транслитом, по основе (как makeTerm), от 4 знаков
+const TR = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya' };
+const translit = s => [...s].map(ch => TR[ch] != null ? TR[ch] : ch).join('');
+function latinRe(t) {
+  if (!t || /^\d+$/.test(t.key)) return null;
+  const stem = t.key.startsWith('~'), w = t.key.replace(/^~/, '').split(' ');
+  const last = w[w.length - 1], cut = stem ? last : last.length >= 6 ? last.slice(0, -2) : last.length >= 4 ? last.slice(0, -1) : last;
+  const lat = translit(w.slice(0, -1).concat(cut).join(' '));
+  if (lat.replace(/\s/g, '').length < 4 || !/[a-z]/.test(lat)) return null;
+  const v = esc(lat).replace(/h/g, '(?:h|kh)');
+  return new RegExp(`(?:^| )${v}`);
+}
+function imageEvents(q, rel) {
+  const ev = [];
+  const fileWords = v => { const b = path.basename(String(v)).replace(/\.[a-z0-9]{2,4}$/i, ''); return b.replace(/[._-]/g, ' '); };
+  const fieldTerms = x => {
+    const out = [];
+    const ask = list => {
+      for (const a of (list || []).filter(a => typeof a === 'string')) {
+        if (a.startsWith('~')) { if (a.slice(1).replace(/\s/g, '').length >= 4) out.push(a); } else out.push(a);
+      }
+    };
+    if (x.type === 'pick' || x.type === 'strike') return out;
+    if (Array.isArray(x.answers) && x.type !== 'choice') ask(x.answers);
+    if (Array.isArray(x.all)) x.all.forEach(g => ask(Array.isArray(g) ? g : g && g.answers));
+    if (x.type === 'choice' && Array.isArray(x.options) && !Array.isArray(x.answer) && !x.any_answer) {
+      const id = x.answer_flag && (q.flags || {})[x.answer_flag] != null ? String(q.flags[x.answer_flag]) : x.answer;
+      const o = x.options.find(o => String(o.id) === String(id));
+      if (o && o.label) out.push(o.label.replace(/^[А-ГA-D1-9]\s*[—–-]\s*/, ''));
+    }
+    return out;
+  };
+  const SKIP = ['kids', 'replies', 'hints', 'check'];
+  (function visit(x, where, own) {
+    if (Array.isArray(x)) return x.forEach((e, i) => visit(e, `${where}/${i}`, own));
+    if (!x || typeof x !== 'object') return;
+    const txt = IMG_KEYS.filter(k => typeof x[k] === 'string' && x[k]).map(k => ['img', 'image', 'audio', 'src'].includes(k) ? fileWords(x[k]) : x[k]);
+    if (txt.length && (x.img || x.image || x.alt || x.caption || x.audio)) ev.push({ kind: 'img', where: `${rel} ${where}`, text: txt.join(' '), own,
+      files: IMG_KEYS.filter(k => ['img', 'image', 'audio', 'src'].includes(k) && typeof x[k] === 'string' && x[k]).map(k => fileWords(x[k]).toLowerCase()).join(' ') });
+    const terms = fieldTerms(x);
+    const id = terms.length ? `${where}` : null;
+    const kids = Object.entries(x).filter(([k, v]) => v && typeof v === 'object' && !SKIP.includes(k));
+    const name = (k) => x.n && x.id ? `т.${x.n} ${x.id}/${k}` : `${where}/${k}`;
+    for (const [k, v] of kids) if (k !== 'ok') visit(v, name(k), id && k === 'options' ? id : own);
+    if (id) ev.push({ kind: 'field', id, where: `${rel} ${where}`, answers: terms });
+    for (const [k, v] of kids) if (k === 'ok') visit(v, name(k), own);
+  })({ intro: q.intro, points: q.points, finale: q.finale }, '', null);
+  return ev;
+}
+function checkImages(ids, opts = {}) {
+  const c = opts.conf || conf(), generic = new Set((c.generic || []).map(norm));
+  const errors = [], warns = [];
+  const why = v => (v && typeof v === 'object' ? v.why : v) || '';
+  for (const id of ids) {
+    const qf = opts.questFile ? path.resolve(opts.questFile) : path.join(REPO, 'quests', id, 'quest.json');
+    if (!opts.quest && !fs.existsSync(qf)) continue;
+    const q = opts.quest || JSON.parse(fs.readFileSync(qf, 'utf8'));
+    const rel = opts.quest ? '(фикстура quest.json)' : opts.questFile ? `${path.basename(qf)} (копия)` : path.relative(REPO, qf);
+    const ev = imageEvents(q, rel);
+    const exc = new Map(Object.entries((c.ok || {})[id] || {}).map(([k, v]) => [norm(k.replace(/^~/, '')), v]));
+    const used = new Set();
+    const fields = ev.map((e, i) => [e, i]).filter(([e]) => e.kind === 'field').map(([e, i]) => {
+      const terms = [];
+      for (const a of e.answers) { const t = makeTerm(a, generic); if (!t.skip && !terms.some(x => x.key === t.key)) terms.push(Object.assign(t, { answer: a, lat: latinRe(t) })); }
+      return { e, i, terms };
+    });
+    const seen = new Set();
+    ev.forEach((im, i) => {
+      if (im.kind !== 'img') return;
+      const n = ' ' + norm(im.text) + ' ', fl = ' ' + (im.files || '') + ' ';
+      for (const f of fields) {
+        if (f.i < i || f.e.id === im.own) continue;
+        const t = f.terms.find(t => t.re.test(n) || (t.lat && t.lat.test(fl)));
+        if (!t) continue;
+        const msg = `${im.where}: «${im.text.slice(0, 80)}» — ответ «${t.answer}» загадки впереди (${f.e.where}) — игрок видит картинку до ответа; поправьте alt, подпись или имя файла (правит Автор)`;
+        if (seen.has(msg)) continue; seen.add(msg);
+        const inScope = v => !(v && typeof v === 'object' && v.only) || im.where.includes(v.only);
+        const k = f.terms.map(x => norm(x.answer.replace(/^~/, ''))).find(x => exc.has(x) && inScope(exc.get(x)));
+        if (k == null) { errors.push(msg); continue; }
+        used.add(k);
+        const v = exc.get(k);
+        if (v && typeof v === 'object' && v.warn) warns.push(`${msg} — известная находка, ждёт решения: ${why(v)}`);
+      }
+    });
+    if (!opts.quest && !opts.questFile) for (const [k, v] of exc) if (v && typeof v === 'object' && String(v.only || '').includes('quest.json') && !used.has(k)) warns.push(`scripts/answer_leaks.json: исключение «${k}» (${id}, картинки quest.json) больше ничего не снимает — снять`);
+  }
+  return { errors, warns };
+}
+
 function selftest() {
   const out = [];
+  // T-159: картинка до загадки с её ответом (и формой из answers) — красное; после ответа — можно; вариант choice — не своим полем
+  const iq = { flags: {}, intro: [{ img: 'media/scenes/s00.webp', alt: 'Двор' }], points: [
+    { n: 1, id: 'a', scene: [{ img: 'media/scenes/s01.webp', alt: 'Старые рамы у забора' }], steps: [{ type: 'ask', answers: ['подпорка'], ok: [{ img: 'media/scenes/s02-podporka.webp', alt: 'Подпорка у пруда' }] }] },
+    { n: 2, id: 'b', steps: [{ type: 'choice', answer: 'x', options: [{ id: 'x', label: 'Конвейер', img: 'konveyer.webp', alt: 'Конвейер' }, { id: 'y', label: 'Склад' }] },
+      { type: 'ask', answers: ['рама', 'рамы', 'раму'] }] }] };
+  const ci = (q, ok) => checkImages(['fx'], { quest: q, conf: { ok: ok ? { fx: ok } : {} } }).errors;
+  const e1 = ci(iq);
+  if (e1.length !== 1 || !/рамы/.test(e1[0])) out.push(`картинки quest.json: alt «рамы» перед загадкой с ответом «рама» не найден или лишние находки (${e1.length})`);
+  const iq2 = JSON.parse(JSON.stringify(iq)); iq2.points[0].scene[0].alt = 'Старый забор'; iq2.points[0].scene[0].img = 'media/scenes/s01-podporka.webp';
+  const e2 = ci(iq2);
+  if (e2.length !== 1 || !/s01 podporka/.test(e2[0])) out.push('картинки quest.json: ответ в имени файла картинки до загадки не найден');
+  if (ci(iq, { 'рама': { why: 'фикстура: исключение для картинок сценария', only: 'quest.json' } }).length) out.push('картинки quest.json: исключение с "only": "quest.json" не сняло находку');
   const quest = { flags: { s: 'b' }, points: [{ n: 1, id: 'x', steps: [
     { type: 'ask', answers: ['подпорка', 'подпорки', '~подпор'] },
     { type: 'ask', answers: ['17', 'семнадцать'] },
@@ -441,7 +554,7 @@ function selftest() {
   return out;
 }
 
-module.exports = { check, checkPosts, allIds, selftest, coverage, terms, conf, checkProbes, caseCorpus, corpusOf, extraParts, norm, strip }; // корпус витрины — и для scripts/story_drift.js
+module.exports = { checkImages, imageEvents, check, checkPosts, allIds, selftest, coverage, terms, conf, checkProbes, caseCorpus, corpusOf, extraParts, norm, strip }; // корпус витрины — и для scripts/story_drift.js
 
 if (require.main === module) {
   const args = Object.fromEntries(process.argv.slice(2).map(a => { const m = a.match(/^--([\w-]+)(?:=(.*))?$/); return m ? [m[1], m[2] == null ? true : m[2]] : [a, true]; }));
@@ -463,6 +576,12 @@ if (require.main === module) {
       if (cov.length) console.log(`  нет в site_spoilers.json: ${cov.join(', ')}`);
     }
     process.exit(0);
+  }
+  if (args.images) { // T-159: только картинки quest.json; --quest-file=копия.json — чужая копия сценария (обратная проверка)
+    const r = checkImages(ids, { questFile: args['quest-file'] });
+    r.warns.forEach(m => console.log(' ! ' + m)); r.errors.forEach(m => console.log(' ✗ ' + m));
+    console.log(r.errors.length ? `answer_leaks --images: находок ${r.errors.length}` : 'answer_leaks --images: OK');
+    process.exit(r.errors.length ? 1 : 0);
   }
   const r = check(ids, { html: args.html, llms: args.llms, posts: args.posts });
   r.info.forEach(m => console.log(' · ' + m));
