@@ -112,6 +112,10 @@ def spoiler_terms():
         def walk(o):
             if isinstance(o, dict):
                 for kk, vv in o.items():
+                    # replies — реакции на «почти» и неверные варианты, а не ответы: «ответ», «висят» из них
+                    # краснили каждый пост канала (27.11, T-141); так же их пропускает scripts/answer_leaks.js
+                    if kk == "replies":
+                        continue
                     if kk in ("answers", "answer"):
                         vals = vv if isinstance(vv, list) else [vv]
                         for a in vals:
