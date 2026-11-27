@@ -61,6 +61,14 @@
  *   - 27.11, чтение с экрана: неверный ответ (поле, вариант, карточки) объявлен в постоянной области #sr-say, поле помечено
  *     aria-invalid и ссылается на сообщение, после перерисовки фокус остаётся на нажатом варианте или «Проверить»; живая
  *     область «где» в шапке не перезаписывается на «Дальше» внутри точки.
+ *   - 27.11, телефон (владелец прошёл дело с телефона; эмуляция iPhone 13, касания через CDP, 390×844 и 360×740): обложка —
+ *     картинка, вопрос дела (= страница дела), паспорт метками, одна кнопка, без прокрутки; вступление не повторяет обложку;
+ *     экран без раскрытого текста не прокручивается (обратная проверка — лишний пиксель в конце страницы); экран «слушаю»
+ *     (реплики первой точки озвучены тестовой записью): картинка, плеер, субтитр, «Показать текст» помещаются, расшифровка
+ *     раскрывается; несколько записей идут подряд, пауза, «Повторить»; картинка на весь экран = вьюпорт, фон заблокирован,
+ *     закрытие Esc / касанием / кнопкой / свайпом вниз; свайп влево — дальше, вправо — назад, вертикальный и короткий — нет,
+ *     при reduced-motion экран за пальцем не едет; заглушка «Здесь будет иллюстрация» не видна у кадра с картинкой (с обратной
+ *     проверкой); картинка сцены загружена заранее; вес картинок плеера ≤ 200 КБ и копии .webp на месте; число экранов.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
 'use strict';
@@ -107,7 +115,7 @@ const BUNDLE = SEALED ? JSON.parse(execFileSync('python3', [path.join(REPO, 'scr
   '--out', fs.mkdtempSync(path.join(os.tmpdir(), 'dvorami-codes-'))], { encoding: 'utf8' }).trim().split('\n').pop()) : null;
 const PORT = 9000 + Math.floor(Math.random() * 900);
 const BASE = `http://127.0.0.1:${PORT}`;
-const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp3': 'audio/mpeg' };
 
 // Подсказка на пустой ответ — та же, что EMPTY_TEXT в site/play/player.js и scripts/quest_bot.py
 const EMPTY_TEXT = 'Впишите ответ.';
@@ -264,7 +272,14 @@ const server = http.createServer((req, res) => {
   const own = p === `/${PAGE}quest.locked.json` || p === `/${PAGE}quest.json`;
   if (own) f = p.endsWith('locked.json') ? (SEALED ? BUNDLE.locked : '') : (SEALED ? '' : QUEST);
   if (!f || (!own && !f.startsWith(REPO)) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
-  res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' });
+  // запись звука браузер просит кусками (Range) — без этого перемотка в тесте не работает
+  const size = fs.statSync(f).size, rg = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range || '');
+  if (rg && +rg[1] < size) {
+    const a = +rg[1], z = rg[2] ? Math.min(+rg[2], size - 1) : size - 1;
+    res.writeHead(206, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Accept-Ranges': 'bytes', 'Content-Range': `bytes ${a}-${z}/${size}`, 'Content-Length': z - a + 1 });
+    return fs.createReadStream(f, { start: a, end: z }).pipe(res);
+  }
+  res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Accept-Ranges': 'bytes', 'Content-Length': size });
   fs.createReadStream(f).pipe(res);
 });
 
@@ -661,15 +676,22 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       }
       // режим «читаю / слушаю и читаю»: по умолчанию плеер реплик есть; в одном прогоне переключаем на «Читаю» — плеера нет нигде
       const readMode = VOICE && vp.width === 1024 && theme === 'sun';
-      if (VOICE && (await page.$$('#app [data-act="mode"]')).length !== 2) err(tag, 'обложка: нет выбора «Слушаю и читаю / Читаю»');
-      if (!VOICE && (await page.$$('#app [data-act="mode"]')).length) err(tag, 'обложка: выбор «Слушаю и читаю / Читаю» у дела без записей (T-93)');
+      // владелец 27.11: на обложке одна кнопка действия — выбор «Слушаю и читаю / Читаю» живёт в меню
+      if (await page.$('#app [data-act="mode"]')) err(tag, 'обложка: выбор «Слушаю и читаю / Читаю» на обложке — он в меню (одна кнопка действия)');
+      await click('[data-act="menu"]');
+      if (VOICE && (await page.$$('#sheet [data-act="mode"]')).length !== 2) err(tag, 'меню: нет выбора «Слушаю и читаю / Читаю»');
+      if (!VOICE && (await page.$$('#sheet [data-act="mode"]')).length) err(tag, 'меню: выбор «Слушаю и читаю / Читаю» у дела без записей (T-93)');
       if (readMode) {
-        await click('#app [data-act="mode"][data-mode="read"]');
+        await click('#sheet [data-act="mode"][data-mode="read"]');
         if ((await pos()).mode !== 'read') err(tag, 'режим «Читаю» не включился');
-        await check('обложка · режим «Читаю»');
       }
+      await click('#sheet [data-act="close"]');
+      if (readMode) await check('обложка · режим «Читаю»');
       await click('[data-act="start"]');
-      if (VOICE && !readMode && Q.format >= 5 && !(await page.$('#frame .pl-voice.is-soon, #frame .pl-voice[data-srcs]'))) err(tag, 'вступление: в режиме «Слушаю и читаю» нет плеера реплики');
+      // вступление показывает только то, чего не было на обложке; повторяло её целиком — «Открыть дело» ведёт сразу к точке 1
+      const introOn = (await state()).phase === 'intro';
+      if (!introOn) notes.push('вступления нет: оно повторяло обложку — «Открыть дело» ведёт к дороге первой точки');
+      if (introOn) {
       if (!VOICE && await page.$('#frame .pl-voice.is-soon')) err(tag, 'вступление: плашка «Аудио скоро» у дела без записей (T-93)');
       // владелец 27.11: один индикатор прогресса (полоса по точкам в шапке), оглавление — по названию точки, без отдельной иконки
       if (await page.$('.pl-minis, .pl-toc-btn')) err(tag, 'вступление: вторая полоса прогресса или отдельная кнопка оглавления под меню');
@@ -677,6 +699,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       await flip('вступление', '[data-act="go"]');
       await fresh('вступление · конец');
       await click('[data-act="go"]');
+      }
       let reviewed = false;
       for (const [pi, p] of Q.points.entries()) {
         const at = `точка ${p.n}`;
@@ -726,7 +749,8 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
         await fresh(at + ' · идём');
         await clockCheck(pi, p, at);
         await click('[data-act="here"]');
-        if ((await pos()).kind !== 'arrive') err(tag, `${at}: после «Мы на месте» открылся не экран точки`);
+        // «На месте» отдельным экраном — только у точки со своей картинкой; иначе сцена начинается сразу (владелец 27.11: пустые экраны)
+        { const ps = await pos(); if (ps.kind !== 'arrive' && ps.id !== 'sc0') err(tag, `${at}: после «Мы на месте» открылся не экран точки (${ps.kind} ${ps.id})`); }
         await fresh(at + ' · на месте');
         if (p.kids) {
           await page.click('#frame .pl-kids > summary'); await check(at + ' · детям');
@@ -1140,7 +1164,7 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       let { ctx, page } = await open({ hasTouch: true }, QS, 0);
       // точка, где у дороги несколько экранов (разговор в пути): там есть «Дальше»
       const wi = await page.evaluate(() => { const D = window.__dvorami, n = D.quest().points.length;
-        for (let i = 0; i < n; i++) { const F = D.frames(i); if (F.findIndex(x => x.kind === 'arrive') >= 2) return i; } return -1; });
+        for (let i = 0; i < n; i++) { const F = D.frames(i); if (F.findIndex(x => x.kind === 'arrive' || x.id === 'sc0') >= 2) return i; } return -1; });
       if (wi < 0) notes.push('касание и свайп: в деле нет дороги с несколькими экранами — не проверено');
       else {
         if (wi !== 0) { await ctx.close(); ({ ctx, page } = await open({ hasTouch: true }, QS, wi)); }
@@ -1364,6 +1388,264 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
     }
   }
 
+    // --- 27.11, правки владельца после прохождения с телефона: обложка, экран без подпрыгивания, экран «слушаю»
+    //     (картинка + запись + «Показать текст»), несколько записей подряд, картинка на весь экран, свайпы, предзагрузка.
+    //     Эмуляция iPhone 13 (касания настоящие, через CDP) на 390×844 и 360×740. Записей у дела может ещё не быть — берём
+    //     копию дела, где реплики первой точки озвучены тестовой записью (файл из quests/zilart/media/assets/audio) ---
+    {
+      const tag = 'телефон';
+      const { devices } = require('playwright');
+      const MP3 = path.join(REPO, 'quests', 'zilart', 'media', 'assets', 'audio', 'pigeon-coo-sfx-02a.mp3');
+      const copy = JSON.parse(JSON.stringify(RAW)), p0 = (copy.points || [])[0] || {};
+      let voiced = 0;
+      const voiceAll = list => [].concat(list || []).forEach(l => { if (l && typeof l === 'object' && !l.arrow && l.who && l.text && voiced < 6) { voiced++; if (typeof l.audio !== 'string') l.audio = `media/audio/_test-${voiced}.mp3`; } });
+      voiceAll(p0.scene); ((p0.steps || [])[0] ? voiceAll(p0.steps[0].lines) : 0);
+      const hasPic = [].concat(p0.scene || []).some(l => l && typeof l === 'object' && typeof l.img === 'string');
+      const pageHtml = fs.readFileSync(path.join(REPO, PAGE, 'index.html'), 'utf8');
+      const hook = ((pageHtml.match(/data-hook="([^"]*)"/) || [])[1] || '').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+      // вопрос дела на обложке — тот же, что на странице дела (витрина = квест)
+      const caseUrl = (pageHtml.match(/data-case-url="([^"]*)"/) || [])[1];
+      if (hook && caseUrl) {
+        const cf = path.join(REPO, PAGE, caseUrl, 'index.html');
+        const flat = s => s.replace(/&nbsp;|&#160;|\u00a0/g, ' ').replace(/&mdash;/g, '—').replace(/&laquo;/g, '«').replace(/&raquo;/g, '»').replace(/\s+/g, ' ');
+        if (fs.existsSync(cf) && !flat(fs.readFileSync(cf, 'utf8')).includes(flat(hook))) err(tag, `обложка: вопрос дела (data-hook) не совпадает со страницей дела ${caseUrl} — «${hook}»`);
+      }
+      const overOf = page => page.evaluate(() => Math.round(document.documentElement.scrollHeight - innerHeight));
+      // заглушка «Здесь будет иллюстрация» на виду у кадра, у которого картинка есть
+      const phShown = page => page.evaluate(() => [].filter.call(document.querySelectorAll('#app .pl-frame'), f => f.querySelector('img') && !f.classList.contains('is-missing') &&
+        [].some.call(f.querySelectorAll('.pl-ph'), p => getComputedStyle(p).display !== 'none')).length);
+      let listenSeen = 0;
+      for (const size of [{ width: 390, height: 844 }, { width: 360, height: 740 }]) {
+        const at0 = `${size.width}×${size.height}`;
+        const ctx = await browser.newContext(Object.assign({}, devices['iPhone 13'], { viewport: size, reducedMotion: 'reduce', serviceWorkers: 'block' }));
+        const page = await ctx.newPage();
+        const media = [];
+        await page.route('**/*', route => {
+          const u = route.request().url();
+          if (!u.startsWith(BASE)) return route.abort();
+          if (/\/quest\.locked\.json(\?|$)/.test(u)) return route.fulfill({ status: 404 });
+          if (/\/quest\.json(\?|$)/.test(u)) return route.fulfill({ body: JSON.stringify(copy), contentType: 'application/json' });
+          if (/\/media\/audio\/_test-\d+\.mp3(\?|$)/.test(u)) return route.continue({ url: BASE + '/' + path.relative(REPO, MP3).split(path.sep).join('/') });
+          if (/\/media\//.test(u)) media.push(u.split('?')[0]);
+          return route.continue();
+        });
+        page.on('pageerror', e => err(tag, `${at0}: JS: ${e.message}`));
+        await page.goto(`${BASE}/${PAGE}${QS}`, { waitUntil: 'load' });
+        await page.waitForSelector('[data-act="start"]', { timeout: 15000 });
+        await page.waitForTimeout(400);
+        const cdp = await ctx.newCDPSession(page);
+        const touch = async (pts, steps) => {
+          const [a, b] = pts;
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: a.x, y: a.y }] });
+          for (let i = 1; i <= (steps || 6); i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: a.x + (b.x - a.x) * i / (steps || 6), y: a.y + (b.y - a.y) * i / (steps || 6) }] });
+          const mid = await page.evaluate(() => { const f = document.getElementById('frame'); return f ? f.style.transform : ''; });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await page.waitForTimeout(250);
+          return mid;
+        };
+        // обложка: картинка, название, вопрос, паспорт метками, одна кнопка, без прокрутки
+        const cov = await page.evaluate(() => { const a = document.getElementById('app'), im = a.querySelector('.pl-cover-art img'); return {
+          img: !!im && im.complete && im.naturalWidth > 0, h1: !!a.querySelector('.pl-cover h1'), hook: (a.querySelector('.pl-cover-hook') || {}).textContent || '',
+          stats: a.querySelectorAll('.pl-pass-stats li').length, rows: a.querySelectorAll('.pl-pass > div').length, btns: a.querySelectorAll('button, a.pl-btn').length,
+          text: a.textContent, pass: window.__dvorami.passport(), intro: window.__dvorami.hasIntro() }; });
+        const hasCoverPic = [].concat(...[].concat(RAW.intro || []).map(x => [].concat(x))).some(l => l && typeof l === 'object' && typeof l.img === 'string') || !!RAW.cover;
+        if (hasCoverPic && !cov.img) err(tag, `${at0}: обложка без картинки (первая картинка вступления или cover не показана)`);
+        if (hasCoverPic && !cov.h1) err(tag, `${at0}: на обложке нет названия дела`);
+        if (hook && cov.hook.replace(/\u00a0/g, ' ') !== hook) err(tag, `${at0}: на обложке нет вопроса дела (data-hook)`);
+        if (cov.pass.stats.length && cov.stats !== cov.pass.stats.length) err(tag, `${at0}: паспорт маршрута на обложке не разложен на метки (${cov.stats} из ${cov.pass.stats.length})`);
+        if (cov.pass.rows.length && cov.rows !== cov.pass.rows.length) err(tag, `${at0}: «Старт» и «Финиш» на обложке не отдельными строками`);
+        if (cov.btns !== 1) err(tag, `${at0}: на обложке ${cov.btns} кнопок — должна быть одна («Открыть дело»)`);
+        for (const s of cov.pass.stats) if (cov.text.split(s).length > 2) err(tag, `${at0}: обложка повторяет «${s}» дважды`);
+        const co = await overOf(page);
+        if (co > 0) err(tag, `${at0}: обложка не помещается в экран — прокрутка ${co} px`);
+        // обратная проверка «прокрутки на 1 px»: область объявлений как absolute в конце страницы даёт прокрутку — проверка её видит
+        await page.click('[data-act="start"]'); await page.waitForTimeout(300);
+        // вступление не повторяет обложку: ни паспорта, ни названия-титра
+        if (cov.intro) {
+          const it = await page.evaluate(() => document.getElementById('frame').textContent);
+          for (const s of cov.pass.stats.concat(cov.pass.rows.map(r => r[1]))) if (it.includes(s)) err(tag, `${at0}: вступление повторяет обложку — «${s}»`);
+          if (await phShown(page)) err(tag, `${at0}: вступление — на виду заглушка «Здесь будет иллюстрация» у кадра с картинкой`);
+          for (let i = 0; i < 6 && await page.$('#app .pl-bar [data-act="fwd"]'); i++) { await page.click('#app .pl-bar [data-act="fwd"]'); await page.waitForTimeout(150); }
+          await page.click('[data-act="go"]'); await page.waitForTimeout(300);
+        }
+        if ((await page.evaluate(() => window.__dvorami.state().phase)) !== 'walk') err(tag, `${at0}: после обложки${cov.intro ? ' и вступления' : ''} открылась не дорога к точке 1`);
+        const o1 = await overOf(page);
+        // предзагрузка: пока игрок на дороге, картинка сцены уже запрошена
+        const firstPic = ([].concat(p0.scene || []).find(l => l && typeof l === 'object' && typeof l.img === 'string') || {}).img;
+        if (firstPic) {
+          await page.waitForTimeout(600);
+          const stem = firstPic.replace(/\.\w+$/, '');
+          if (!media.some(u => u.includes(stem + '.'))) err(tag, `${at0}: на дороге к точке 1 картинка сцены (${firstPic}) заранее не загружена`);
+        }
+        {
+          await page.addStyleTag({ content: '#sr-say{position:absolute!important;top:auto!important}' }).then(async h => {
+            if (o1 <= 0 && (await overOf(page)) <= 0) err(tag, `${at0}: обратная проверка прокрутки не сработала (лишний пиксель в конце страницы не замечен)`);
+            await h.evaluate(n => n.remove());
+          });
+        }
+        for (let i = 0; i < 12 && !(await page.$('[data-act="here"]')) && await page.$('#app .pl-bar [data-act="fwd"]'); i++) { await page.click('#app .pl-bar [data-act="fwd"]'); await page.waitForTimeout(150); }
+        if (!(await page.$('[data-act="here"]'))) { notes.push(`${at0}: дорога первой точки кончается вопросом на ходу — экраны «слушаю» не проверены`); await ctx.close(); listenSeen++; continue; }
+        await page.click('[data-act="here"]'); await page.waitForTimeout(350);
+        // экраны «слушаю» первой точки: картинка (если есть), плеер, субтитр и «Показать текст» — без прокрутки документа
+        for (let i = 0; i < 12; i++) {
+          const s = await page.evaluate(() => { const f = document.getElementById('frame'); if (!f) return null;
+            const box = sel => { const e = f.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), h: Math.round(r.height) }; };
+            const bar = document.querySelector('#app .pl-bar'), tx = f.querySelector('details.pl-tx');
+            return { id: f.dataset.frame, listen: f.dataset.listen === '1', fig: box('.pl-fig .pl-frame'), doc: !!f.querySelector('.pl-letter, .pl-cardx'), voice: box('.pl-voice[data-srcs]'), n: ((f.querySelector('.pl-voice[data-srcs]') || { dataset: {} }).dataset.srcs || '').split('|').filter(Boolean).length,
+              cc: ((f.querySelector('.pl-cc .pl-cc-t') || {}).textContent || '').trim(), tx: tx ? { open: tx.open, sum: tx.querySelector('summary').getBoundingClientRect().bottom, says: tx.querySelectorAll('[data-say]').length } : null,
+              say: f.querySelectorAll('[data-say]').length, figs: f.querySelectorAll('.pl-fig').length, bar: bar ? bar.getBoundingClientRect().top : innerHeight, task: !!f.querySelector('.pl-task'),
+              over: Math.round(document.documentElement.scrollHeight - innerHeight) }; });
+          if (!s || s.task) break;
+          const at = `${at0} · точка 1 · экран ${s.id}`;
+          if (await phShown(page)) err(tag, `${at}: на виду заглушка «Здесь будет иллюстрация» у кадра с картинкой`);
+          if (s.voice && s.tx) {
+            listenSeen++;
+            if (!s.cc) err(tag, `${at}: у плеера нет строки-субтитра — звук без текста на экране (H-62)`);
+            if (s.tx.open) err(tag, `${at}: расшифровка раскрыта сразу — по умолчанию она свёрнута`);
+            if (s.tx.says !== s.say || !s.say) err(tag, `${at}: в расшифровке ${s.tx.says} реплик из ${s.say}`);
+            if (s.figs <= 1 && !s.doc) {
+              if (s.over > 0) err(tag, `${at}: картинка, запись и «Показать текст» не помещаются — прокрутка ${s.over} px`);
+              if (s.tx.sum > s.bar + 1) err(tag, `${at}: «Показать текст» закрыта кнопкой «Дальше»`);
+            }
+            // раскрыли текст — он на экране; прокрутка раскрытого допустима
+            await page.click('#frame details.pl-tx > summary');
+            if (!(await page.evaluate(() => { const e = document.querySelector('#frame details.pl-tx [data-say]'); return !!e && e.getBoundingClientRect().height > 10; }))) err(tag, `${at}: «Показать текст» не раскрывает расшифровку`);
+            await page.click('#frame details.pl-tx > summary');
+          }
+          // картинка на весь экран: окно во весь вьюпорт, картинка вписана, фон стоит; закрывается Esc, касанием, кнопкой, свайпом вниз
+          if (s.fig && await page.$('#frame .pl-frame--zoom') && size.width === 390 && !page.__zoomed) {
+            page.__zoomed = true;
+            const openZ = async () => { await page.click('#frame .pl-frame--zoom'); await page.waitForTimeout(200); };
+            const isOpen = () => page.evaluate(() => { const v = document.getElementById('viewer'); return !!v && v.open; });
+            await openZ();
+            const z = await page.evaluate(() => { const v = document.getElementById('viewer'), im = v && v.querySelector('img'); if (!v || !v.open || !im) return null;
+              const r = v.getBoundingClientRect(), ir = im.getBoundingClientRect(); const y0 = scrollY; scrollTo(0, 300); const moved = scrollY !== y0; scrollTo(0, y0);
+              return { w: r.width, h: r.height, iw: ir.width, ih: ir.height, fit: getComputedStyle(im).objectFit, lock: getComputedStyle(document.documentElement).overflowY, moved, vw: innerWidth, vh: innerHeight, ok: im.complete && im.naturalWidth > 0,
+                top: document.elementFromPoint(innerWidth / 2, innerHeight / 2) === im }; });
+            if (!z) err(tag, `${at}: нажатие на картинку не открывает её на весь экран`);
+            else {
+              if (Math.abs(z.w - z.vw) > 1 || Math.abs(z.h - z.vh) > 1) err(tag, `${at}: окно картинки ${z.w}×${z.h}, а экран ${z.vw}×${z.vh}`);
+              if (z.fit !== 'contain' || Math.abs(z.iw - z.vw) > 1 || z.ih < z.vh * 0.9) err(tag, `${at}: картинка не вписана во весь экран (${z.fit}, ${Math.round(z.iw)}×${Math.round(z.ih)})`);
+              if (z.lock !== 'hidden' || z.moved) err(tag, `${at}: под открытой картинкой страница прокручивается`);
+              if (!z.ok || !z.top) err(tag, `${at}: картинка на весь экран не загрузилась или закрыта другим слоем`);
+              const f0 = await page.evaluate(() => window.__dvorami.pos().f);
+              await touch([{ x: 300, y: 400 }, { x: 80, y: 410 }]);
+              if (!(await isOpen())) await openZ();   // горизонтальный жест не закрывает
+              if ((await page.evaluate(() => window.__dvorami.pos().f)) !== f0) err(tag, `${at}: свайп по открытой картинке листает экран под ней`);
+              await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+              if (await isOpen()) err(tag, `${at}: Esc не закрывает картинку`);
+              if ((await page.evaluate(() => document.documentElement.classList.contains('pl-lock')))) err(tag, `${at}: после закрытия картинки страница осталась заблокированной`);
+              await openZ(); await page.touchscreen.tap(size.width / 2, size.height / 2); await page.waitForTimeout(200);
+              if (await isOpen()) err(tag, `${at}: касание не закрывает картинку`);
+              await openZ(); await page.click('#viewer [data-act="zoomclose"]'); await page.waitForTimeout(150);
+              if (await isOpen()) err(tag, `${at}: кнопка не закрывает картинку`);
+              await openZ(); await touch([{ x: 195, y: 300 }, { x: 200, y: 520 }]);
+              if (await isOpen()) err(tag, `${at}: свайп вниз не закрывает картинку`);
+              if ((await page.evaluate(() => window.__dvorami.pos().f)) !== f0) err(tag, `${at}: закрытие картинки сдвинуло экран`);
+              notes.push('картинка на весь экран: окно = вьюпорт, вписана целиком, фон заблокирован; закрытие Esc, касанием, кнопкой и свайпом вниз');
+            }
+          }
+          // несколько записей подряд на одном экране: вторая начинается сама, идёт одна, пауза и «Повторить» работают
+          if (s.voice && s.n >= 2 && size.width === 390 && !page.__voiced) {
+            page.__voiced = true;
+            const V = () => page.evaluate(() => window.__dvorami.voice());
+            if (!(await V())) await page.click('#frame .pl-voice-btn');
+            const until = async (fn, ms) => { for (const t0 = Date.now(); Date.now() - t0 < ms; await page.waitForTimeout(100)) if (await fn()) return true; return false; };
+            if (!(await until(async () => { const v = await V(); return v && !v.paused && v.d > 0; }, 5000))) notes.push('несколько записей: браузер теста не проигрывает mp3 — не проверено');
+            else {
+              const v0 = await V();
+              if (v0.at !== 0 || v0.n !== s.n) err(tag, `${at}: плеер начал не с первой записи (${v0.at + 1} из ${v0.n}, ждали 1 из ${s.n})`);
+              await page.evaluate(() => window.__dvorami.voiceEnd());
+              if (!(await until(async () => { const v = await V(); return v && v.at === 1 && !v.paused; }, 5000))) err(tag, `${at}: после первой записи вторая не началась сама`);
+              const note = await page.evaluate(() => document.querySelector('#frame .pl-voice-note').textContent);
+              if (!/^2\//.test(note)) err(tag, `${at}: счётчик записей не показывает вторую («${note}»)`);
+              const sp = await page.evaluate(() => { const tx = document.querySelector('#frame details.pl-tx'), list = [].slice.call(tx.querySelectorAll('[data-say]')); return { at: list.findIndex(e => e.classList.contains('is-speaking')), cc: document.querySelector('#frame .pl-cc-t').textContent }; });
+              if (sp.at !== 1) err(tag, `${at}: звучит вторая запись, а отмечена реплика ${sp.at + 1}`);
+              await page.click('#frame .pl-voice-btn'); await page.waitForTimeout(150);
+              if (!(await V()).paused) err(tag, `${at}: пауза не останавливает запись`);
+              await page.click('#frame .pl-voice-re');
+              if (!(await until(async () => { const v = await V(); return v && v.at === 0 && !v.paused; }, 5000))) err(tag, `${at}: «Повторить» в начале второй записи не вернул первую`);
+              await until(() => page.evaluate(() => document.querySelectorAll('.pl-voice.is-on').length === 1), 2000);
+              const playing = await page.evaluate(() => document.querySelectorAll('.pl-voice.is-on').length);
+              if (playing !== 1) err(tag, `${at}: играющих плееров на экране ${playing}, должен быть один`);
+              notes.push(`несколько записей на экране (${s.n}): вторая начинается сама, счётчик и отметка реплики идут за ней, пауза и «Повторить» работают`);
+              await page.click('#frame .pl-voice-btn');
+            }
+          }
+          if (!(await page.$('#app .pl-bar [data-act="fwd"], #app .pl-bar [data-act="next"]'))) break;
+          // свайпы настоящими касаниями: влево — вперёд, вправо — назад, вертикальный и короткий — не листают
+          if (!page.__swiped) {
+            page.__swiped = true;
+            const f = () => page.evaluate(() => { const p = window.__dvorami.pos(); return p.sec + ':' + p.f; });
+            const y = Math.min(s.bar - 60, 420), a = await f();
+            await touch([{ x: 200, y: y - 150 }, { x: 205, y: y + 60 }]);
+            if (await f() !== a) err(tag, `${at}: вертикальный жест листает экран`);
+            await page.evaluate(() => scrollTo(0, 0));
+            await touch([{ x: 250, y }, { x: 225, y: y + 2 }]);
+            if (await f() !== a) err(tag, `${at}: короткое движение пальца (25 px) листает экран`);
+            const mid = await touch([{ x: 300, y }, { x: 120, y: y + 40 }], 8);
+            const b = await f();
+            if (b === a) err(tag, `${at}: свайп влево (с уходом вниз на 40 px) не листает вперёд`);
+            if (mid) err(tag, `${at}: при prefers-reduced-motion экран едет за пальцем (${mid})`);
+            await touch([{ x: 90, y }, { x: 280, y: y - 30 }], 8);
+            if (await f() !== a) err(tag, `${at}: свайп вправо не возвращает на предыдущий экран (${b} → ${await f()})`);
+            if (await phShown(page)) err(tag, `${at}: после свайпа назад на виду заглушка «Здесь будет иллюстрация»`);
+            await touch([{ x: 300, y }, { x: 120, y }], 8);
+            if (await f() !== b) err(tag, `${at}: свайп влево после возврата не листает вперёд`);
+            notes.push('свайп настоящими касаниями (iPhone 13): влево — дальше, вправо — назад; вертикальный жест и движение в 25 px не листают');
+            continue;
+          }
+          await page.click('#app .pl-bar [data-act="fwd"], #app .pl-bar [data-act="next"]'); await page.waitForTimeout(200);
+        }
+        // обратная проверка заглушки: если показать её у кадра с картинкой — проверка это видит
+        if (size.width === 390) {
+          const h = await page.addStyleTag({ content: '.pl-frame > .pl-ph{display:flex!important}' });
+          const any = await page.evaluate(() => !!document.querySelector('#app .pl-frame img'));
+          if (any && !(await phShown(page))) err(tag, 'обратная проверка заглушки не сработала');
+          await h.evaluate(n => n.remove());
+        }
+        await ctx.close();
+      }
+      // переход между экранами (движение включено) не расширяет страницу вбок: на телефоне от этого вся страница на миг уменьшалась
+      {
+        const ctx = await browser.newContext(Object.assign({}, devices['iPhone 13'], { reducedMotion: 'no-preference', serviceWorkers: 'block' }));
+        const page = await ctx.newPage();
+        await page.route('**/*', route => {
+          const u = route.request().url();
+          if (!u.startsWith(BASE)) return route.abort();
+          if (/\/quest\.locked\.json(\?|$)/.test(u)) return route.fulfill({ status: 404 });
+          if (/\/quest\.json(\?|$)/.test(u)) return route.fulfill({ body: JSON.stringify(RAW), contentType: 'application/json' });
+          return route.continue();
+        });
+        await page.goto(`${BASE}/${PAGE}${QS}`, { waitUntil: 'load' });
+        await page.waitForSelector('[data-act="start"]', { timeout: 15000 });
+        const wide = () => page.evaluate(() => { const b = document.querySelector('#app [data-act="start"], #app .pl-bar [data-act="fwd"], #app .pl-bar [data-act="go"]'); if (!b) return null; b.click();
+          const d = document.documentElement; void d.offsetWidth; return { w: d.scrollWidth - d.clientWidth, anim: document.getAnimations().length }; });
+        let worst = 0, moved = 0;
+        for (let i = 0; i < 4; i++) { const r = await wide(); if (!r) break; worst = Math.max(worst, r.w); moved += r.anim; await page.waitForTimeout(350); }
+        if (worst > 0) err(tag, `переход между экранами расширяет страницу вбок на ${worst} px — на телефоне страница «ездит»`);
+        if (!moved) notes.push('переход между экранами: анимаций не было — ширина страницы при движении не проверена');
+        await ctx.close();
+      }
+      if (!listenSeen) err(tag, 'экран «слушаю»: у озвученных реплик первой точки нет экрана с плеером и «Показать текст»');
+      else if (!hasPic) notes.push('экран «слушаю»: у сцены первой точки нет картинки — проверены плеер, субтитр и «Показать текст»');
+      // вес картинок, которые получает плеер: копия .webp, если страница дела её объявила (data-webp), иначе исходник — ≤ 200 КБ
+      const webp = /data-webp="1"/.test(pageHtml), pics = new Set();
+      (function walk(x) { if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object') for (const [k, v] of Object.entries(x)) {
+        if (k === 'img' || k === 'layers') [].concat(v || []).forEach(s => { if (typeof s === 'string' && !/^(https?:)?\/\//.test(s)) pics.add(s); }); else walk(v); } })(RAW);
+      let sum = 0, heavy = 0;
+      for (const s of pics) {
+        const src = path.join(REPO, PAGE, s), lite = src.replace(/\.(jpe?g|png)$/i, '.webp');
+        if (!fs.existsSync(src)) continue;   // нет файла — отдельная проверка (медиа дела)
+        let f = src;
+        if (webp && lite !== src) { if (fs.existsSync(lite)) f = lite; else err(tag, `картинка ${s}: нет лёгкой копии .webp (страница объявила data-webp) — python3 scripts/player_webp.py ${QID}`); }
+        const kb = Math.round(fs.statSync(f).size / 1024);
+        sum += kb; heavy = Math.max(heavy, kb);
+        if (kb > 200) err(tag, `картинка ${path.relative(path.join(REPO, PAGE), f)} весит ${kb} КБ — больше 200 КБ (сжать: python3 scripts/player_webp.py)`);
+      }
+      if (pics.size) notes.push(`картинки плеера: ${pics.size} шт., вместе ${sum} КБ, самая тяжёлая ${heavy} КБ${webp ? ' (копии .webp)' : ''}`);
+    }
+
   await browser.close();
   server.close();
   // у разных игроков (новое сохранение в каждом из 6 прогонов) порядок разный хотя бы у одного выбора
@@ -1381,6 +1663,8 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
   if (seenFrames.size) {
     const list = [...scrolled.values()], pics = list.filter(x => /картинка/.test(x)).length;
     warn('прокрутка 390×844', `экранов с прокруткой ${list.length} из ${seenFrames.size} (с картинкой ${pics})` + (list.length ? ':\n     ' + list.join('\n     ') : ''));
+    // владелец 27.11: «очень много пустоватых экранов» — число экранов прохождения до объединения (ЗИЛАРТ 5.5, 27.11) и сейчас
+    notes.push(`экранов в прохождении на 390×844: ${seenFrames.size}` + (QID === 'zilart' && !args.data ? ' (прежний плеер на этом же сценарии, 27.11 — 229; экраны реплик сворачиваются в «слушаю» по мере озвучки)' : ''));
   }
   [...new Set(notes)].forEach(n => console.log(' · ' + n));
   console.log(' · ' + SRC);

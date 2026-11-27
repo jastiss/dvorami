@@ -536,6 +536,8 @@
     addCards(Q.cards, 0);
     if (Q.letter && Q.letter.start) S.letter = Q.letter.start;
     log('start');
+    // вступление целиком повторяет обложку (или его нет) — сразу к первой точке, без пустого экрана
+    if (!hasIntro()) return showWalk();
     commit('top');
   }
   function clearSlot(o) { o.hint = 0; o.wrong = null; o.last = ''; o.reply = ''; o.sel = []; }
@@ -549,7 +551,7 @@
     S.phase = 'step'; S.k = 0; S.res = []; clearSlot(S);
     log('arrive');
     enterStep();
-    S.f = frameIndex(framesOf(S.p), function (x) { return x.kind === 'arrive'; }, 0);
+    S.f = frameIndex(framesOf(S.p), function (x) { return x.kind === 'arrive' || x.arrive; }, 0);
     commit('top');
   }
   function step() { return pt().steps[S.k]; }
@@ -890,23 +892,34 @@
   }
   // Картинка или заглушка: место под картинку держится всегда (aspect-ratio), нет файла — подпись вместо картинки
   function mediaSrc(src) { return /^(https?:)?\/\//.test(src) ? '' : String(src); }
+  // Лёгкие копии картинок: страница дела объявляет <body data-webp="1"> — у каждой .jpg/.png дела рядом лежит .webp
+  // (втрое легче; player_check сверяет, что копии есть и весят ≤ 200 КБ). Браузер без WebP берёт исходный файл.
+  var WEBP = document.body.dataset.webp === '1';
+  function webpOf(s) { return WEBP && /\.(jpe?g|png)$/i.test(s) ? s.replace(/\.(jpe?g|png)$/i, '.webp') : ''; }
+  function picHtml(s, alt, attrs) {
+    var w = webpOf(s), img = '<img src="' + esc(s) + '" alt="' + esc(alt || '') + '" decoding="async"' + (attrs || '') + '>';
+    return w ? '<picture><source type="image/webp" srcset="' + esc(w) + '">' + img + '</picture>' : img;
+  }
   function figureHtml(l) {
     var srcs = [].concat(l.layers || l.img || []).filter(Boolean).map(mediaSrc).filter(Boolean);
     var alt = plain(l.alt || l.caption || 'Картинка');
     var tall = isTall(l);   // вертикальная — показываем квадратом (std/images.md, «Картинки в плеере»)
     var ratio = tall ? '1 / 1' : (l.ratio || '3 / 2');
+    // заглушка с подписью видна, только когда файла нет (is-empty) или он не загрузился (is-missing, обработчик error):
+    // пока картинка грузится — ровный фон кадра, а не «Здесь будет иллюстрация» (владелец 27.11)
     var ph = '<span class="pl-ph" aria-hidden="true"><b>Здесь будет иллюстрация</b><span>' + esc(alt) + '</span></span>';
+    var none = srcs.length ? '' : ' is-empty';
     var imgs = srcs.map(function (s, i) {
-      return '<img src="' + esc(s) + '" alt="' + (i ? '' : esc(alt)) + '" loading="lazy" decoding="async"' + (i ? ' hidden' : '') + ' data-layer="' + i + '">';
+      return picHtml(s, i ? '' : alt, (i ? ' hidden' : '') + ' data-layer="' + i + '"');
     }).join('');
     var box = srcs.length > 1
-      ? '<button type="button" class="pl-frame pl-frame--layers" data-act="layer" data-i="0" data-n="' + srcs.length + '" style="aspect-ratio:' + esc(ratio) + '" aria-label="' + esc(alt) + '. Слой 1 из ' + srcs.length + ', нажмите — следующий">' + ph + imgs +
+      ? '<button type="button" class="pl-frame pl-frame--layers' + none + '" data-act="layer" data-i="0" data-n="' + srcs.length + '" style="aspect-ratio:' + esc(ratio) + '" aria-label="' + esc(alt) + '. Слой 1 из ' + srcs.length + ', нажмите — следующий">' + ph + imgs +
         '<span class="pl-dots" aria-hidden="true">' + srcs.map(function (s, i) { return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</span></button>'
-      : tall && srcs.length && !l.inOpt
-        // обрезанная вертикальная картинка — целиком по нажатию (в шторке): деталь на краю кадра не теряется
-        ? '<button type="button" class="pl-frame pl-frame--zoom" data-act="zoom" data-src="' + esc(srcs[0]) + '" data-alt="' + esc(alt) + '" style="aspect-ratio:' + esc(ratio) + '" aria-label="' + esc(alt) + '. Открыть картинку целиком">' + ph + imgs +
+      : srcs.length && !l.inOpt
+        // любая картинка — целиком по нажатию, на весь экран (openZoom); у обрезанной вертикальной так видна деталь на краю кадра
+        ? '<button type="button" class="pl-frame pl-frame--zoom' + (tall ? ' pl-frame--crop' : '') + '" data-act="zoom" data-src="' + esc(srcs[0]) + '" data-alt="' + esc(alt) + '" style="aspect-ratio:' + esc(ratio) + '" aria-label="' + esc(alt) + '. Открыть картинку целиком">' + ph + imgs +
           '<span class="pl-zoom" aria-hidden="true">' + ico('zoom') + '</span></button>'
-        : '<div class="pl-frame" style="aspect-ratio:' + esc(ratio) + '"' + (srcs.length ? '' : ' role="img" aria-label="' + esc(alt) + ' (картинка готовится)"') + '>' + ph + imgs + '</div>';
+        : '<div class="pl-frame' + none + '" style="aspect-ratio:' + esc(ratio) + '"' + (srcs.length ? '' : ' role="img" aria-label="' + esc(alt) + ' (картинка готовится)"') + '>' + ph + imgs + '</div>';
     return '<figure class="pl-fig" data-arrow-at="image">' + box + (l.caption ? '<figcaption>' + inline(l.caption) + '</figcaption>' : '') + '</figure>';
   }
   // Звук: плеер реплики. У всех реплик экрана есть файлы — играет их подряд; нет — то же место с плашкой «Аудио скоро».
@@ -930,7 +943,8 @@
       (n ? ' data-n="' + n + '"' + (whole ? ' data-whole="1"' : '') : '') + '>' +
       '<button type="button" class="pl-voice-btn" data-act="voice" aria-label="' + (ready ? 'Слушать' : 'Слушать: аудио скоро') + '"' + (ready ? ' aria-pressed="false"' : ' aria-disabled="true"') + '>' + ico('play') + ico('pause') + '</button>' +
       '<span class="pl-voice-wave" aria-hidden="true">' + WAVE.map(function (h) { return '<i style="height:' + h + 'px"></i>'; }).join('') + '</span>' +
-      '<span class="pl-voice-note">' + (ready ? '0:00' : 'Аудио скоро') + '</span></div>';
+      '<span class="pl-voice-note">' + (ready ? (srcs.length > 1 ? '1/' + srcs.length + ' · ' : '') + '0:00' : 'Аудио скоро') + '</span>' +
+      (ready && !clue ? '<button type="button" class="pl-voice-re" data-act="voiceback" aria-label="Повторить реплику">' + ico('restart') + '</button>' : '') + '</div>';
   }
   // lines — реплики экрана; whole — одна запись на весь блок (audio у точки, шага, дороги)
   function voiceHtml(lines, whole) {
@@ -958,6 +972,14 @@
       if (tg && !a.closest('details')) { tg.insertAdjacentElement('afterend', a); a.classList.add('is-at'); }
       if (t === 'board') { var nb = document.querySelector('.pl-nav [data-view="board"]'); if (nb) { nb.classList.remove('pl-callme'); void nb.offsetWidth; nb.classList.add('pl-callme'); } }
     });
+    // экран «слушаю»: «включите звук» — в строке-субтитре, один раз, на том экране, где появилась
+    var cc = app.querySelector('.pl-cc[data-tip]');
+    if (cc && (!S.arrows.sound || S.arrows.sound === key)) {
+      if (!S.arrows.sound) { S.arrows.sound = key; changed = true; }
+      cc.querySelector('.pl-cc-who').textContent = ARROW_NAMES.sound;
+      cc.querySelector('.pl-cc-t').textContent = cc.dataset.tip;
+      cc.dataset.tipon = '1';
+    }
     if (changed) save();
   }
   // Письмо-улика: строки с пятном (▓ в тексте), линии на просвет, кончик (присох / с кружками), штамп, оборот
@@ -1502,7 +1524,7 @@
   // Экран заполняется по оценке высоты в пикселях, а не по числу знаков: ширина колонки, средняя ширина буквы и высота строки
   // меряются один раз и запоминаются в сохранении (S.lay) — разбивка на экраны не меняется от перезагрузки, клавиатуры или
   // догрузки шрифта, и номер экрана S.f остаётся верным. Другая версия раскладки — место ставится на начало текущего шага.
-  var LAY_V = 3, LAY0 = null;
+  var LAY_V = 4, LAY0 = null;
   var LAY_SAMPLE = 'Из-за спинки скамейки сперва вылез хвост, а следом и весь кот. Голубь спросил: «Курлык! Где улика, 1931?»';
   // плеер реплики, строка заголовка шага, штамп «Верно», зазор частей, буквы доски, отступ первой части экрана, запас на перенос строк
   var V_VOICE = 64, V_HEAD = 46, V_STAMP = 56, V_GAP = 16, V_BOARD = 110, V_FRAME = 16, V_SAFE = 10;
@@ -1520,12 +1542,16 @@
     var w = app.clientWidth - (parseFloat(acs.paddingLeft) || 0) - (parseFloat(acs.paddingRight) || 0);
     // всё, что не экран: шапка с полосой, отступ, строка «назад · где мы», зазор, кнопка «Дальше» с подложкой, низ с навигацией
     var chrome = (topEl ? topEl.offsetHeight : 65) + (parseFloat(acs.paddingTop) || 0) + 44 + 8 + 92 + (parseFloat(acs.paddingBottom) || 0);
+    // мерка снята с обложки (её ещё не сменил первый экран): там нет полосы прогресса (8 px) и навигации под кнопкой
+    var prog = document.getElementById('progress'), cover = app.querySelector('.pl-cover-go');
+    if (prog && !prog.firstChild) chrome += 8;
+    if (cover && window.innerWidth < 1024) chrome += (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 64) + 16 - (parseFloat(acs.paddingBottom) || 0);
     // T-123 (H-97): на низком окне (< 760 px, 360×740 и ниже) экран может быть на ~15% окна выше видимого — немного прокрутки
     // вместо лишнего «Дальше» (без допуска на 360×740 нажатий было на 13% больше, чем на 390×844). Кнопка «Дальше» прибита
     // к низу и видна всегда. LAY_V не меняем: сохранённая раскладка (S.lay) остаётся своей — у играющих экраны не перескакивают
     var ih = window.innerHeight || 700, extra = ih < LOW_H ? Math.round(ih * LOW_SCROLL) : 0;
     return { v: LAY_V, w: Math.round(w > 200 ? w : 358), h: Math.max(300, Math.round(ih + extra - chrome - V_SAFE)),
-      cw: r.width > 100 ? r.width / LAY_SAMPLE.length : 9.6, lh: r.height > 10 ? Math.round(r.height) : 27, ih: window.innerHeight || 0, voice: voiceOn() };
+      cw: r.width > 100 ? r.width / LAY_SAMPLE.length : 9.6, lh: r.height > 10 ? Math.round(r.height) : 27, ih: window.innerHeight || 0, voice: voiceOn(), mode: MODE };
   }
   function VV() { return lay().voice ? V_VOICE : 0; }   // место плеера реплики на экране (T-93: без записей его нет)
   function lay() {
@@ -1568,8 +1594,13 @@
     return r > 0 && r < 1 ? 1 : (r || 1.5);   // вертикальная картинка показывается квадратом (std/images.md, «Картинки в плеере»)
   }
   function isTall(l) { var m = String(l.ratio || '').match(/([\d.]+)\s*\/\s*([\d.]+)/); return !!m && +m[1] < +m[2]; }
-  function figPx(l, w) { var L = lay(); return Math.min(w / figRatio(l), Math.round(FIG_MAX * (L.ih || 800))) + (l.caption ? 8 + textPx(l.caption, w) * 0.85 : 0); }
+  function figPx(l, w) { return Math.min(w / figRatio(l), figCap()) + (l.caption ? 8 + textPx(l.caption, w) * 0.85 : 0); }
   var FIG_MAX = 0.42;   // картинка экрана — не выше 42% высоты окна (player.css, .pl-step .pl-frame)
+  // На экране «слушаю» под картинкой стоят плеер, субтитр и «Показать текст» — картинка ниже: окно минус 548 px
+  // (player.css, .pl-step[data-listen] .pl-frame: 844 → 296 px, 740 → 192 px), чтобы всё помещалось без прокрутки
+  var FIG_LISTEN = false, FIG_REST = 548;
+  function figCap() { var ih = lay().ih || 800; return FIG_LISTEN ? Math.max(160, ih - FIG_REST) : Math.round(FIG_MAX * ih); }
+  function listenFr(fr) { return !!fr && ((wholeOn(fr.audio) && spoken(fr.lines)) || asLines(fr.lines).some(audible)); }
   // Высота реплики на экране, px (cont — тот же говорящий, что выше: имя не подписано)
   function linePx(l, cont) {
     var w = lay().w;
@@ -1578,7 +1609,8 @@
     if (l.arrow) return arrowOff(l) ? 0 : 64 + textPx(l.text, w - 32);
     if (l.doc === 'letter') return letterPx(l);
     if (l.doc === 'card') return 260;
-    if (l.img !== undefined || l.layers) return figPx(l, w) + (l.text || l.audio ? 8 + linePx(Object.assign({}, l, { img: undefined, layers: undefined, caption: undefined }), cont) : 0);
+    if (l.img !== undefined || l.layers) return figPx(l, w) + (audible(l) ? 0 : l.text || l.audio ? 8 + linePx(Object.assign({}, l, { img: undefined, layers: undefined, caption: undefined }), cont) : 0);
+    if (audible(l)) return 0;   // текст озвученной реплики свёрнут под «Показать текст» (beatHtml)
     if (l.audio && !l.text) return 60 + (l.transcript || l.caption ? 10 + textPx(l.transcript || l.caption, w) : 0);
     if (!l.who) return textPx(l.text, w);
     var sp = speaker(l.who), paper = sp.style === 'note' || sp.style === 'letter' || sp.style === 'card';
@@ -1598,27 +1630,92 @@
     var h = 0, prev = null, n = 0;
     asLines(lines).forEach(function (l) {
       var who = l && typeof l === 'object' && !l.arrow && l.text != null ? (l.who || null) : null, cont = !!who && who === prev;
-      h += linePx(l, cont) + (n ? (cont ? 10 : 14) : 0); n++;
+      var px = linePx(l, cont);
+      if (px) { h += px + (n ? (cont ? 10 : 14) : 0); n++; }
       if (!(l && typeof l === 'object' && l.arrow)) prev = who;
     });
     return h;
   }
   function spoken(lines) { return asLines(lines).some(function (l) { return l && typeof l === 'object' && !l.arrow && l.text != null; }); }
   // Реплики → экраны: подряд идущие реплики делят экран, пока помещаются по высоте; head — заголовок или штамп над первой частью
-  function beatsOf(src, head) {
-    var L = lay(), out = [], cur = [], room = L.h - V_FRAME - (head || 0), h = 0, voice = false, prev = null;
-    asLines(src).forEach(function (l) {
+  // ---------- «слушаю»: картинка, запись и текст — на одном экране (владелец 27.11) ----------
+  // У всех реплик экрана есть запись (своя у каждой или одна на блок — audio у точки, шага, дороги) и выбран режим «Слушаю и читаю» —
+  // экран собирается так: картинки → плеер → строка-субтитр (звучащая фраза) → «Показать текст» (вся расшифровка, свёрнута).
+  // Текст такой реплики места на экране не занимает, поэтому реплики не дробятся на экраны «картинка / текст / текст».
+  // Реплики без записи идут как раньше — текстом; на одном экране озвученные и неозвученные не смешиваются.
+  function isSpoken(l) { return !!l && typeof l === 'object' && !l.arrow && l.text != null && !(l.audio && !l.text); }
+  function audible(l) { return MODE === 'listen' && isSpoken(l) && !!l.text && typeof l.audio === 'string' && !!mediaSrc(l.audio); }
+  function wholeOn(a) { return MODE === 'listen' && typeof a === 'string' && !!mediaSrc(a); }
+  function audioOnly(lines, whole) { var sp = asLines(lines).filter(isSpoken); return sp.length > 0 && (wholeOn(whole) || sp.every(audible)); }
+  function subPx() { return 3 * 26 + 16 + 44 + 16; }   // субтитр в три строки и кнопка «Показать текст» с зазорами
+  function voicePx(lines, whole) { return spoken(lines) ? VV() + (audioOnly(lines, whole) ? subPx() : 0) : 0; }
+  function splitTx(lines) {
+    var vis = [], tx = [], tip = '';
+    asLines(lines).forEach(function (l) {
+      if (l && typeof l === 'object' && l.arrow === 'sound') { if (!arrowOff(l)) tip = plain(l.text); return; }
+      if (!isSpoken(l)) { vis.push(l); return; }
+      var pic = l.img !== undefined || !!l.layers;
+      if (pic) vis.push(Object.assign({}, l, { text: undefined, who: undefined, audio: undefined }));
+      tx.push(pic ? Object.assign({}, l, { img: undefined, layers: undefined, caption: undefined }) : l);
+    });
+    return { vis: vis, tx: tx, tip: tip };
+  }
+  // фразы реплики для строки-субтитра: по предложениям, короткие склеиваются с соседней
+  function chunks(text) {
+    var t = String(text || '').replace(/\s+/g, ' ').trim(), out = [], re = /[^.!?…]+[.!?…]+[»"”)]*\s*|[^.!?…]+$/g, m;
+    while ((m = re.exec(t))) {
+      var s = m[0].trim();
+      if (!s) continue;
+      if (out.length && out[out.length - 1].length < 48) out[out.length - 1] += ' ' + s; else out.push(s);
+    }
+    return out.length ? out : [t];
+  }
+  // tip — подсказка «включите звук» (стрелка sound): один раз стоит в субтитре вместо первой фразы (placeArrows)
+  function ccHtml(tx, tip) {
+    var l = tx[0] || {}, sp = l.who ? speaker(l.who) : null, name = sp && sp.style !== 'titr' ? sp.name : '';
+    return '<p class="pl-cc"' + (tip ? ' data-tip="' + esc(tip) + '"' : '') + ' aria-hidden="true"><b class="pl-cc-who">' + esc(name) + '</b><span class="pl-cc-t">' + esc(chunks(plain(l.text))[0]) + '</span></p>';
+  }
+  function txHtml(tx) {
+    return '<details class="pl-more pl-tx"><summary><span class="pl-tx-show">Показать текст</span><span class="pl-tx-hide">Скрыть текст</span></summary>' +
+      '<div class="pl-more-body pl-lines">' + linesHtml(tx) + '</div></details>';
+  }
+  function beatHtml(lines, whole) {
+    if (!audioOnly(lines, whole)) return voiceHtml(lines, whole) + '<section class="pl-lines pl-beat">' + linesHtml(lines) + '</section>';
+    var sp = splitTx(lines);
+    return (sp.vis.length ? '<section class="pl-lines pl-beat">' + linesHtml(sp.vis) + '</section>' : '') + voiceHtml(lines, whole) + ccHtml(sp.tx, sp.tip) + txHtml(sp.tx);
+  }
+  // Реплики → экраны: подряд идущие реплики делят экран, пока помещаются по высоте; head — заголовок или штамп над первой частью;
+  // whole — одна запись на весь блок: такой блок в режиме «слушаю» не делится (запись одна)
+  function beatsOf(src, head, whole) {
+    var all = asLines(src);
+    if (wholeOn(whole) && all.some(isSpoken)) return [all];
+    var L = lay(), out = [], cur = [], room = L.h - V_FRAME - (head || 0), h = 0, voice = false, prev = null, aud = null;
+    all.forEach(function (l, li) {
       if (l && typeof l === 'object' && l.arrow) {
-        if (cur.length || !out.length) { h += linePx(l) + (cur.length ? 14 : 0); cur.push(l); } else out[out.length - 1].push(l);
+        // «включите звук» на экране «слушаю» стоит в строке-субтитре и места не занимает (ccHtml)
+        var free = l.arrow === 'sound' && (aud === true || all.slice(li + 1).filter(isSpoken).slice(0, 1).some(audible));
+        if (cur.length || !out.length) { h += free ? 0 : linePx(l) + (cur.length ? 14 : 0); cur.push(l); } else out[out.length - 1].push(l);
         return;
       }
       var who = l && typeof l === 'object' && l.text != null ? (l.who || null) : null, cont = !!who && who === prev;
-      var add = linePx(l, cont) + (cur.length ? (cont ? 10 : 14) : 0), sp = voice || spoken([l]);
-      if (cur.length && h + add + (sp ? VV() : 0) > room) {
-        out.push(cur); cur = []; room = L.h - V_FRAME; h = 0; voice = false;
+      // картинка попадёт на экран «слушаю», если рядом озвученная реплика: выше на том же экране или следующая
+      FIG_LISTEN = aud === true || all.slice(li).filter(isSpoken).slice(0, 1).some(audible);
+      var px = linePx(l, cont);
+      FIG_LISTEN = false;
+      var add = px ? px + (cur.length && h ? (cont ? 10 : 14) : 0) : 0, sp = voice || spoken([l]);
+      var a = isSpoken(l) ? audible(l) : null, mix = a != null && aud != null && a !== aud;
+      var res = sp ? VV() + ((a != null ? a : aud) ? subPx() : 0) : 0;
+      // последняя короткая строка блока (до двух строк текста) не уходит на отдельный почти пустой экран из-за пары десятков
+      // пикселей: оценка высоты берётся с запасом (V_SAFE, V_FRAME), на деле такой экран помещается
+      var widow = li === all.length - 1 && cur.length && !mix && (typeof l === 'string' || isSpoken(l)) && px > 0 && px <= 2 * L.lh + 4 && h + add + res <= room + 28;
+      if (cur.length && !widow && (mix || h + add + res > room)) {
+        out.push(cur); cur = []; room = L.h - V_FRAME; h = 0; voice = false; aud = null;
+        FIG_LISTEN = a === true || all.slice(li).filter(isSpoken).slice(0, 1).some(audible);
         add = linePx(l, false); sp = spoken([l]);
+        FIG_LISTEN = false;
       }
       cur.push(l); h += add; voice = sp; prev = who;
+      if (a != null) aud = a;
     });
     if (cur.length) out.push(cur);
     return out;
@@ -1644,9 +1741,15 @@
     F.forEach(function (fr) {
       var a = out[out.length - 1];
       if (!soft(fr) && fr.kind !== 'done') { out.push(fr); return; }
-      var est = fr.kind === 'done' ? fr.est || 0 : partPx(fr, p) + (spoken(fr.lines) ? VV() : 0) + V_FRAME;
-      var joined = a && a.est != null ? a.est + est - V_FRAME + V_GAP - (spoken(a.lines) && spoken(fr.lines) ? VV() : 0) : 1e9;
+      FIG_LISTEN = listenFr(fr);
+      var est = fr.kind === 'done' ? fr.est || 0 : partPx(fr, p) + voicePx(fr.lines, fr.audio) + V_FRAME;
+      FIG_LISTEN = false;
+      var joined = a && a.est != null ? a.est + est - V_FRAME + V_GAP - (a.kind === 'done' || fr.kind === 'done' ? 0 : Math.min(voicePx(a.lines), voicePx(fr.lines))) : 1e9;
       var ok = a && soft(a) && !a.gate && !a.board && !hasAudio(a) && !hasAudio(fr) && joined <= L.h;
+      // сцена точки начинается с нового экрана: с разговором в пути не склеивается (раньше их разделял экран «На месте»)
+      if (fr.arrive) ok = false;
+      // озвученные экраны («слушаю») с текстовыми не склеиваются: у плеера экрана либо все реплики с записью, либо ни одной
+      if (ok && fr.kind !== 'done' && spoken(a.lines) && spoken(fr.lines) && audioOnly(a.lines) !== audioOnly(fr.lines)) ok = false;
       // письмо показывается в состоянии своего шага: экран с письмом не склеивается с другим шагом и с итогом точки
       if (ok && (hasDoc(a) || hasDoc(fr)) && (fr.kind === 'done' || a.step !== fr.step)) ok = false;
       if (!ok) { fr.est = est; out.push(fr); return; }
@@ -1702,11 +1805,77 @@
     [].concat(st.cards || [], st.add || []).forEach(function (c) { var id = typeof c === 'string' ? c : c && c.id; if (id && CARDS[id] && ids.indexOf(id) === -1) ids.push(id); });
     return ids;
   }
+  // ---------- обложка и вступление (владелец 27.11: «не раз вначале повторяем одно и то же», «сейчас текстовый экран») ----------
+  // Обложка — первое впечатление: картинка дела, название, вопрос дела, паспорт маршрута метками и одна кнопка.
+  // Картинка — Q.cover или первая картинка вступления; вопрос — Q.hook или <body data-hook> (тот же, что на витрине);
+  // паспорт разбирается из Q.summary: «10 остановок · около 3 км · 2,5–3 часа.» — метки, «Старт — …» и «Финиш — …» — строки.
+  // Вступление показывает только то, чего на обложке не было: абзацы, повторяющие summary, титр с названием дела, картинка
+  // обложки и строка о закате (она на обложке) во вступление не идут. Ничего не осталось — «Открыть дело» ведёт сразу к точке 1.
+  function introAll() { var lines = []; (Q.intro || []).forEach(function (m) { lines = lines.concat(m); }); return lines; }
+  function coverArt() {
+    var c = Q.cover;
+    if (typeof c === 'string' && mediaSrc(c)) return { img: c, alt: '' };
+    if (c && typeof c === 'object' && typeof c.img === 'string' && mediaSrc(c.img)) return c;
+    return introAll().filter(function (x) { return x && typeof x === 'object' && typeof x.img === 'string' && !!mediaSrc(x.img); })[0] || null;
+  }
+  function coverHook() { return plain(Q.hook || document.body.dataset.hook || ''); }
+  function introLines() {
+    var ttl = lmNorm(Q.title || ''), art = coverArt(), pic = null;
+    // подводку (summary без паспорта) обложка показывает, только когда у дела нет вопроса-крючка; тогда во вступлении она — повтор
+    var lede = coverHook() ? '' : lmNorm(passport().lede);
+    var said = function (t) {
+      var n = lmNorm(t), ps = passport(t);
+      if (!n) return true;
+      if ((ps.stats.length || ps.rows.length) && !ps.lede) return true;   // строка-паспорт: точки, км, часы, старт, финиш — на обложке
+      return !!lede && lede.indexOf(n) !== -1;
+    };
+    var rest = introAll().filter(function (l) {
+      if (typeof l === 'string') return !said(l);
+      if (!l || typeof l !== 'object') return false;
+      if (typeof l.sun === 'number') return false;
+      if (art && l.img === art.img && !l.text && !l.audio) { pic = l; return false; }
+      if (l.arrow || l.img !== undefined || l.layers || l.doc) return true;
+      if (l.text == null) return true;
+      if (typeof l.audio === 'string') return true;   // озвученная реплика — это уже не повтор обложки, а сцена
+      if (l.who && speaker(l.who).style === 'titr' && ttl && lmNorm(l.text).indexOf(ttl) !== -1) return false;
+      return !said(l.text);
+    });
+    // вступление живёт, пока в нём есть свой текст или звук; одни картинки и подсказки интерфейса — пустой экран
+    var live = rest.some(function (l) { return typeof l === 'string' || (l && !l.arrow && (l.text != null || l.audio)); });
+    if (!live) return [];
+    // картинка обложки возвращается во вступление, только если другой картинки в нём нет
+    return pic && !rest.some(function (l) { return l && typeof l === 'object' && (l.img || l.layers); }) ? [pic].concat(rest) : rest;
+  }
+  function hasIntro() { return introLines().length > 0; }
+  function passport(src) {
+    var s = plain(src != null ? src : (Q.summary || '')).replace(/\s+/g, ' ').trim(), stats = [], rows = [];
+    s = s.replace(/(^|\s)(\d+\s+(?:остановок|остановки|остановка|точек|точки|точка)(?=[\s·,.])[^.!?]*)[.!?]/, function (m, sp, a) { stats = a.split(/\s*·\s*/).filter(Boolean); return ' '; });
+    ['Старт', 'Финиш'].forEach(function (k) {
+      s = s.replace(new RegExp('(^|\\s)' + k + '\\s*[—–:-]\\s*(.+?)[.!?](?=\\s+[А-ЯЁA-Z«]|\\s*$)'), function (m, sp, v) {
+        rows.push([k, v.charAt(0).toUpperCase() + v.slice(1)]); return ' ';
+      });
+    });
+    return { lede: s.replace(/\s+/g, ' ').trim(), stats: stats, rows: rows };
+  }
+  function idleHtml() {
+    var art = coverArt(), ps = passport(), hook = coverHook();
+    var eyebrow = (Q.district ? Q.district + ' · ' : '') + caseName();
+    var h = art
+      ? '<header class="pl-cover" id="top"><div class="pl-cover-art">' + picHtml(mediaSrc(art.img), plain(art.alt || ''), ' fetchpriority="high"') + '</div>' +
+        '<div class="pl-cover-head"><p class="pl-eyebrow">' + esc(eyebrow) + '</p><h1>' + esc(plain(Q.title)) + '</h1></div></header>'
+      : head(eyebrow, Q.title, '', 0);
+    if (hook) h += '<p class="pl-cover-hook">' + esc(hook).replace(/ — /g, '\u00a0— ') + '</p>';
+    // есть вопрос дела — подводку рассказывает вступление (с картинкой, а позже и голосом); нет — она здесь
+    if (ps.lede && !(hook && hasIntro())) h += '<p class="pl-cover-lede">' + esc(ps.lede) + '</p>';
+    if (ps.stats.length) h += '<ul class="pl-pass-stats" aria-label="Маршрут">' + ps.stats.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+    if (ps.rows.length) h += '<dl class="pl-pass">' + ps.rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl>';
+    return h + sunNote() + forkAhead() +
+      (S.field ? '<section class="pl-field"><span class="pl-label">Режим полевого теста</span><p class="pl-small">На каждой точке — список «что проверить». Время, ошибки, подсказки и заметки сохраняются сами. В конце, а при желании и раньше (меню → «Отправить отчёт»), отправьте отчёт одним сообщением в Telegram.</p></section>' : '') +
+      '<div class="pl-actions pl-stick pl-cover-go"><button class="pl-btn" type="button" data-act="start">Открыть дело</button>' +
+      '<p class="pl-small">Прогресс сохраняется на этом телефоне.</p></div>';
+  }
   function introFrames() {
-    var lines = [];
-    (Q.intro || []).forEach(function (m) { lines = lines.concat(m); });
-    var bs = beatsOf(lines);
-    if (!bs.length) bs = [[]];
+    var bs = beatsOf(introLines());
     return pack(bs.map(function (b, i) { return { id: 'i' + i, kind: 'beat', lines: b }; }));
   }
   // «Точка пройдена»: штамп, улика точки, карточки, легшие на доску здесь, задание для детей и кнопка «Что-то не так?»
@@ -1723,7 +1892,7 @@
   function stepFrames(F, p, i, r) {
     var st = p.steps[i], t = tagOf(st), ln = asLines(st.lines);
     if (!isInteractive(st)) {
-      var bs = beatsOf(ln.concat(t.text ? [t.text] : []), t.tag || st.title ? V_HEAD : 0);
+      var bs = beatsOf(ln.concat(t.text ? [t.text] : []), t.tag || st.title ? V_HEAD : 0, st.audio);
       if (!bs.length) bs = [[]];
       bs.forEach(function (b, j) {
         F.push({ id: 's' + i + 'b' + j, kind: 'beat', step: i, lines: b, tag: j ? null : t, title: j ? null : st.title, audio: j ? null : st.audio,
@@ -1732,7 +1901,7 @@
       return;
     }
     var tp = taskParts(ln);
-    if (!tp.inline) beatsOf(tp.talk, st.title ? V_HEAD : 0).forEach(function (b, j) {
+    if (!tp.inline) beatsOf(tp.talk, st.title ? V_HEAD : 0, st.audio).forEach(function (b, j) {
       F.push({ id: 's' + i + 'b' + j, kind: 'beat', step: i, lines: b, tag: null, title: j ? null : st.title, audio: j ? null : st.audio });
     });
     F.push({ id: 's' + i + 't', kind: 'task', step: i, inline: (tp.inline ? tp.talk : []).concat(tp.tail), recap: tp.inline ? null : tp.talk, arrows: tp.late,
@@ -1750,18 +1919,22 @@
     var p = Q.points[pi], F = [], road = [], chat = [];
     asLines(clockPick(p.walk, pi)).forEach(function (l) { (typeof l === 'string' || (l && l.arrow && !chat.length) ? road : chat).push(l); });
     F.push({ id: 'w', kind: 'road', lines: road });
-    beatsOf(chat).forEach(function (b, i) { F.push({ id: 'wc' + i, kind: 'beat', lines: b, audio: i ? null : p.walk_audio }); });
+    beatsOf(chat, 0, p.walk_audio).forEach(function (b, i) { F.push({ id: 'wc' + i, kind: 'beat', lines: b, audio: i ? null : p.walk_audio }); });
     walkAsks(p).forEach(function (w, i) {
       if (stage !== 0 && !(wa[i] && wa[i].res)) return;   // после дороги остаются только те вопросы, на которые ответили
       var tp = taskParts(w.lines), t = tagOf(w);
-      if (!tp.inline) beatsOf(tp.talk, V_HEAD).forEach(function (b, j) { F.push({ id: 'wa' + i + 'b' + j, kind: 'beat', lines: b, audio: j ? null : w.audio, tag: j ? null : { tag: 'По желанию', cls: 'opt' }, title: j ? null : 'Вопрос на ходу' }); });
+      if (!tp.inline) beatsOf(tp.talk, V_HEAD, w.audio).forEach(function (b, j) { F.push({ id: 'wa' + i + 'b' + j, kind: 'beat', lines: b, audio: j ? null : w.audio, tag: j ? null : { tag: 'По желанию', cls: 'opt' }, title: j ? null : 'Вопрос на ходу' }); });
       F.push({ id: 'wa' + i, kind: 'wask', i: i, inline: (tp.inline ? tp.talk : []).concat(tp.tail), recap: tp.inline ? null : tp.talk, arrows: tp.late,
         ask: t.text ? '' : (tp.inline ? '' : askFrom(tp.talk)) });
     });
     var goLast = stage === 0 && F.length > 1;
     if (stage >= 1) {
-      F.push({ id: 'a', kind: 'arrive' });
-      beatsOf(clockPick(p.scene, pi)).forEach(function (b, i) { F.push({ id: 'sc' + i, kind: 'beat', lines: b, audio: i ? null : p.audio }); });
+      // «На месте» отдельным экраном — только когда на нём есть что показать: картинка точки (или у точки нет сцены).
+      // Иначе это был экран из заголовка и плаката-заглушки (владелец 27.11: «очень много пустоватых экранов»): сцена начинается
+      // сразу, название точки стоит в строке над экраном, задание для детей (свёрнуто) и список полевого теста — под сценой
+      var sc = beatsOf(clockPick(p.scene, pi), p.kids ? 64 : 0, p.audio), solo = !!p.img || !sc.length;
+      if (solo) F.push({ id: 'a', kind: 'arrive' });
+      sc.forEach(function (b, i) { F.push({ id: 'sc' + i, kind: 'beat', lines: b, audio: i ? null : p.audio, arrive: !solo && !i }); });
       var last = Math.min(k, p.steps.length - 1);
       for (var i = 0; i <= last; i++) stepFrames(F, p, i, i < k ? (res[i] || { st: 'none' }) : null);
     }
@@ -1804,6 +1977,15 @@
     if (typeof S.f === 'number' && S.f >= 0 && S.f < F.length) return;
     S.f = S.phase === 'step' ? frameIndex(F, function (x) { return x.step === S.k; }, F.length - 1)
       : S.phase === 'point_done' ? frameIndex(F, function (x) { return x.kind === 'done'; }, F.length - 1) : 0;
+  }
+  // Экраны пересобрались (сменился режим «слушаю / читаю»): встаём на экран с той же репликой, иначе — на начало шага
+  function reseat(was) {
+    var F = framesOf(liveSec()), first = asLines(was.lines)[0];
+    var i = frameIndex(F, function (x) { return x.kind === was.kind && x.id === was.id && asLines(x.lines)[0] === first; }, -1);
+    if (i < 0 && first && typeof first === 'object') i = frameIndex(F, function (x) { return asLines(x.lines).indexOf(first) !== -1; }, -1);
+    if (i < 0 && (was.kind === 'task' || was.kind === 'wask')) i = frameIndex(F, function (x) { return x.kind === was.kind && x.step === was.step && x.i === was.i; }, -1);
+    S.f = i;
+    fixCursor();
   }
   function shownPos() { return peek || { sec: liveSec(), f: S.f }; }
   function secName(sec) {
@@ -1955,20 +2137,24 @@
   // Экран из нескольких частей (pack): разбор ответа со штампом и «легло на доску», реплики с заголовком шага.
   // Плеер реплики — один на экран, сразу под первым заголовком или штампом
   function partsHtml(parts, fr, p) {
-    var voice = voiceHtml(fr.lines, fr.audio), h = '';
+    var ao = audioOnly(fr.lines, fr.audio), voice = voiceHtml(fr.lines, fr.audio), h = '', tx = [], tip = '';
     parts.forEach(function (pt, i) {
-      var v = i === 0 ? voice : '';
+      var body = asLines(pt.lines);
+      // «слушаю»: картинки частей остаются на экране, тексты всех частей — одной расшифровкой под кнопкой
+      if (ao) { var sp = splitTx(body); tx = tx.concat(sp.tx); body = sp.vis; tip = tip || sp.tip; }
+      var v = i === 0 ? voice + (ao ? '<!--cc-->' : '') : '';
       if (pt.kind === 'result') {
         var cards = pt.res && p ? stepCards(p.steps[pt.step]) : [];
         h += '<section class="pl-result">' + (pt.res ? '<div class="pl-result-top">' + resultStamp(pt.res) + '</div>' : '') + v +
-          (asLines(pt.lines).length ? '<div class="pl-lines">' + linesHtml(pt.lines) + '</div>' : '') +
+          (body.length ? '<div class="pl-lines">' + linesHtml(body) + '</div>' : '') +
           (cards.length ? '<aside class="pl-toboard"><span class="pl-label">Легло на доску улик</span><ul>' + cards.map(function (id) { return '<li>' + inline(CARDS[id].title) + '</li>'; }).join('') + '</ul></aside>' : '') + '</section>';
         return;
       }
       var top = (pt.tag && pt.tag.tag) || pt.title ? '<div class="pl-task-top">' + (pt.tag ? tagHtml(pt.tag) : '') + (pt.title ? '<span class="pl-beat-title">' + esc(plain(pt.title)) + '</span>' : '') + '</div>' : '';
-      h += top + v + '<section class="pl-lines pl-beat">' + linesHtml(pt.lines) + '</section>';
+      var sec = body.length || !ao ? '<section class="pl-lines pl-beat">' + linesHtml(body) + '</section>' : '';
+      h += top + (ao ? sec + v : v + sec);
     });
-    return h;
+    return ao ? h.replace('<!--cc-->', ccHtml(tx, tip)) + txHtml(tx) : h;
   }
   // Один экран. c = {sec, f, F, live}: live — это текущий экран игрока, а не просмотр пройденного
   function frameHtml(fr, c) {
@@ -1988,7 +2174,8 @@
       return walkAskHtml(walkAsks(p)[fr.i], fr, mine ? ctxSlot('w:' + fr.i) : ((((S.hist || {})[c.sec] || {}).wa || [])[fr.i] || {}), mine && S.phase === 'walk');
     }
     if (fr.kind === 'task') return taskHtml(fr, c, p);
-    if (fr.kind === 'result' || (fr.kind === 'beat' && fr.parts)) return partsHtml(fr.parts || [partOf(fr)], fr, p) + (fr.board ? '<div class="pl-beat-board">' + boardLetters(false) + '</div>' : '') + goT;
+    if (fr.kind === 'result' || (fr.kind === 'beat' && fr.parts)) return partsHtml(fr.parts || [partOf(fr)], fr, p) + (fr.board ? '<div class="pl-beat-board">' + boardLetters(false) + '</div>' : '') + goT +
+      (fr.arrive && p ? kidsHtml(p.kids) + checkBlock(p, true) : '');
     if (fr.kind === 'done') {
       var h = (fr.pre ? partsHtml(fr.pre, fr, p) : '') + '<div class="pl-result-top"><span class="pl-stamp">Точка ' + p.n + ' пройдена</span></div>';
       var clues = S.board.filter(function (x) { return x.n === p.n; });
@@ -2008,7 +2195,8 @@
     }
     // реплики
     var top = (fr.tag && fr.tag.tag) || fr.title ? '<div class="pl-task-top">' + (fr.tag ? tagHtml(fr.tag) : '') + (fr.title ? '<span class="pl-beat-title">' + esc(plain(fr.title)) + '</span>' : '') + '</div>' : '';
-    return top + voiceHtml(fr.lines, fr.audio) + '<section class="pl-lines pl-beat">' + linesHtml(fr.lines) + '</section>' + (fr.board ? '<div class="pl-beat-board">' + boardLetters(false) + '</div>' : '') + goT;
+    return top + beatHtml(fr.lines, fr.audio) + (fr.board ? '<div class="pl-beat-board">' + boardLetters(false) + '</div>' : '') + goT +
+      (fr.arrive && p ? kidsHtml(p.kids) + checkBlock(p, true) : '');
   }
   // Строка над экраном: «назад», где мы, линия мини-шагов точки; нажатие — оглавление
   // Строка над экраном: «назад» и где мы. Нажатие на название — оглавление пройденного (стрелка ▾ это показывает).
@@ -2016,7 +2204,7 @@
   // показывает текущий отрезок общей полосы в шапке (pointPart), а не вторая полоса.
   function crumbHtml(pos, F, fr) {
     var name = fr.kind === 'road' ? 'Точка ' + Q.points[pos.sec].n + ' · дорога' : fr.kind === 'arrive' ? 'Точка ' + Q.points[pos.sec].n + ' · на месте' : secName(pos.sec);
-    var canBack = !(pos.sec < 0 && pos.f === 0);
+    var canBack = !(pos.f === 0 && (pos.sec < 0 || (pos.sec === 0 && !hasIntro())));
     return '<div class="pl-crumb">' +
       '<button type="button" class="pl-back" data-act="back" aria-label="Назад, к предыдущему шагу"' + (canBack ? '' : ' hidden') + '>' + ico('back') + '</button>' +
       '<button type="button" class="pl-crumb-btn" data-act="toc" aria-haspopup="dialog" aria-label="Оглавление. ' + esc(secName(pos.sec)) + ', экран ' + (pos.f + 1) + '">' +
@@ -2068,20 +2256,14 @@
         (S.field ? '<button class="pl-btn pl-btn--ghost" type="button" data-act="report">Отправить отчёт</button>' : '') +
         '<button class="pl-btn pl-btn--ghost" type="button" data-act="restart">Начать заново</button></div>';
     }
-    if (S.phase === 'idle') {
-      return head((Q.district ? Q.district + ' · ' : '') + caseName(), Q.title, Q.summary || '', 0) + sunNote() + forkAhead() +
-        (S.field ? '<section class="pl-field"><span class="pl-label">Режим полевого теста</span><p class="pl-small">На каждой точке — список «что проверить». Время, ошибки, подсказки и заметки сохраняются сами. В конце, а при желании и раньше (меню → «Отправить отчёт»), отправьте отчёт одним сообщением в Telegram.</p></section>' : '') +
-        (voiceOn() ? '<section class="pl-how"><span class="pl-label">Как пойдём</span>' + modeSeg() + '</section>' : '') +
-        '<div class="pl-actions pl-stick"><button class="pl-btn" type="button" data-act="start">Открыть дело</button></div>' +
-        '<p class="pl-small">Прогресс сохраняется на этом телефоне: можно закрыть страницу и вернуться.</p>';
-    }
+    if (S.phase === 'idle') return idleHtml();
     var pos = shownPos(), F = framesOf(pos.sec);
     if (pos.f >= F.length) { pos.f = F.length - 1; }
     var fr = F[pos.f], c = { sec: pos.sec, f: pos.f, F: F, live: !peek };
     var headed = fr.kind === 'road' || fr.kind === 'arrive' || fr.kind === 'closed';
     return crumbHtml(pos, F, fr) +
       (peek ? '<p class="pl-review"><span class="pl-stamp pl-stamp--ans">Пройденное</span> Это вы уже видели: ' + esc(secName(pos.sec)) + '.</p>' : '') +
-      '<div class="pl-step" id="frame" tabindex="-1" data-sec="' + pos.sec + '" data-f="' + pos.f + '" data-frame="' + esc(fr.id) + '" data-kind="' + esc(fr.kind) + '" data-dir="' + moveDir + '">' +
+      '<div class="pl-step" id="frame" tabindex="-1" data-sec="' + pos.sec + '" data-f="' + pos.f + '" data-frame="' + esc(fr.id) + '" data-kind="' + esc(fr.kind) + '" data-dir="' + moveDir + '"' + (listenFr(fr) ? ' data-listen="1"' : '') + '>' +
       (headed ? '' : '<h1 class="visually-hidden">' + esc(secName(pos.sec)) + '</h1>') + frameHtml(fr, c) + '</div>' +
       (/^(road|go|arrive|task|wask|done)$/.test(fr.kind) ? issueBtn() : '') + barHtml(fr, c);
   }
@@ -2119,7 +2301,7 @@
   // Оглавление: всё пройденное по точкам и мини-шагам; того, что впереди, в нём нет — только число точек
   function tocHtml() {
     var n = Q.points.length, live = liveSec(), pos = shownPos(), h = '';
-    for (var sec = -1; sec <= Math.min(live, n); sec++) {
+    for (var sec = hasIntro() ? -1 : 0; sec <= Math.min(live, n); sec++) {
       var F = framesOf(sec), seen = sec === live && S.phase !== 'done' ? S.f : F.length - 1, items = '', lastStep = null;
       for (var i = 0; i <= seen && i < F.length; i++) {
         var fr = F[i];
@@ -2188,7 +2370,102 @@
     kbGone();
     var fr = document.getElementById('frame');
     if (view === 'point' && fr) placeArrows(fr.dataset.sec + ':' + fr.dataset.frame); else [].forEach.call(app.querySelectorAll('.pl-arrow'), function (a) { a.remove(); });
+    fitFigs();
+    preloadSoon();
   }
+  // Экран с картинкой не помещается на несколько десятков пикселей — картинка становится ниже ровно на столько (не больше чем
+  // на 40% и не ниже 120 px): страница не «ездит» из-за хвоста в 20–60 px (владелец 27.11). Картинка обрезается по краям
+  // (object-fit: cover) и открывается целиком по нажатию. Экраны загадок и раскрытую расшифровку не трогаем.
+  function fitFigs() {
+    var fr = document.getElementById('frame');
+    app.style.paddingBottom = '';
+    if (view !== 'point' || !fr || window.innerWidth >= 1024) return;
+    // экран длиннее окна на считаные пиксели (до 12) — их отдаёт воздух под кнопкой (16 px): прокрутки «на волосок» нет
+    var tight = document.documentElement.scrollHeight - window.innerHeight;
+    if (tight > 0 && tight <= 12 && !fr.querySelector('details.pl-tx[open]')) app.style.paddingBottom = Math.max(0, parseFloat(getComputedStyle(app).paddingBottom) - tight - 1) + 'px';
+    if (!/^(beat|result|done)$/.test(fr.dataset.kind || '')) return;
+    var figs = [].filter.call(fr.querySelectorAll('.pl-fig > .pl-frame'), function (f) { return !f.closest('.pl-opt, details'); });
+    if (!figs.length || fr.querySelector('details.pl-tx[open]')) return;
+    figs.forEach(function (f) { f.style.maxHeight = ''; });
+    var over = document.documentElement.scrollHeight - window.innerHeight;
+    if (over <= 0) return;
+    over += 1;   // высоты дробные: без запаса остаётся прокрутка в 1 px
+    var hs = figs.map(function (f) { return f.getBoundingClientRect().height; });
+    var give = hs.map(function (h) { return Math.max(0, Math.min(h * 0.4, h - 120)); }), all = give.reduce(function (a, b) { return a + b; }, 0);
+    if (all < over) return;   // не поместится и так — оставляем картинку целой, экран прокручивается
+    figs.forEach(function (f, i) { f.style.maxHeight = Math.floor(hs[i] - over * give[i] / all) + 'px'; });
+  }
+  window.addEventListener('resize', function () { if (Q && S) fitFigs(); });
+  // ---------- предзагрузка (владелец 27.11: «картинки долго грузятся», переходы вперёд-назад — без ожидания) ----------
+  // Картинки текущей, предыдущей и следующей точки (и обложки со вступлением) загружаются и раскодируются заранее, пока игрок
+  // читает экран; у записей соседних экранов и следующего блока заранее берутся метаданные. Те же адреса уходят в sw.js
+  // (сообщение {warm}) — после первого показа медиа отдаётся из кеша сразу и без связи.
+  var PRE_I = {}, PRE_A = {}, WARM = {}, WEBP_OK = null;
+  function mediaIn(x, out) {
+    if (Array.isArray(x)) { x.forEach(function (e) { mediaIn(e, out); }); return out; }
+    if (!x || typeof x !== 'object') return out;
+    Object.keys(x).forEach(function (k) {
+      var v = x[k];
+      if (k === 'img' || k === 'layers') [].concat(v || []).forEach(function (s) { if (typeof s === 'string' && mediaSrc(s) && out.img.indexOf(s) === -1) out.img.push(s); });
+      else if (k === 'audio' || k === 'walk_audio') { if (typeof v === 'string' && mediaSrc(v) && out.audio.indexOf(v) === -1) out.audio.push(v); }
+      else if (v && typeof v === 'object') mediaIn(v, out);
+    });
+    return out;
+  }
+  function preImg(src) {
+    if (PRE_I[src]) return;
+    var d = document.createElement('div');
+    d.innerHTML = picHtml(src, '');
+    PRE_I[src] = d;   // ссылка держит раскодированную картинку в памяти: тот же адрес на экране появляется без мигания
+    var im = d.querySelector('img');
+    im.addEventListener('error', function () { dropWebp(im); });
+    if (im.decode) im.decode().catch(function () { /* нет файла — на экране будет заглушка */ });
+  }
+  function preAudio(src) {
+    if (PRE_A[src]) return;
+    try { var a = new Audio(); a.preload = 'metadata'; a.src = src; PRE_A[src] = a; } catch (e) { /* без предзагрузки */ }
+  }
+  function warmMedia(urls) {
+    var list = urls.filter(function (u) { return !WARM[u]; });
+    if (!list.length) return;
+    try {
+      if (!navigator.serviceWorker) return;
+      navigator.serviceWorker.ready.then(function (reg) {
+        if (!reg || !reg.active) return;
+        list.forEach(function (u) { WARM[u] = 1; });
+        reg.active.postMessage({ warm: list.map(function (u) { return new URL(u, location.href).href; }) });
+      }).catch(function () { /* без офлайна */ });
+    } catch (e) { /* без офлайна */ }
+  }
+  function preload() {
+    if (!Q || !S) return;
+    var n = Q.points.length, near = { img: [], audio: [] }, next = { img: [], audio: [] };
+    if (S.phase === 'idle' || S.phase === 'intro') { mediaIn([Q.cover, Q.intro, Q.letter, Q.points[0]], near); mediaIn(Q.points[0], next); }
+    else {
+      var sec = Math.max(0, Math.min(n - 1, shownPos().sec));
+      mediaIn([Q.points[sec - 1], Q.points[sec], Q.points[sec + 1], Q.letter], near);
+      // записи: соседние экраны и то, что откроется следующим (сцена после дороги, следующий шаг, дорога следующей точки)
+      var pos = shownPos(), F = framesOf(pos.sec), p = Q.points[sec];
+      [F[pos.f - 1], F[pos.f], F[pos.f + 1]].forEach(function (fr) { if (fr) mediaIn({ l: fr.lines, audio: typeof fr.audio === 'string' ? fr.audio : null }, next); });
+      if (S.phase === 'walk') mediaIn({ s: p.scene, audio: p.audio, st: p.steps[0] }, next);
+      else if (S.phase === 'step') mediaIn([p.steps[S.k], p.steps[S.k + 1]], next);
+      else if (Q.points[sec + 1]) mediaIn({ w: Q.points[sec + 1].walk, walk_audio: Q.points[sec + 1].walk_audio }, next);
+    }
+    near.img.forEach(preImg);
+    next.audio.slice(0, 8).forEach(preAudio);
+    if (WEBP_OK != null) warmMedia(near.img.map(function (s) { return (WEBP_OK && webpOf(s)) || s; }).concat(near.audio.slice(0, 40)));
+  }
+  var preTm = 0;
+  function preloadSoon() { clearTimeout(preTm); preTm = setTimeout(preload, 120); }
+  // WebP умеют все нынешние браузеры; проверка нужна, чтобы в кеш офлайна лёг тот файл, который браузер и покажет
+  (function () {
+    if (!WEBP) { WEBP_OK = false; return; }
+    var im = new Image();
+    im.onload = function () { WEBP_OK = im.width === 1; preloadSoon(); };
+    im.onerror = function () { WEBP_OK = false; preloadSoon(); };
+    im.src = 'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA';
+  })();
+
   // После перерисовки вернуть фокус на ту же кнопку (выбор карточек, варианты) — клавиатура и чтение с экрана не теряют место
   function refocus(sel) { var el = document.querySelector(sel); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } } }
 
@@ -2228,7 +2505,7 @@
   function back() {
     var pos = shownPos();
     if (pos.f > 0) return show(pos.sec, pos.f - 1, 'back');
-    if (pos.sec < 0) return;
+    if (pos.sec < 0 || (pos.sec === 0 && !hasIntro())) return;
     show(pos.sec - 1, framesOf(pos.sec - 1).length - 1, 'back');
   }
   function fwd() {
@@ -2271,7 +2548,7 @@
     if (++fwdPress !== 3 || store.get(TIP_KEY)) return;
     if (window.matchMedia && !matchMedia('(pointer: coarse)').matches) return;
     store.set(TIP_KEY, '1');
-    toast('Листать можно и касанием правой части экрана или свайпом влево');
+    toast('Листать можно и свайпом: влево — дальше, вправо — назад');
   }
   app.addEventListener('click', function (e) {
     if (e.defaultPrevented || !e.target.closest || e.target.closest(TAP_SKIP)) return;
@@ -2281,18 +2558,54 @@
     if (window.matchMedia && !matchMedia('(pointer: coarse)').matches) return;
     flipFwd('tap');
   });
-  var swipe = null;
+  // Свайп (владелец 27.11: «свайп влево-вправо у меня не работает»): влево — «Дальше», вправо — «назад». Направление решается
+  // по первым 12 px: горизонтальный жест забираем себе (страница при нём не прокручивается, экран чуть идёт за пальцем),
+  // вертикальный оставляем прокрутке и больше не трогаем. Порог — 48 px или быстрый короткий мах. Раньше слушали только
+  // touchstart/touchend и только «влево»: жест с небольшим уходом вниз превращался в прокрутку страницы и не засчитывался.
+  var swipe = null, SWIPE_MIN = 48;
+  function swipeFrame() { return document.getElementById('frame'); }
+  function swipeShift(dx) {
+    var fr = swipeFrame();
+    if (!fr) return;
+    if (!dx || smooth() === 'auto') { fr.style.transform = ''; fr.style.transition = ''; return; }
+    fr.style.transition = 'none';
+    fr.style.transform = 'translateX(' + Math.round(dx * 0.3) + 'px)';
+  }
+  function stopSwipe() { if (swipe) { swipe = null; swipeShift(0); } }
+  function canBack() { return !!app.querySelector('.pl-crumb .pl-back:not([hidden])'); }
+  function flipBack() {
+    if (view !== 'point' || sheet.open || document.documentElement.classList.contains('pl-kb') || !canBack()) return false;
+    back();
+    return true;
+  }
   app.addEventListener('touchstart', function (e) {
     var t = e.target;
-    swipe = e.touches.length === 1 && !(t.closest && t.closest('input, textarea, select, .pl-opts, .pl-sel, .pl-frame--layers, svg'))
-      ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+    swipe = e.touches.length === 1 && !(viewer && viewer.open) && !(t.closest && t.closest('input, textarea, select, .pl-opts, .pl-sel, .pl-frame--layers, svg, dialog'))
+      ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), lock: '' } : null;
   }, { passive: true });
+  app.addEventListener('touchmove', function (e) {
+    if (!swipe) return;
+    if (e.touches.length !== 1) { stopSwipe(); return; }
+    var dx = e.touches[0].clientX - swipe.x, dy = e.touches[0].clientY - swipe.y;
+    if (!swipe.lock) {
+      if (Math.abs(dx) >= 12 && Math.abs(dx) > Math.abs(dy) * 1.2) swipe.lock = 'x';
+      else if (Math.abs(dy) >= 12) { swipe = null; return; }   // вертикальный жест — прокрутка текста, не листание
+      else return;
+    }
+    if (e.cancelable) e.preventDefault();
+    swipeShift(dx);
+  }, { passive: false });
   app.addEventListener('touchend', function (e) {
     if (!swipe || !e.changedTouches.length) return;
-    var c = e.changedTouches[0], dx = c.clientX - swipe.x, dy = c.clientY - swipe.y, dt = Date.now() - swipe.t;
-    swipe = null;
-    if (dx < -60 && Math.abs(dy) < Math.abs(dx) * 0.6 && dt < 800 && !String(window.getSelection ? window.getSelection() : '')) flipFwd('swipe');
+    var c = e.changedTouches[0], dx = c.clientX - swipe.x, dy = c.clientY - swipe.y, dt = Date.now() - swipe.t, lock = swipe.lock;
+    stopSwipe();
+    if (String(window.getSelection ? window.getSelection() : '')) return;
+    // жест распознан по ходу (lock) — важна только длина; без touchmove (быстрый мах) — длина, наклон и время
+    var ok = lock === 'x' ? Math.abs(dx) >= SWIPE_MIN : (Math.abs(dx) > 60 && Math.abs(dy) < Math.abs(dx) * 0.6 && dt < 800);
+    if (!ok) return;
+    if (dx < 0) flipFwd('swipe'); else flipBack();
   }, { passive: true });
+  app.addEventListener('touchcancel', stopSwipe, { passive: true });
 
   // ---------- клавиатура телефона: экран не ездит ----------
   // Поле ответа стоит в потоке страницы (не прилипает и не position: fixed), поэтому открытая клавиатура ничего не двигает.
@@ -2328,7 +2641,54 @@
   if (vv) vv.addEventListener('resize', function () { if (kbEl) { clearTimeout(kbTm); kbTm = setTimeout(kbFit, 60); } });
 
   // ---------- шторки ----------
-  var zoomImg = { src: '', alt: '' };
+  // ---------- картинка на весь экран (владелец 27.11: «открывается криво, фон прокручивается, картинка не на весь экран») ----------
+  // Отдельное окно поверх всего (<dialog>, верхний слой): чёрный фон, картинка вписана целиком в окно (object-fit: contain),
+  // страница под ним не прокручивается (html.pl-lock + свои обработчики касаний). Закрыть: касание, кнопка, Esc, свайп вниз.
+  var viewer = null, viewDrag = null;
+  function lockScroll(on) {
+    var r = document.documentElement;
+    if (on) { var gap = window.innerWidth - r.clientWidth; r.classList.add('pl-lock'); r.style.paddingRight = gap > 0 ? gap + 'px' : ''; }
+    else { r.classList.remove('pl-lock'); r.style.paddingRight = ''; }
+  }
+  function closeZoom() {
+    if (!viewer) return;
+    if (viewer.open && typeof viewer.close === 'function') viewer.close(); else { viewer.removeAttribute('open'); lockScroll(false); }
+  }
+  function openZoom(el) {
+    if (!viewer) {
+      viewer = document.createElement('dialog');
+      viewer.className = 'pl-viewer'; viewer.id = 'viewer';
+      viewer.setAttribute('aria-label', 'Картинка на весь экран');
+      viewer.innerHTML = '<div class="pl-viewer-stage" id="viewer-stage"></div>' +
+        '<button type="button" class="pl-viewer-x" data-act="zoomclose" aria-label="Закрыть картинку">' + ico('close') + '</button>';
+      document.body.appendChild(viewer);
+      viewer.addEventListener('close', function () { lockScroll(false); viewDrag = null; });
+      viewer.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); closeZoom(); });
+      var stage = viewer.firstChild;
+      var settle = function (y) { stage.style.transform = y ? 'translateY(' + y + 'px)' : ''; viewer.style.setProperty('--fade', String(Math.max(0.35, 1 - y / 500))); };
+      viewer.addEventListener('touchstart', function (e) { viewDrag = e.touches.length === 1 ? { y: e.touches[0].clientY, d: 0 } : null; }, { passive: true });
+      // одно касание страницу не двигает (фон под окном стоит); два пальца — увеличение браузера, не мешаем
+      viewer.addEventListener('touchmove', function (e) {
+        if (e.touches.length !== 1) { viewDrag = null; settle(0); return; }
+        if (e.cancelable) e.preventDefault();
+        if (!viewDrag) return;
+        viewDrag.d = e.touches[0].clientY - viewDrag.y;
+        settle(Math.max(0, viewDrag.d));
+      }, { passive: false });
+      var end = function (e) {
+        var d = viewDrag ? viewDrag.d : 0;
+        viewDrag = null; settle(0);
+        if (d > 80) { if (e.cancelable) e.preventDefault(); closeZoom(); }   // свайп вниз закрывает
+      };
+      viewer.addEventListener('touchend', end);
+      viewer.addEventListener('touchcancel', function () { viewDrag = null; settle(0); });
+    }
+    viewer.firstChild.style.transform = ''; viewer.style.removeProperty('--fade');
+    viewer.firstChild.innerHTML = picHtml(el.dataset.src, el.dataset.alt || '', ' class="pl-viewer-img"');
+    stopSwipe();
+    lockScroll(true);
+    if (typeof viewer.showModal === 'function') { if (!viewer.open) viewer.showModal(); } else viewer.setAttribute('open', '');
+  }
   function openSheet(kind) {
     sheetKind = kind;
     var title = '', body = '';
@@ -2389,9 +2749,6 @@
       var cid = kind.slice(5);
       title = CARDS[cid] ? plain(CARDS[cid].title) : 'Улика';
       body = cardHtml(cid, { full: true });
-    } else if (kind === 'img') {
-      title = 'Картинка целиком';
-      body = '<img class="pl-zoom-img" src="' + esc(zoomImg.src) + '" alt="' + esc(zoomImg.alt) + '">';
     } else if (kind === 'report') {
       title = 'Отчёт';
       body = '<p class="pl-small">Нажмите «Отправить» и выберите Telegram. Если не получается, нажмите «Скопировать» и вставьте текст в чат с ботом.</p>' +
@@ -2603,9 +2960,13 @@
     toc: function () { openSheet('toc'); },
     jump: function (el) { closeSheet(); show(parseInt(el.dataset.sec, 10), parseInt(el.dataset.f, 10), 'fwd'); },
     mode: function (el) {
+      var playing = S && S.phase !== 'idle' && S.phase !== 'done' && !S.paused && S.ver_from == null;
+      var was = playing ? framesOf(liveSec())[S.f] : null;
       MODE = el.dataset.mode === 'read' ? 'read' : 'listen';
       store.set(MODE_KEY, MODE);
-      if (MODE === 'read') stopVoice();
+      stopVoice();
+      if (S && S.lay) S.lay.mode = MODE;
+      if (was) { reseat(was); peek = null; save(); }
       render();
       if (sheetKind === 'menu') openSheet('menu');
       refocus((sheetKind === 'menu' ? '#sheet ' : '#app ') + '[data-act="mode"][data-mode="' + MODE + '"]');
@@ -2613,6 +2974,7 @@
     rate: function (el) { rate(parseInt(el.dataset.v, 10)); },
     sharecase: shareCase,
     voice: function (el) { playVoice(el); },
+    voiceback: replayVoice,
     hint: function (el) { hint(parseInt(el.dataset.level, 10), ctxOf(el)); },
     reveal: function (el) { reveal(ctxOf(el)); },
     skip: function (el) { skip(ctxOf(el)); },
@@ -2621,7 +2983,8 @@
     check: function (el) { checkSel(ctxOf(el)); },
     letter: function () { openSheet('letter'); },
     card: function (el) { openSheet('card:' + el.dataset.id); },
-    zoom: function (el) { zoomImg = { src: el.dataset.src, alt: el.dataset.alt || '' }; openSheet('img'); },
+    zoom: openZoom,
+    zoomclose: closeZoom,
     layer: function (el) {
       var n = +el.dataset.n || 1, i = ((+el.dataset.i || 0) + 1) % n;
       el.dataset.i = i;
@@ -2772,7 +3135,8 @@
       return (box.compareDocumentPosition(el) & 4) && !el.closest('.pl-recap');
     }).slice(0, n);
   }
-  function sayText(el, open) {   // текст реплики без имени говорящего и «Подробнее»; open — только видимое сейчас
+  function sayText(el, open) { return sayStr(el, open).length; }
+  function sayStr(el, open) {   // текст реплики без имени говорящего и «Подробнее»; open — только видимое сейчас
     var t = '';
     (function walk(x) {
       [].forEach.call(x.childNodes, function (c) {
@@ -2781,7 +3145,22 @@
         walk(c);
       });
     })(el);
-    return t.replace(/\s+/g, ' ').trim().length;
+    return t.replace(/\s+/g, ' ').trim();
+  }
+  // Строка-субтитр под плеером (экран «слушаю»): фраза, которая звучит сейчас, и кто говорит. Текст на экране есть всегда,
+  // даже когда расшифровка свёрнута (H-62: звук без текста на экране не играет)
+  function ccAt(box, el, pos) {
+    var cc = box.nextElementSibling;
+    if (!cc || !cc.matches('.pl-cc') || !el) return;
+    // подсказка «включите звук» держится первые секунды записи: телефон может быть без звука
+    if (cc.dataset.tipon === '1') { if (voice && voiceAt === 0 && voice.currentTime < 5) return; cc.dataset.tipon = ''; }
+    var ch = chunks(sayStr(el, false)), i = 0, p = pos;
+    while (i < ch.length - 1 && p >= ch[i].length) { p -= ch[i].length + 1; i += 1; }
+    var who = el.dataset.who ? speaker(el.dataset.who) : null, name = who && who.style !== 'titr' ? who.name : '';
+    var w = cc.querySelector('.pl-cc-who'), t = cc.querySelector('.pl-cc-t');
+    if (w.textContent !== name) w.textContent = name;
+    if (t.textContent !== ch[i]) t.textContent = ch[i];
+    cc.classList.add('is-live');
   }
   function sayOff() { [].forEach.call(document.querySelectorAll('.is-speaking'), function (el) { el.classList.remove('is-speaking'); }); }
   // file — номер записи в плеере, part — доля прослушанного (0…1); пусто — снять отметку
@@ -2796,6 +3175,7 @@
     var el = els[i];
     if (!el) return null;
     el.classList.add('is-speaking');
+    ccAt(box, el, pos);
     // голос дошёл до свёрнутого хвоста — раскрыть, чтобы произносимое было на экране
     if (pos > sayText(el, true) - 2) [].forEach.call(el.querySelectorAll('details.pl-more--text:not([open])'), function (d) { d.open = true; opened = true; });
     // докрутка — только когда голос перешёл к другой реплике или раскрыл хвост, а не на каждом timeupdate: иначе игрок не может
@@ -2814,10 +3194,26 @@
     voiceBox = box; voiceList = box.dataset.srcs.split('|'); voiceAt = 0;
     playNext(quiet);
   }
+  // «Повторить»: реплика идёт дольше трёх секунд — с её начала; иначе — предыдущая реплика (или первая)
+  function replayVoice(el) {
+    var box = el.closest('.pl-voice');
+    if (!box || !box.dataset.srcs) return;
+    if (voice && voiceBox === box && voice.currentTime > 3) {
+      voice.currentTime = 0;
+      if (voice.paused) { var p0 = voice.play(); if (p0 && p0.catch) p0.catch(function () {}); }
+      return;
+    }
+    var at = voice && voiceBox === box ? Math.max(0, voiceAt - 1) : 0;
+    stopVoice();
+    voiceBox = box; voiceList = box.dataset.srcs.split('|'); voiceAt = at;
+    playNext(false);
+  }
   function playNext(quiet) {
     var box = voiceBox, a = new Audio(voiceList[voiceAt]);
     voice = a;
     var btn = box.querySelector('.pl-voice-btn'), note = box.querySelector('.pl-voice-note'), bars = box.querySelectorAll('.pl-voice-wave i');
+    var nth = voiceList.length > 1 ? (voiceAt + 1) + '/' + voiceList.length + ' · ' : '';
+    note.textContent = nth + '0:00';   // счётчик записей — сразу, не дожидаясь первого timeupdate
     var set = function (on) {
       if (voice !== a) return;
       btn.setAttribute('aria-pressed', on ? 'true' : 'false'); btn.setAttribute('aria-label', on ? 'Пауза' : 'Слушать');
@@ -2829,12 +3225,14 @@
       if (voice !== a || !a.duration) return;
       var part = (voiceAt + a.currentTime / a.duration) / voiceList.length, k = Math.round(part * bars.length);
       [].forEach.call(bars, function (b, i) { b.classList.toggle('on', i < k); });
-      note.textContent = clock(a.currentTime);
+      note.textContent = nth + clock(a.currentTime);
       if (!a.paused) sayAt(box, voiceAt, a.currentTime / a.duration);
     });
     a.addEventListener('ended', function () {
       if (voice !== a) return;
-      if (voiceAt + 1 < voiceList.length) { voiceAt += 1; playNext(quiet); } else { set(false); sayOff(); }
+      if (voiceAt + 1 < voiceList.length) { voiceAt += 1; playNext(quiet); return; }
+      // всё прозвучало: следующее нажатие «Слушать» начинает с первой записи
+      set(false); sayOff(); voice = null; voiceBox = null;
     });
     a.addEventListener('error', function () { if (voice !== a) return; set(false); sayOff(); if (!quiet) toast('Озвучка ещё не готова — читаем глазами'); });
     var pr = a.play();
@@ -3009,12 +3407,22 @@
     if (POSTCARD && POSTCARD.key === postcardKey()) return go(POSTCARD.blob);
     postcard().then(go);
   }
+  // Нет лёгкой копии .webp (картинку добавили, а копию не сделали) — берём исходный файл: убираем <source> и грузим заново
+  function dropWebp(img) {
+    var pic = img && img.parentNode, list = pic && pic.tagName === 'PICTURE' ? pic.querySelectorAll('source') : [];
+    if (!list.length) return false;
+    [].forEach.call(list, function (x) { x.remove(); });
+    img.src = img.getAttribute('src');
+    return true;
+  }
   // Картинка не загрузилась — остаётся заглушка с подписью, раскладка не прыгает
   document.addEventListener('error', function (e) {
     var t = e.target;
+    if (t && t.tagName === 'IMG' && dropWebp(t)) return;
     var fr = t && t.tagName === 'IMG' && t.closest('.pl-frame');
     if (!fr) return;
     t.classList.add('is-broken');
+    fr.classList.add('is-missing');
     if (fr.tagName !== 'BUTTON' && t.alt) { fr.setAttribute('role', 'img'); fr.setAttribute('aria-label', t.alt + ' (картинка готовится)'); }
   }, true);
 
@@ -3162,7 +3570,9 @@
     S = load();
     if (S.phase === 'walk' || S.phase === 'step' || S.phase === 'point_done') fixClock(S.p);
     // сохранение с другой раскладкой экранов (или до неё): номер экрана уже не тот — ставим на начало текущего шага
-    if (S.phase !== 'idle' && !(S.lay && S.lay.v === LAY_V && S.lay.voice === voiceOn())) { S.lay = null; S.f = -1; }
+    if (S.phase !== 'idle' && !(S.lay && S.lay.v === LAY_V && S.lay.voice === voiceOn() && (S.lay.mode || MODE) === MODE)) { S.lay = null; S.f = -1; }
+    // сохранение на вступлении, которого больше нет (оно повторяло обложку), — к дороге первой точки
+    if (S.phase === 'intro' && !hasIntro()) { S.phase = 'walk'; S.p = 0; S.k = 0; S.res = []; S.wa = []; S.f = 0; }
     fixCursor();
     if (S.phase !== 'idle') { log('reload'); save(); }
     themeColor();
@@ -3224,7 +3634,11 @@
     // мини-шаги: где игрок (live), что на экране (shown), сколько экранов в разделе, режим чтения
     pos: function () { var p = shownPos(), F = framesOf(p.sec), x = F[p.f] || {}; return { sec: p.sec, f: p.f, live: liveSec(), cur: S.f, peek: !!peek, total: F.length, mode: MODE, id: x.id, kind: x.kind, step: x.step == null ? null : x.step }; },
     frames: function (sec) { return framesOf(sec).map(function (x) { return { id: x.id, kind: x.kind, step: x.step == null ? null : x.step, est: x.est == null ? null : Math.round(x.est), parts: (x.parts || x.pre || []).length }; }); },
-    lay: function () { return lay(); } };
+    lay: function () { return lay(); },
+    // экран «слушаю»: какая запись идёт (at из n), пауза, время; voiceEnd — перемотать запись к концу (проверка перехода к следующей)
+    voice: function () { return voice ? { at: voiceAt, n: voiceList.length, paused: voice.paused, t: voice.currentTime, d: voice.duration || 0 } : null; },
+    voiceEnd: function () { if (voice && voice.duration) voice.currentTime = Math.max(0, voice.duration - 0.2); },
+    hasIntro: function () { return hasIntro(); }, passport: function () { return passport(); } };
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
     navigator.serviceWorker.register('../sw.js').catch(function () { /* без офлайна */ });

@@ -26,8 +26,11 @@
 </script>
 </head>
 <!-- Данные дела для каркаса: data-quest — папка с делом (quest.locked.json собирает pages.yml), data-case-no — номер дела в шапке,
-     data-case-url — страница дела (ссылка «Нет кода?» на экране кода) -->
-<body data-quest="zilart" data-case-no="1" data-case-url="../../moscow/zilart-sinyaya-ptica/">
+     data-case-url — страница дела (ссылка «Нет кода?» на экране кода), data-hook — вопрос дела на обложке (тот же, что в карточке
+     дела на витрине: platform/site/cases/, поле card.teaser; player_check сверяет), data-webp="1" — у каждой картинки media/ рядом
+     лежит лёгкая копия .webp (player_check сверяет наличие и вес) -->
+<body data-quest="zilart" data-case-no="1" data-case-url="../../moscow/zilart-sinyaya-ptica/" data-webp="1"
+  data-hook="Чьё честное слово стоит в письме 1931 года — и было ли оно сдержано?">
 <main class="pl-main" id="app" tabindex="-1">
   <p class="pl-loading">Загружаем дело…</p>
   <noscript><p class="pl-loading">Для прохождения квеста включите JavaScript.</p></noscript>

@@ -58,14 +58,19 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+/* Экран не «ездит» (владелец 27.11): без резинки за краем страницы (overscroll), а экран, который помещается, не прокручивается
+   вовсе — см. #sr-say ниже и player_check («прокрутка документа»). */
+html { -webkit-text-size-adjust: 100%; background: var(--bg); overscroll-behavior-y: none; }
+/* открыта картинка на весь экран: страница под ней стоит */
+html.pl-lock, html.pl-lock body { overflow: hidden; }
 body {
   margin: 0;
   background: var(--bg) var(--page-bg);
   color: var(--text);
   font: 400 18px/1.5 var(--font-text);
   overflow-x: hidden;
-  min-height: 100vh;
+  min-height: 100vh; min-height: 100dvh;
+  overscroll-behavior-y: none;
 }
 h1, h2, h3, p, ul, ol, figure { margin: 0; }
 a { color: var(--accent-text); text-underline-offset: 3px; }
@@ -74,6 +79,9 @@ button { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
 [hidden] { display: none !important; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Область объявлений стоит в конце <body>: как absolute она добавляла странице 1 px высоты, и любой экран «впритык»
+   получал прокрутку на 1 px — на телефоне страница подпрыгивала от каждого касания (владелец 27.11) */
+#sr-say { position: fixed !important; top: 0; left: 0; }
 b, strong { font-weight: 600; }
 code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-ico { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -113,6 +121,9 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
   /* снизу — только навигация и 16 px воздуха: каждые лишние 24 px давали прокрутку на экранах «впритык» (владелец 27.11) */
   padding: 12px 16px calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));
   outline: none;
+  /* въезжающий экран и экран, идущий за пальцем, не расширяют страницу вбок: на телефоне от этого вся страница на миг
+     уменьшалась и «ездила» (владелец 27.11) */
+  overflow-x: clip;
 }
 .pl-main > * + * { margin-top: 16px; }
 .pl-loading { padding: 48px 0; color: var(--text-2); }
@@ -479,6 +490,8 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-frame { position: relative; display: block; width: 100%; overflow: hidden; border-radius: min(var(--radius), 12px); background: var(--surface-2); border: 0; padding: 0; color: inherit; }
 .pl-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .pl-frame img.is-broken { display: none; }
+/* Заглушка с подписью — только когда картинки нет (is-empty) или она не загрузилась (is-missing); пока грузится — ровный фон кадра */
+.pl-frame:not(.is-empty):not(.is-missing) > .pl-ph { display: none; }
 /* Место под иллюстрацию: нейтральная композиция из фигур темы и описание того, что здесь будет нарисовано (по нему решаются загадки) */
 .pl-ph { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; padding: 14px 16px; text-align: left;
   border: 2px dashed var(--control); border-radius: inherit; color: var(--text-2); font-size: 15px; line-height: 1.35; overflow: hidden; }
@@ -497,11 +510,24 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
    Высоту знает и раскладка экранов (player.js, FIG_MAX) */
 .pl-step .pl-frame { max-height: 42vh; max-height: 42dvh; }
 .pl-step .pl-opt .pl-frame { max-height: none; }
+/* экран «слушаю»: под картинкой — плеер, субтитр и «Показать текст»; картинка ниже, чтобы всё поместилось (player.js, FIG_REST) */
+.pl-step[data-listen] .pl-frame { max-height: max(160px, calc(100vh - 548px)); max-height: max(160px, calc(100dvh - 548px)); }
+.pl-step[data-listen] .pl-opt .pl-frame { max-height: none; }
 .pl-frame--zoom { cursor: zoom-in; }
-.pl-frame--zoom img { object-position: 50% 35%; }
+.pl-frame--crop img { object-position: 50% 35%; }
 .pl-zoom { position: absolute; right: 8px; bottom: 8px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--bg); color: var(--text); box-shadow: 0 0 0 2px var(--control); }
 .pl-zoom .pl-ico { width: 20px; height: 20px; }
-.pl-zoom-img { display: block; width: 100%; height: auto; max-height: 76vh; max-height: 76dvh; object-fit: contain; border-radius: min(var(--radius), 12px); background: var(--surface-2); }
+/* Картинка на весь экран: окно во весь вьюпорт, картинка вписана целиком, фон под окном не прокручивается (html.pl-lock) */
+.pl-viewer { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+  background: rgba(0, 0, 0, var(--fade, 1)); color: #fff; overflow: hidden; touch-action: pinch-zoom; overscroll-behavior: contain; cursor: zoom-out; }
+.pl-viewer:not([open]) { display: none; }
+.pl-viewer::backdrop { background: #000; }
+.pl-viewer-stage { position: absolute; inset: 0; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.pl-viewer-stage picture { display: block; width: 100%; height: 100%; }
+.pl-viewer-img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.pl-viewer-x { position: absolute; top: calc(8px + env(safe-area-inset-top)); right: calc(8px + env(safe-area-inset-right)); width: 48px; height: 48px; display: grid; place-items: center;
+  border: 2px solid #fff; border-radius: 50%; background: #000; color: #fff; cursor: pointer; }
+.pl-viewer-x:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .pl-dots { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 6px; }
 .pl-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--text); }
 .pl-dots i.on { background: var(--text); }
@@ -647,7 +673,8 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-review { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; font-size: 15px; color: var(--text-2); }
 .pl-review .pl-stamp { margin: 0; }
 
-.pl-step { outline: none; }
+/* горизонтальный жест по экрану — листание (player.js, свайп), вертикальный — прокрутка текста */
+.pl-step { outline: none; touch-action: pan-y pinch-zoom; }
 /* строка «назад · где мы» и экран — ближе: 8 px вместо 16 (владелец 27.11 — меньше прокрутки; раскладка экранов считает так же) */
 .pl-main > .pl-crumb + .pl-step, .pl-main > .pl-crumb + .pl-review { margin-top: 8px; }
 /* Главная кнопка экрана всегда на одном месте — внизу, над навигацией: листать можно, не глядя на палец */
@@ -781,3 +808,50 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-fork-opt small { font-size: 15px; color: var(--text-2); }
 .pl-fork-opt[aria-pressed="true"] { border-color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-text); }
 .pl-fork-on { flex: none; font: var(--tag-font); text-transform: uppercase; letter-spacing: var(--tag-track); color: var(--accent-text); }
+
+/* ---------- Обложка дела (владелец 27.11): картинка, название, вопрос дела, паспорт маршрута метками, одна кнопка ---------- */
+.pl-cover { position: relative; margin: -12px -16px 0; overflow: hidden; background: var(--surface-2); }
+.pl-cover-art { aspect-ratio: 4 / 3; max-height: 38vh; max-height: 38dvh; width: 100%; }
+.pl-cover-art picture { display: block; width: 100%; height: 100%; }
+.pl-cover-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.pl-cover-head { position: absolute; left: 0; right: 0; bottom: 0; padding: 48px 16px 10px; background: linear-gradient(to bottom, transparent, var(--bg) 78%); }
+.pl-cover-head h1 { margin-top: 6px; font-family: var(--font-display); font-size: var(--h1-size); line-height: var(--h1-line); font-weight: var(--h1-weight);
+  text-transform: var(--h1-case); letter-spacing: var(--h1-track); overflow-wrap: break-word; text-wrap: balance; }
+.pl-main > .pl-cover + * { margin-top: 12px; }
+.pl-cover-hook { font: 600 21px/1.25 var(--font-text); color: var(--text); text-wrap: balance; }
+.pl-cover-lede { font-size: 16px; line-height: 1.45; color: var(--text-2); }
+.pl-main > .pl-cover-hook + .pl-cover-lede { margin-top: 8px; }
+.pl-pass-stats { list-style: none; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.pl-pass-stats li { padding: 10px 8px; border: 2px solid var(--control); border-radius: min(var(--radius), 10px); font: 600 16px/1.2 var(--font-text); color: var(--text); text-align: center; text-wrap: balance; }
+.pl-pass { margin: 0; display: grid; gap: 6px; }
+.pl-main > .pl-pass-stats + .pl-pass { margin-top: 10px; }
+.pl-pass > div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.pl-pass dt { font: 600 15px/1.3 var(--font-text); color: var(--text-3); }
+.pl-pass dd { margin: 0; font-size: 16px; line-height: 1.35; color: var(--text); }
+/* кнопка обложки — у нижнего края: навигации на обложке нет */
+.pl-cover-go .pl-small { margin-top: 10px; text-align: center; }
+.pl-cover .pl-eyebrow { display: inline-block; padding: 4px 8px; background: var(--bg); }
+/* низкое окно (360×740): картинка ниже, строка о сохранении уступает место паспорту и кнопке */
+@media (max-height: 780px) {
+  .pl-cover-art { max-height: 28vh; max-height: 28dvh; }
+  .pl-cover-go .pl-small { display: none; }
+}
+@media (max-width: 1023px) {
+  .pl-main:has(> .pl-cover-go) { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  .pl-main > .pl-cover-go { bottom: env(safe-area-inset-bottom); margin-top: auto; padding-bottom: 4px; }
+}
+
+
+/* ---------- Экран «слушаю»: плеер → строка-субтитр → «Показать текст» ---------- */
+.pl-voice-re { flex: none; width: 44px; height: 44px; margin-right: -14px; display: grid; place-items: center; border: 0; background: transparent; color: var(--text-2); cursor: pointer; border-radius: var(--radius-btn); }
+.pl-voice-re:active { background: var(--surface-2); }
+/* субтитр: три строки, высота постоянная — экран не прыгает, когда фраза меняется */
+.pl-cc { height: 94px; padding: 8px 12px; overflow: hidden; border-left: 3px solid var(--control); font-size: 17px; line-height: 26px; color: var(--text-2);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.pl-cc.is-live { border-left-color: var(--accent); color: var(--text); }
+.pl-cc-who { margin-right: 8px; font-weight: 600; color: var(--accent-text); }
+.pl-cc-who:empty { display: none; }
+.pl-step > .pl-voice + .pl-cc, .pl-result > .pl-voice + .pl-cc { margin-top: 10px; }
+.pl-step > .pl-tx { margin-top: 6px; }
+.pl-tx > summary { color: var(--text); }
+.pl-tx[open] .pl-tx-show, .pl-tx:not([open]) .pl-tx-hide { display: none; }
