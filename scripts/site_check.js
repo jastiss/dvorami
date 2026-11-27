@@ -674,6 +674,14 @@ async function mapTaps() {
     fc.errors.forEach(m => err('факты ↔ сценарий', '', m));
     fc.warns.forEach(w => warns.push('факты: ' + w));
   } catch (e) { err('факты ↔ сценарий', '', `scripts/facts_check.py не запустился: ${String(e.message).split('\n')[0]}`); }
+  // 27.11 (итерация 28): последний шаг pages.yml — codes.py leakcheck (текст сцен дел в site/ дословно). Он краснел 7 выкладок подряд,
+  // а команда узнавала об этом только из CI — стенд стоял на версии 27.11 утра. Теперь тот же leakcheck здесь, до push.
+  try {
+    require('child_process').execFileSync('python3', [path.join(__dirname, 'codes.py'), 'leakcheck', path.join(__dirname, '..', 'site')], { encoding: 'utf8', stdio: 'pipe' });
+  } catch (e) {
+    const out = String(e.stdout || e.message).split('\n').filter(l => l.includes('✗'));
+    (out.length ? out : [String(e.message).split('\n')[0]]).forEach(l => err('текст дела на сайте дословно (leakcheck; перескажите, а не цитируйте сценарий)', '', l.trim()));
+  }
   const warnReport = () => { if (warns.length) { console.log(`\n ! предупреждения (не красное): ${warns.length}`); warns.forEach(w => console.log('   ! ' + w)); } };
   const tone = toneCheck(); // T-65: штампы машинного текста — ошибка (красная проверка с 27.11)
   tone.forEach(t => err('тон текста', '', t));
