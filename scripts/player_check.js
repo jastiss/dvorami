@@ -56,6 +56,8 @@
  *   - 27.11, офлайн: первый заход с service worker (sw.js) — страница, player.js и дело попадают в кеш (warmCache), без связи
  *     перезагрузка открывает то же место; кеш назван по версии выпуска (dvorami-play-<хеш>, scripts/sw_version.js), новый выпуск
  *     sw.js удаляет старые кеши (и прежний dvorami-play-v1) и заполняет новый (install + controllerchange → warmCache);
+ *   - 27.11, пустой ответ и ответ из одних знаков: подсказка «Впишите ответ.» под полем, объявлена в #sr-say, шаг не сдвинут,
+ *     ошибкой не записан (ни answer_wrong, ни «неверно» в журнале);
  *   - 27.11, чтение с экрана: неверный ответ (поле, вариант, карточки) объявлен в постоянной области #sr-say, поле помечено
  *     aria-invalid и ссылается на сообщение, после перерисовки фокус остаётся на нажатом варианте или «Проверить»; живая
  *     область «где» в шапке не перезаписывается на «Дальше» внутри точки.
@@ -107,6 +109,8 @@ const PORT = 9000 + Math.floor(Math.random() * 900);
 const BASE = `http://127.0.0.1:${PORT}`;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg' };
 
+// Подсказка на пустой ответ — та же, что EMPTY_TEXT в site/play/player.js и scripts/quest_bot.py
+const EMPTY_TEXT = 'Впишите ответ.';
 const errors = [];
 const err = (where, msg) => errors.push(`${where}: ${msg}`);
 // предупреждения — не красный тест: печатаются в конце, выкладку не блокируют
@@ -795,6 +799,20 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           }
           // загадка: неверный ответ не проходит; поле не перерисовывается — фокус и набранное остаются
           if (si % 2 === 0) {
+            // пустой ответ и одни знаки — подсказка «Впишите ответ.» под полем, вслух (#sr-say), поле aria-invalid; это не ошибка:
+            // шаг не сдвинут, цели answer_wrong и записи «неверно» в журнале нет (раньше плеер молчал — на улице жмут дважды)
+            for (const blank of ['', ' ?!… ']) {
+              const what = blank ? 'ответ из одних знаков' : 'пустой ответ';
+              const g0e = (await goals()).length, e0 = (await state()).events.length;
+              await page.fill('#ans', blank); await click('#active button[type="submit"]');
+              const se = await state();
+              if (se.k !== si || se.phase !== 'step') err(tag, `${sat}: ${what} сдвинул шаг`);
+              const msg = await page.$eval('#active .pl-wrong', el => el.textContent).catch(() => '');
+              if (msg !== EMPTY_TEXT) err(tag, `${sat}: на ${what} нет подсказки «${EMPTY_TEXT}» (на экране: «${msg}»)`);
+              if ((await goals()).slice(g0e).some(([n]) => n === 'answer_wrong') || se.events.slice(e0).some(e => e.kind === 'wrong')) err(tag, `${sat}: ${what} записан как неверный ответ`);
+              if (!(await page.evaluate(() => { const i = document.getElementById('ans'), d = i && document.getElementById(i.getAttribute('aria-describedby') || '-'); return i.getAttribute('aria-invalid') === 'true' && d && d.classList.contains('pl-wrong') && document.activeElement === i; }))) err(tag, `${sat}: ${what} — поле без aria-invalid / aria-describedby или без фокуса`);
+              await srSaid(`${sat} · ${what}`);
+            }
             await page.evaluate(() => { document.getElementById('ans').dataset.same = '1'; });
             const g0 = (await goals()).length;
             await page.fill('#ans', 'заведомо неверно'); await click('#active button[type="submit"]');

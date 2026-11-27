@@ -639,7 +639,10 @@
     ctx = ctx || 'step';
     var st = ctxDef(ctx), o = ctxSlot(ctx), lbl = ctxLabel(ctx);
     text = String(text || '').trim();
-    if (!text || !st) return;
+    if (!st) return;
+    // пустой ответ или одни знаки («?», «…»): не ошибка и не молчание (на улице жмут «Ответить» дважды и думают, что плеер завис) —
+    // короткая подсказка под полем, вслух для чтения с экрана; у свободного ответа знаки — тоже ответ
+    if (!text || (st.type !== 'free' && !ANS.norm(text))) return emptyAnswer(ctx);
     if (st.type === 'free') {
       log('free', { step: lbl, text: text });
       return ctxDone(ctx, { st: 'free', text: text });
@@ -664,6 +667,21 @@
     try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); }
     inp.select();
     box.querySelector('.pl-wrong').scrollIntoView({ block: 'nearest', behavior: smooth() });
+    announceWrong(box);
+  }
+  // Пустой ответ: подсказка там же, где сообщение о неверном (под полем), поле — aria-invalid, вслух — через #sr-say.
+  // Тот же текст — у бота (scripts/quest_bot.py, EMPTY_TEXT). Состояние не меняется: ни ошибки в журнале, ни цели answer_wrong
+  var EMPTY_TEXT = 'Впишите ответ.';
+  function emptyAnswer(ctx) {
+    var box = ctxBox(ctx), form = box && box.querySelector('.pl-form');
+    if (!form) return;
+    var old = box.querySelector('.pl-wrong');
+    if (old) old.remove();
+    var inp = form.elements.ans, id = inp.id + '-err';
+    form.insertAdjacentHTML('afterend', '<p class="pl-wrong pl-wrong--empty" id="' + id + '">' + EMPTY_TEXT + '</p>');
+    inp.setAttribute('aria-invalid', 'true'); inp.setAttribute('aria-describedby', id);
+    try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); }
+    if (inp.value) inp.select();
     announceWrong(box);
   }
   // Неверный ответ — вслух для чтения с экрана (#sr-say); фокус остаётся там, где был игрок (поле, вариант, «Проверить»)

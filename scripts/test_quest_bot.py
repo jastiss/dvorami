@@ -473,6 +473,10 @@ class QuestBotTest(unittest.TestCase):
         self.assertIn("Бот выключается", self.fake.last_text())
         self.assertTrue((pathlib.Path(self.tmp.name) / "quest-kolomenskoe-state.json").exists())
 
+    def test_empty_text_same_as_player(self):
+        player = (ROOT / "site" / "play" / "player.js").read_text(encoding="utf-8")
+        self.assertIn(f"var EMPTY_TEXT = '{qb.EMPTY_TEXT}';", player, "подсказка на пустой ответ у бота и плеера разная")
+
     def test_inline_markup(self):
         self.assertEqual(qb.inline("A & B <b>жирно</b> <script>x</script>"), "A &amp; B <b>жирно</b> &lt;script&gt;x&lt;/script&gt;")
         self.assertEqual(qb.inline('<a href="javascript:alert(1)">ссылка</a>'), "ссылка")
