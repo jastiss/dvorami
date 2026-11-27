@@ -939,6 +939,8 @@
   function voiceStrip(srcs, force, n, whole, clue) {
     if ((MODE !== 'listen' || !voiceOn()) && !force) return '';
     var ready = srcs.length > 0;
+    // Рецензент 28.11: «Аудио скоро» — внутренняя кухня (language.md п. 9); без записи плашку видит только полевой тест
+    if (!ready && !force && !(FIELD || (S && S.field))) return '';
     return '<div class="pl-voice' + (ready ? '' : ' is-soon') + '" data-arrow-at="sound"' + (clue ? ' data-clue="1"' : '') + (ready ? ' data-srcs="' + esc(srcs.join('|')) + '"' : '') +
       (n ? ' data-n="' + n + '"' + (whole ? ' data-whole="1"' : '') : '') + '>' +
       '<button type="button" class="pl-voice-btn" data-act="voice" aria-label="' + (ready ? 'Слушать' : 'Слушать: аудио скоро') + '"' + (ready ? ' aria-pressed="false"' : ' aria-disabled="true"') + '>' + ico('play') + ico('pause') + '</button>' +
