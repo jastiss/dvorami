@@ -22,7 +22,8 @@
  *     финиш; T-127) и OG-картинка дела = её данным (platform/site/og-manifest.json, scripts/make_og.py; T-121, шрифт ≥ 11 px на 600 px — H-114);
  *     site/llms*.txt = делам (номер, название, точки, км, часы, статус, ссылки) и без спойлеров (H-108); временные объекты
  *     (scripts/temporary_check.js, H-111): за 30 дней до срока — предупреждение, после — ошибка ([--today=ГГГГ-ММ-ДД]);
- *     предупреждением — длина <title> > 60 и description > 160 на страницах дел (H-108);
+ *     предупреждением — длина <title> > 60 и description > 160 на страницах дел, главной и /moscow/ (H-108; аудит SEO 27.11);
+ *     JSON-LD каждой страницы разбирается, и в его строках нет HTML — сущностей (&nbsp;) и тегов (аудит SEO 27.11);
  *     ответы загадок из сценария на витрине дела и в его карточках (scripts/answer_leaks.js, исключения — answer_leaks.json);
  *     колонка «Где у игрока» в research/facts.md ↔ quest.json (scripts/facts_check.py, H-110; формат — docs/facts-format.md).
  *     карточки одной сетки витрины дела одинаковые (scripts/card_grid_check.js, владелец 27.11): год, источник, картинка —
@@ -607,13 +608,41 @@ function seoLengths() {
   const out = [];
   const ent = { nbsp: ' ', laquo: '«', raquo: '»', quot: '"', amp: '&', mdash: '—', ndash: '–', hellip: '…', apos: "'", lt: '<', gt: '>' };
   const decode = t => t.replace(/&(#x?[0-9a-f]+|\w+);/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1].toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : +e.slice(1)) : (ent[e] ?? m)).replace(/\s+/g, ' ').trim();
-  for (const pg of listPages().filter(p => CASE_RE.test(p))) {
+  for (const pg of listPages().filter(p => CASE_RE.test(p) || p === '' || p === 'moscow/')) {
     const h = fs.readFileSync(path.join(ROOT, pg, 'index.html'), 'utf8');
     const title = decode((h.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '');
     const desc = decode((h.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '');
     if ([...title].length > TITLE_MAX) out.push(`${pg}: <title> ${[...title].length} знаков (нужно ≤ ${TITLE_MAX}) — «${title}»`);
     if ([...desc].length > DESC_MAX) out.push(`${pg}: description ${[...desc].length} знаков (нужно ≤ ${DESC_MAX}) — «${desc.slice(0, 80)}…»`);
   }
+  return out;
+}
+
+/* JSON-LD (аудит SEO 27.11, docs/seo/audit-2026-11-27.md): разметка каждой страницы разбирается, а в её строках нет HTML —
+ * ни сущностей (&nbsp;), ни тегов. Поисковик и ИИ читают JSON как есть: «Дело №3 · Туман в&nbsp;овраге» так и уходил в крошки.
+ * Самопроверка на фикстурах — в каждом запуске. */
+function ldIssues(html, pg) {
+  const out = [];
+  for (const m of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
+    let ld; try { ld = JSON.parse(m[1]); } catch (e) { out.push(`${pg}: JSON-LD не разбирается — ${e.message}`); continue; }
+    (function walk(x, at) {
+      if (typeof x === 'string') {
+        const h = x.match(/&(?:#x?[0-9a-f]+|[a-z]+);|<\/?[a-z][^>]*>/i);
+        if (h) out.push(`${pg}: JSON-LD ${at}: HTML в тексте «${h[0]}» — «${x.slice(0, 60)}» (строку — через strip() в scripts/build_cases.py)`);
+      } else if (Array.isArray(x)) x.forEach((v, i) => walk(v, `${at}[${i}]`));
+      else if (x && typeof x === 'object') for (const [k, v] of Object.entries(x)) walk(v, at ? `${at}.${k}` : k);
+    })(ld, '');
+  }
+  return out;
+}
+function ldSync() {
+  const out = [];
+  const fx = j => `<script type="application/ld+json">${j}</script>`;
+  if (!ldIssues(fx('{"name": "Туман в&nbsp;овраге"}'), 'фикстура').length) out.push('самопроверка: &nbsp; в строке JSON-LD не пойман');
+  if (!ldIssues(fx('{"text": "<b>990 ₽</b>"}'), 'фикстура').length) out.push('самопроверка: тег в строке JSON-LD не пойман');
+  if (!ldIssues(fx('{"name": '), 'фикстура').length) out.push('самопроверка: неразборный JSON-LD не пойман');
+  if (ldIssues(fx('{"url": "https://dvorami.ru/?a=1&b=2", "name": "Москва & область"}'), 'фикстура').length) out.push('самопроверка: ложное срабатывание на & в адресе');
+  for (const pg of listPages().filter(p => !p.startsWith('play/'))) out.push(...ldIssues(fs.readFileSync(path.join(ROOT, pg, 'index.html'), 'utf8'), pg || '/'));
   return out;
 }
 
@@ -716,6 +745,7 @@ async function mapTaps() {
   questSync().forEach(m => err('сценарий ↔ витрина', '', m));
   ogSync().forEach(m => err('OG-картинки', '', m));
   llmsSync(spoilers).forEach(m => err('llms.txt ↔ дела', '', m));
+  ldSync().forEach(m => err('JSON-LD', '', m));
   // предупреждения — не красное: печатаются в конце, выкладку не блокируют
   const warns = seoLengths().map(w => 'длина сниппета: ' + w);
   // H-111: временные объекты маршрута — за 30 дней предупреждение, после срока ошибка; сначала самопроверка на фикстуре

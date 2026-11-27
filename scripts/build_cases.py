@@ -125,7 +125,7 @@ def head(c):
     og = c.get('og_image', f"{ORIGIN}/assets/og/main.png")
     faq = [{'@type': 'Question', 'name': strip(q), 'acceptedAnswer': {'@type': 'Answer', 'text': strip(a)}} for q, a in c['faq']]
     trip = {
-        '@type': 'TouristTrip', '@id': url + '#quest', 'name': f"{c['title']} — квест-прогулка {c['where_po']}",
+        '@type': 'TouristTrip', '@id': url + '#quest', 'name': strip(f"{c['title']} — квест-прогулка {c['where_po']}"),
         'description': strip(c['ld_description']), 'url': url, 'image': [og], 'inLanguage': 'ru',
         'provider': {'@id': ORIGIN + '/#org'},
         'touristType': ['Компании друзей', 'Пары', 'Семьи с детьми', 'Путешественники-одиночки'],
@@ -152,7 +152,7 @@ def head(c):
         {'@type': 'BreadcrumbList', 'itemListElement': [
             {'@type': 'ListItem', 'position': 1, 'name': 'Главная', 'item': ORIGIN + '/'},
             {'@type': 'ListItem', 'position': 2, 'name': 'Квесты по Москве', 'item': ORIGIN + '/moscow/'},
-            {'@type': 'ListItem', 'position': 3, 'name': f"Дело №{c['no']} · {c['short']}", 'item': url}]},
+            {'@type': 'ListItem', 'position': 3, 'name': strip(f"Дело №{c['no']} · {c['short']}"), 'item': url}]},  # JSON-LD без &nbsp; (site_check, ldSync)
         {'@type': 'FAQPage', '@id': url + '#faq', 'mainEntity': faq},
     ]}
     return f'''<!doctype html>
