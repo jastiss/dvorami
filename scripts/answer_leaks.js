@@ -356,7 +356,7 @@ function selftest() {
   return out;
 }
 
-module.exports = { check, allIds, selftest, coverage, terms, conf, checkProbes };
+module.exports = { check, allIds, selftest, coverage, terms, conf, checkProbes, caseCorpus, corpusOf, extraParts, norm, strip }; // корпус витрины — и для scripts/story_drift.js
 
 if (require.main === module) {
   const args = Object.fromEntries(process.argv.slice(2).map(a => { const m = a.match(/^--([\w-]+)(?:=(.*))?$/); return m ? [m[1], m[2] == null ? true : m[2]] : [a, true]; }));

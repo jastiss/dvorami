@@ -1,0 +1,9 @@
+{
+  "_doc": "Витрина дела = сценарий (CLAUDE.md, «Витрина = квест»; T-140). <id дела>.version — версия сценария, с которой сверены страница дела, карточки в каталогах, OG, site/llms*.txt и посты канала: version из quests/<id>/quest.json, у дела без него — «vN» последнего quests/<id>/story/scenario-vN.md. Новая версия сценария краснит node scripts/site_check.js --sync («витрина не пересверена со сценарием vX») — сверьте витрину и впишите сюда новую версию, дату и документ сверки. Снятых из сценария героев, годы и фразы — в quests/<id>/retired.json.",
+  "zilart": { "version": "5.5", "date": "2026-11-27", "doc": "quests/zilart/story/site-sync-2026-11-27.md (сверка 2)" },
+  "kolomenskoe": { "version": "2.2-field", "date": "2026-11-27", "doc": "quests/zilart/story/site-sync-2026-11-27.md (разделы «Коломенское» и «Сверка 2»)" },
+  "krasnaya-ploshchad": { "version": "v2", "date": "2026-11-27", "doc": "шапка platform/site/cases/c4_krasnaya.py: витрина собрана по story/scenario-v2.md; отдельной сверки нет" },
+  "kitay-gorod": { "version": "v2", "date": "2026-11-27", "doc": "шапка platform/site/cases/c5_kitay.py: витрина собрана по story/scenario-v2.md; отдельной сверки нет" },
+  "arbat": { "version": "v2", "date": "2026-11-27", "doc": "шапка platform/site/cases/c6_arbat.py: витрина собрана по story/scenario-v2.md; отдельной сверки нет" },
+  "vdnh": { "version": "v2", "date": "2026-11-27", "doc": "шапка platform/site/cases/c7_vdnh.py: витрина собрана по story/scenario-v2.md; отдельной сверки нет" }
+}

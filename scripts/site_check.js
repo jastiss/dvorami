@@ -25,6 +25,8 @@
  *     предупреждением — длина <title> > 60 и description > 160 на страницах дел (H-108);
  *     ответы загадок из сценария на витрине дела и в его карточках (scripts/answer_leaks.js, исключения — answer_leaks.json);
  *     колонка «Где у игрока» в research/facts.md ↔ quest.json (scripts/facts_check.py, H-110; формат — docs/facts-format.md).
+ *     дрейф сюжета (scripts/story_drift.js, T-140): витрина сверена с текущей версией сценария (platform/site/story-sync.json),
+ *     герои «Кто ведёт дело» — среди speakers quest.json, снятое из сценария (quests/<id>/retired.json) — нигде на витрине.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
  */
@@ -706,6 +708,13 @@ async function mapTaps() {
   al.warns.concat(al.info).forEach(w => warns.push('ответы на витрине: ' + w));
   // владелец 27.11: «Проба» (фонарик на главной, лампа «Следами») — не ответ и не ход загадки ни одного дела
   LEAKS.checkProbes().forEach(m => err('«Проба» ↔ ответы дел', '', m));
+  // T-140: дрейф сюжета — витрина сверена с текущей версией сценария (platform/site/story-sync.json), герои «Кто ведёт дело» —
+  // среди speakers quest.json, снятое из сценария (quests/<id>/retired.json) не встречается на витрине, в OG, llms.txt и постах
+  const SD = require('./story_drift.js');
+  SD.selftest().forEach(m => err('витрина ↔ сценарий (самопроверка)', '', m));
+  const sd = SD.check();
+  sd.errors.forEach(m => err('витрина ↔ сценарий', '', m));
+  sd.warns.forEach(w => warns.push('витрина ↔ сценарий: ' + w));
   // H-110: колонка «Где у игрока» в quests/<id>/research/facts.md — мёртвый путь в quest.json и ❌ у игрока — ошибка,
   // не ✅ у игрока, сокращённый путь, ссылка на текст без ключевых слов факта — предупреждение (scripts/facts_check.py)
   try {
