@@ -1,0 +1,35 @@
+/* Тема дела №3 «Туман в овраге» — Коломенское (quests/kolomenskoe/identity.md: молочно-серый, белый камень, мох, тёмная вода оврага;
+   золото — «яблоко» под крестом белой церкви). Только значения переменных каркаса (site/play/player.css) и вид артефакта. */
+
+:root {
+  --bg: #1B2321; --surface: #232D2A; --surface-2: #2C3833; --line: #3E4B46; --control: #95A39C;
+  --text: #EEF1EC; --text-2: #CAD2CC; --text-3: #A9B5AE;
+  --accent: #D8AE62; --on-accent-fill: #1B2321; --accent-text: #E2BE7A; --accent-btn: #D8AE62; --on-accent: #1B2321;
+  --ok: #9FD3A6; --paper: #EEF1EC; --ink: #1B2321; --ink-2: #3F4A45;
+  --font-display: 'Alegreya', 'Alegreya Fallback', Georgia, 'Times New Roman', serif;
+  --font-text: 'Alegreya Sans', 'Alegreya Sans Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --h1-size: clamp(32px, 9vw, 44px); --h1-line: 1.05; --h1-weight: 700; --h1-case: none; --h1-track: 0;
+  --btn-font: 700 19px/1.15 var(--font-display); --btn-case: none; --btn-track: .01em;
+  --tag-font: 700 15px/1 var(--font-display); --tag-track: .04em;
+  --radius: 10px; --radius-btn: 999px; --btn-shadow: none;
+}
+/* Светлая тема: «белый камень»; мелкий золотой текст — только тёмным золотом */
+:root[data-theme="sun"] {
+  --bg: #EEF1EC; --surface: #FFFFFF; --surface-2: #E3E8E3; --line: #CBD3CD; --control: #66736C;
+  --text: #1B2321; --text-2: #34403B; --text-3: #4E5A54;
+  --accent: #B8893A; --on-accent-fill: #1B2321; --accent-text: #7A5A1C; --accent-btn: #7A5A1C; --on-accent: #FFFFFF;
+  --ok: #1F6B2A; --paper: #FFFFFF; --ink: #1B2321; --ink-2: #3F4A45;
+}
+
+/* Знак у заголовка точки — валун (круг, сплюснутый снизу) */
+.pl-deco { display: block; background: var(--accent); border-radius: 55% 45% 40% 40% / 60% 60% 40% 40%; }
+.pl-head h1 { padding-right: 44px; }
+
+/* Артефакт: письмо под печатью — плотная бумага с мягкой тенью тумана */
+.pl-art { box-shadow: 0 6px 24px rgba(0, 0, 0, .28); }
+.pl-art-mark { font: 700 40px/1 var(--font-display); }
+.pl-art-mark small { font: 500 15px/1 var(--font-text); letter-spacing: .04em; }
+.pl-art-who { font: 700 20px/1.2 var(--font-display); }
+.pl-letters span { font: 700 26px/1 var(--font-display); }
+.pl-card--paper { box-shadow: 0 4px 18px rgba(0, 0, 0, .22); }
+:root[data-theme="sun"] .pl-art, :root[data-theme="sun"] .pl-card--paper { outline: 1px solid var(--line); }

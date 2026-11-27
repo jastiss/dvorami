@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дело о тумане в овраге — прохождение | Дворами</title>
+<!-- Плеер квеста: не индексируется ни на стенде, ни на боевом сайте -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1B2321">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="preload" href="../../assets/fonts/alegreya-cyrillic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../assets/fonts/alegreya-sans-cyrillic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../../assets/fonts.css">
+<!-- Каркас экрана — общий для всех дел; тема дела — только переменные и вид артефакта (platform/design/player-frame.md) -->
+<link rel="stylesheet" href="../player.css">
+<link rel="stylesheet" href="theme.css">
+<script>
+  try { if (localStorage.getItem('dvorami:theme') === 'sun') document.documentElement.dataset.theme = 'sun'; } catch (e) {}
+  // Код доступа из ссылки …/#code=XXXX-XXXX забираем до аналитики и убираем из адреса (docs/codes.md)
+  try {
+    var m = location.hash.match(/(?:^#|&)code=([^&]+)/);
+    if (m) { window.__dvoramiCode = decodeURIComponent(m[1]); history.replaceState(null, '', location.pathname + location.search); }
+  } catch (e) {}
+</script>
+</head>
+<!-- Данные дела для каркаса: data-quest — папка с делом (quest.locked.json собирает pages.yml), data-case-no — номер дела в шапке,
+     data-case-url — страница дела (ссылка «Нет кода?» на экране кода) -->
+<body data-quest="kolomenskoe" data-case-no="3" data-case-url="../../moscow/kolomenskoe-tuman/">
+<main class="pl-main" id="app" tabindex="-1">
+  <p class="pl-loading">Загружаем дело…</p>
+  <noscript><p class="pl-loading">Для прохождения квеста включите JavaScript.</p></noscript>
+</main>
+
+<!-- Аналитика: счётчик подключается из analytics.js -->
+<script src="../../assets/analytics.js" defer></script>
+<script src="../answer.js" defer></script>
+<script src="../player.js" defer></script>
+</body>
+</html>
