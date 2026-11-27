@@ -307,3 +307,8 @@ main > section { padding: 72px 0; position: relative; }
 .other-card { display: grid; gap: 20px; padding: 28px 22px; border: 1px solid var(--line); background: var(--asphalt); }
 .other-card .btn { justify-self: start; }
 @media (min-width: 900px) { .other-card { grid-template-columns: 1fr auto; align-items: center; padding: 36px 40px; } .other-card .btn { justify-self: end; } }
+
+/* «Другие линии» в подвале (../assets/lines.css): цвета — бумаги «Следами» (у «Следами» --text — шрифт, а не цвет) */
+.lines-band { border-bottom-color: var(--line); }
+.lines-band-h, .lines-band li { color: var(--paper-2); }
+.lines-band li b { color: var(--paper); font-family: var(--head); letter-spacing: .03em; }

@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="../../assets/style.css">
 <link rel="stylesheet" href="../../assets/case.css">
 <link rel="stylesheet" href="../../assets/case-media.css">
+<link rel="stylesheet" href="../../assets/lines.css">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
 {
@@ -240,7 +241,7 @@
 </head>
 <body class="case-page t-otkrytka">
 <a class="skip" href="#main">К содержанию</a>
-
+<nav class="lines" aria-label="Линии «Дворами» и мои дела"><div class="lines-in"><ul class="lines-list"><li><a class="lines-item" href="../../" aria-current="true">Дворами</a></li><li><a class="lines-item" href="../../sledami/?from=dvorami" data-city-href data-track="brand_cross" data-track-to="sledami" data-track-place="lines">Следами<span class="lines-18" aria-hidden="true">18+</span><span class="vh">, 18 плюс</span></a></li><li class="lines-soon-li"><span class="lines-item lines-item--soon">Залами<span class="vh"> — дела в музеях,</span><span class="lines-soon">скоро</span></span></li></ul><a class="lines-my" href="../../account/" data-track="account_open" data-track-place="lines"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 7v11a1.5 1.5 0 0 0 1.5 1.5h14a1.5 1.5 0 0 0 1.5-1.5V9.5A1.5 1.5 0 0 0 19 8h-7l-2-2.5H5A1.5 1.5 0 0 0 3.5 7Z"/><path d="M8 13.5h8"/></svg><span>Мои дела</span></a></div></nav>
 <header class="site-header">
   <div class="wrap">
     <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path class="logo-key" fill="currentColor" fill-rule="evenodd" d="M230.9 194.4L295.2 258.8L319.5 234.5L313.5 228.5L319.5 222.5L323.6 222.5L373.5 237.5L381.5 264L388.6 257.5L396.5 265.5L385.5 277.1L389.5 290.5L382.5 296.5L378.5 289.5L352.2 315.8L363.7 327.3L446.5 244.5L493.6 291.5L410.8 374.3L421.2 384.8L454.5 351.5L499.6 359.5L508.6 401.6L473.3 436.9L482.6 446.2A30.7 30.7 0 0 1 439.2 489.6L188.2 238.6A121.5 121.5 0 1 1 230.9 194.4ZM316 281L337 260L351 274L330 295ZM440 404L460.5 383.5L474.5 397.5L454 418ZM378.7 331.4L396.1 314L406.1 324L388.7 341.4ZM404.7 305.3L421.8 288.2L431.8 298.3L414.8 315.3ZM430.5 279.5L447 263L457.1 273L440.5 289.6ZM396.7 349.4L414.1 332L424.1 342L406.7 359.4ZM422.8 323.3L439.8 306.3L449.8 316.2L432.8 333.3ZM448.5 297.6L465.1 281L475 291L458.5 307.5Z"/><circle class="logo-light" cx="124.9" cy="134.9" r="67.6" fill="#F9BD39"/></svg><span>дворами</span></a>
@@ -400,9 +401,10 @@
 <a class="fab" id="fab" href="#buy" aria-hidden="true" tabindex="-1">Взять дело · 990&nbsp;₽<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 
 <footer class="site-footer">
+  <div class="lines-band"><div class="wrap"><h2 class="lines-band-h">Другие линии</h2><ul><li><a href="../../sledami/?from=dvorami" data-city-href data-track="brand_cross" data-track-to="sledami" data-track-place="footer"><b>Следами<span class="lines-18" aria-hidden="true">18+</span><span class="vh">, 18 плюс</span></b>Детективные прогулки для взрослых.</a></li><li><b>Залами</b>Дела в музеях&nbsp;— скоро.</li></ul></div></div>
   <div class="wrap">
     <a class="logo" href="../../" aria-label="Дворами — на главную"><svg viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path class="logo-key" fill="currentColor" fill-rule="evenodd" d="M230.9 194.4L295.2 258.8L319.5 234.5L313.5 228.5L319.5 222.5L323.6 222.5L373.5 237.5L381.5 264L388.6 257.5L396.5 265.5L385.5 277.1L389.5 290.5L382.5 296.5L378.5 289.5L352.2 315.8L363.7 327.3L446.5 244.5L493.6 291.5L410.8 374.3L421.2 384.8L454.5 351.5L499.6 359.5L508.6 401.6L473.3 436.9L482.6 446.2A30.7 30.7 0 0 1 439.2 489.6L188.2 238.6A121.5 121.5 0 1 1 230.9 194.4ZM316 281L337 260L351 274L330 295ZM440 404L460.5 383.5L474.5 397.5L454 418ZM378.7 331.4L396.1 314L406.1 324L388.7 341.4ZM404.7 305.3L421.8 288.2L431.8 298.3L414.8 315.3ZM430.5 279.5L447 263L457.1 273L440.5 289.6ZM396.7 349.4L414.1 332L424.1 342L406.7 359.4ZM422.8 323.3L439.8 306.3L449.8 316.2L432.8 333.3ZM448.5 297.6L465.1 281L475 291L458.5 307.5Z"/><circle class="logo-light" cx="124.9" cy="134.9" r="67.6" fill="#F9BD39"/></svg><span>дворами</span></a>
-    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../#faq">Вопросы</a><a href="../../#reviews">Отзывы</a><a href="../../legal/privacy/">Политика конфиденциальности</a><a data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Telegram-канал @dvorami_quest</a></nav>
+    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../account/">Мои дела</a><a href="../../#faq">Вопросы</a><a href="../../#reviews">Отзывы</a><a href="../../legal/privacy/">Политика конфиденциальности</a><a data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Telegram-канал @dvorami_quest</a></nav>
   </div>
 </footer>
 <script src="../../assets/site.js" defer></script>

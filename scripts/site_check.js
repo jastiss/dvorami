@@ -30,6 +30,10 @@
  *     у всех, если у большинства; исключение — year_none/credit_none/art_none/photo_none: «почему» в данных дела;
  *     дрейф сюжета (scripts/story_drift.js, T-140): витрина сверена с текущей версией сценария (platform/site/story-sync.json),
  *     герои «Кто ведёт дело» — среди speakers quest.json, снятое из сценария (quests/<id>/retired.json) — нигде на витрине.
+ *   - линии и «Мои дела» (владелец 27.11, docs/account.md, раздел 8): на каждой витрине полоса над шапкой с «Мои дела» своей марки
+ *     и ссылкой на другую марку, «Залами» — живой ссылкой или «скоро», пункты не наезжают; «Мои дела» в подвале; «Другие линии»
+ *     в подвале главной, каталога, дел и «Следами»; видимых ссылок в пустоту нет (linesIssues, самопроверка lineSelftest);
+ *     «Мои дела» на 390 и 1280, обе темы, пусто и с делами (accountCheck); данные дел кабинета = плееры и версии quest.json (accountSync, и в --sync).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
  */
@@ -289,7 +293,171 @@ function inPage(MAIN_CTA) {
   out.casePage = plaque ? { plaque: nt(plaque), status: nt(document.querySelector('#top .c-status')),
     facts: Array.from(document.querySelectorAll('#facts li')).map(li => ({ n: nt(li.querySelector('.n')), full: nt(li) })) } : null;
   out.anchorsMissing = out.anchors.filter(id => !document.getElementById(decodeURIComponent(id)));
+  // 8. Линии и «Мои дела» (владелец 27.11, docs/account.md, «Перелинковка»): полоса над шапкой, подвал, ссылки в пустоту
+  const ln = document.querySelector('nav.lines');
+  const box = e => { const b = e.getBoundingClientRect(); return { left: Math.round(b.left), right: Math.round(b.right) }; };
+  out.lines = ln ? {
+    height: Math.round(ln.getBoundingClientRect().height),
+    items: Array.from(ln.querySelectorAll('.lines-item')).map(e => Object.assign({ text: nt(e), href: e.tagName === 'A' ? e.href : null, cur: e.hasAttribute('aria-current'), vis: visible(e) }, box(e))),
+    my: Array.from(ln.querySelectorAll('a.lines-my')).map(a => Object.assign({ href: a.href, vis: visible(a) }, box(a))),
+  } : null;
+  out.footerMy = Array.from(document.querySelectorAll('.site-footer a')).filter(a => /\/account\/(\?brand=[a-z]+)?$/.test(a.href)).length;
+  out.band = Array.from(document.querySelectorAll('.lines-band li')).map(li => { const a = li.querySelector('a'); return { text: nt(li), href: a ? a.href : null }; });
+  out.dead = Array.from(document.querySelectorAll('a')).filter(a => { const h = a.getAttribute('href'); return (h === null || /^\s*(#|javascript:.*)?\s*$/i.test(h)) && visible(a); }).map(label);
   out.text = document.body.innerText;
+  return out;
+}
+
+/* Линии и «Мои дела» на странице витрины (не плеера): полоса над шапкой с путём в кабинет и на другую марку, «Залами» —
+ * ссылкой на живую страницу или «скоро» без ссылки, пункты полосы не наезжают друг на друга; «Мои дела» в подвале;
+ * на страницах дел, каталоге, главной и «Следами» — «Другие линии» в подвале; видимых ссылок в пустоту (#, пусто) нет.
+ * Обратная проверка — lineSelftest() ниже: сломанная разметка краснеет. */
+function linesIssues(rel, r, vw) {
+  const out = [];
+  if (r.dead && r.dead.length) r.dead.forEach(d => out.push(`ссылка в пустоту (href пустой или «#»): ${d}`));
+  const L = r.lines;
+  if (!L) { out.push('нет полосы линий (nav.lines): путь в «Мои дела» и на другие линии — scripts/build_cases.py, lines_html'); return out; }
+  const sled = rel.startsWith('sledami/');
+  const my = L.my.filter(m => m.vis);
+  if (my.length !== 1) out.push(`в полосе линий ${my.length} видимых ссылок «Мои дела» (нужна одна)`);
+  else if (!/\/account\/(\?brand=sledami)?$/.test(my[0].href) || (sled && !/brand=sledami/.test(my[0].href))) out.push(`«Мои дела» ведёт не в кабинет своей марки: ${my[0].href}`);
+  const vis = L.items.filter(i => i.vis);
+  if (!rel.startsWith('account/')) {
+    const cur = vis.find(i => i.cur);
+    const want = sled ? 'Следами' : 'Дворами';
+    if (!cur || !cur.text.startsWith(want)) out.push(`текущая линия в полосе — «${cur ? cur.text : 'нет'}», а страница — «${want}»`);
+  }
+  const other = sled ? vis.find(i => i.text.startsWith('Дворами') && i.href && /\/(\?[^/]*)?$/.test(i.href) && !/\/sledami\//.test(i.href))
+    : vis.find(i => i.text.startsWith('Следами') && i.href && /\/sledami\//.test(i.href));
+  if (!other) out.push(`в полосе линий нет видимой ссылки на «${sled ? 'Дворами' : 'Следами'}»`);
+  for (const i of L.items) if (/Залами/.test(i.text) && !i.href && !/скоро/.test(i.text)) out.push(`«Залами» без ссылки и без «скоро»: «${i.text}»`);
+  if (my.length) for (const i of vis) if (i.right > my[0].left - 4) out.push(`полоса линий: «${i.text}» наезжает на «Мои дела» (${i.right} > ${my[0].left})`);
+  for (const x of vis.concat(my)) if (x.right > vw + 1 || x.left < -1) out.push(`полоса линий: «${x.text || 'Мои дела'}» за краем экрана`);
+  if (L.height > 52) out.push(`полоса линий в ${L.height} px — переносится на вторую строку`);
+  if (!r.footerMy && !rel.startsWith('account/')) out.push('в подвале нет ссылки «Мои дела»');
+  if (/^(|moscow\/|moscow\/[^/]+\/|sledami\/)$/.test(rel)) {
+    if (!r.band.length) out.push('в подвале нет «Других линий» (scripts/build_cases.py, lines_band)');
+    else {
+      if (!r.band.some(b => b.href && (sled ? !/\/sledami\//.test(b.href) : /\/sledami\//.test(b.href)))) out.push(`«Другие линии»: нет ссылки на «${sled ? 'Дворами' : 'Следами'}»`);
+      if (!r.band.some(b => /Залами/.test(b.text))) out.push('«Другие линии»: нет «Залами»');
+    }
+  }
+  return out;
+}
+function lineSelftest() {
+  const ok = { dead: [], footerMy: 1, band: [{ text: 'Следами', href: 'http://x/sledami/?from=dvorami' }, { text: 'Залами Дела в музеях — скоро.', href: null }],
+    lines: { height: 45, items: [{ text: 'Дворами', href: 'http://x/', cur: true, vis: true, left: 16, right: 80 }, { text: 'Следами 18+', href: 'http://x/sledami/?from=dvorami', cur: false, vis: true, left: 98, right: 190 }, { text: 'Залами скоро', href: null, cur: false, vis: false, left: 0, right: 0 }],
+      my: [{ href: 'http://x/account/', vis: true, left: 280, right: 374 }] } };
+  const out = [];
+  if (linesIssues('', ok, 390).length) out.push('исправная полоса краснеет: ' + linesIssues('', ok, 390).join('; '));
+  const bad = JSON.parse(JSON.stringify(ok));
+  bad.lines.items[1].href = null; bad.lines.items[2] = { text: 'Залами', href: null, cur: false, vis: true, left: 200, right: 300 }; bad.footerMy = 0; bad.dead = ['a «Залами»'];
+  const got = linesIssues('', bad, 390).join(' | ');
+  for (const w of ['нет видимой ссылки на «Следами»', '«Залами» без ссылки', 'наезжает на «Мои дела»', 'в подвале нет ссылки', 'ссылка в пустоту']) if (!got.includes(w)) out.push(`сломанная полоса не поймана: «${w}»`);
+  return out;
+}
+
+/* «Мои дела» (site/account/, docs/account.md): 390 и 1280, обе темы (?brand=sledami), пусто и с делами на устройстве.
+ * Нет горизонтальной прокрутки и общих проблем inPage (контраст кнопок, обрезанный текст); пустое состояние — только без дел;
+ * состояния «на паузе — продолжить с точки N», «раскрыто», «готово к старту», «идёт»; уже начатые дела не дублируются в витрине;
+ * тема «Следами» — свой фон и текущая линия. Снимки — в --shots. */
+function accountSeeds() {
+  const now = Date.now();
+  const play = (q, o) => JSON.stringify(Object.assign({ v: 1, quest: q, phase: 'idle', p: 0, k: 0, paused: false, t_start: null, t_end: null, events: [] }, o));
+  return {
+    empty: { store: {}, cards: [] },
+    mine: { store: {
+      'dvorami:play:zilart': play('zilart', { phase: 'walk', p: 4, paused: true, t_start: now - 26 * 36e5, events: [{ t: now - 26 * 36e5, kind: 'start', point: null }, { t: now - 25 * 36e5, kind: 'walk', point: 5 }, { t: now - 25 * 36e5 + 6e4, kind: 'stop', point: 5 }] }),
+      'dvorami:code:zilart': 'TEST-CODE',
+      'dvorami:play:kolomenskoe': play('kolomenskoe', { phase: 'done', p: 8, t_start: now - 5 * 864e5 - 96e5, t_end: now - 5 * 864e5 }),
+      'dvorami:rating:kolomenskoe': '4' },
+      cards: [['paused', /Продолжить с\s+точки\s+5/i], ['done', /Раскрыто[\s\S]*Ваша оценка/i]] },
+    ready: { store: { 'dvorami:code:zilart': 'TEST-CODE', 'dvorami:play:kolomenskoe': play('kolomenskoe', { phase: 'intro', t_start: now - 6e5, events: [{ t: now - 6e5, kind: 'start' }] }) },
+      cards: [['active', /Идёт[\s\S]*вступлении[\s\S]*Продолжить/i], ['ready', /Готово к старту[\s\S]*Начать дело/i]] },
+  };
+}
+async function accountCheck(browser, shots) {
+  const out = [];
+  const seeds = accountSeeds();
+  const runs = [];
+  for (const brand of ['dvorami', 'sledami']) for (const w of [390, 1280]) for (const seed of ['empty', 'mine']) runs.push([brand, w, seed]);
+  runs.push(['dvorami', 390, 'ready']);
+  const links = new Set();
+  for (const [brand, w, seed] of runs) {
+    const where = `account/${brand === 'sledami' ? '?brand=sledami' : ''} (${seed})`;
+    const ctx = await browser.newContext({ viewport: { width: w, height: 844 }, deviceScaleFactor: 1 });
+    await ctx.route('**/*', route => route.request().url().startsWith(BASE) ? route.continue() : route.abort());
+    await ctx.addInitScript(s => { try { localStorage.clear(); for (const k in s) localStorage.setItem(k, s[k]); } catch (e) {} }, seeds[seed].store);
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on('pageerror', e => errs.push('JS: ' + e.message));
+    await page.goto(`${BASE}/account/${brand === 'sledami' ? '?brand=sledami' : ''}`, { waitUntil: 'load' });
+    await page.waitForTimeout(500);
+    const r = await page.evaluate(inPage, MAIN_CTA);
+    r.problems.forEach(p => out.push(`${where} @${w}: ${p}`));
+    r.links.filter(l => l.startsWith(BASE)).forEach(l => links.add(l.split('#')[0]));
+    errs.forEach(e => out.push(`${where} @${w}: ${e}`));
+    const s = await page.evaluate(() => {
+      const vis = el => { if (!el) return false; const b = el.getBoundingClientRect(), cs = getComputedStyle(el); return b.width > 0 && b.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden'; };
+      return { brand: document.documentElement.dataset.brand || 'dvorami', sw: document.documentElement.scrollWidth, empty: vis(document.getElementById('my-empty')),
+        emptyCta: Array.from(document.querySelectorAll('#my-empty a.btn')).some(vis), list: vis(document.getElementById('my-list')),
+        note: (document.getElementById('my-note') || {}).textContent || '', bg: getComputedStyle(document.body).backgroundColor,
+        cur: (Array.from(document.querySelectorAll('.lines .lines-item[aria-current]')).find(vis) || {}).textContent || '',
+        cards: Array.from(document.querySelectorAll('.my-card')).map(c => ({ state: c.dataset.state, no: c.dataset.case, text: c.innerText.replace(/\s+/g, ' ') })),
+        shown: Array.from(document.querySelectorAll('#qgrid > .qcard[data-case]')).filter(li => !li.hidden).map(li => li.dataset.case) };
+    });
+    if (s.sw > w + 1) out.push(`${where} @${w}: горизонтальная прокрутка (${s.sw} при ${w})`);
+    if (s.brand !== brand) out.push(`${where} @${w}: тема «${s.brand}» вместо «${brand}»`);
+    if (!/этом браузере/.test(s.note)) out.push(`${where} @${w}: нет строки о том, что список хранится в этом браузере`);
+    if (!s.cur.startsWith(brand === 'sledami' ? 'Следами' : 'Дворами')) out.push(`${where} @${w}: текущая линия в полосе — «${s.cur}»`);
+    if (brand === 'sledami' && s.bg !== 'rgb(18, 16, 14)') out.push(`${where} @${w}: фон не «Следами» (${s.bg})`);
+    const want = seeds[seed].cards;
+    if (!want.length) {
+      if (!s.empty || !s.emptyCta) out.push(`${where} @${w}: нет пустого состояния с кнопкой выбора дела`);
+      if (s.list || s.cards.length) out.push(`${where} @${w}: без дел на устройстве показан список`);
+    } else {
+      if (s.empty) out.push(`${where} @${w}: есть дела, а показано пустое состояние`);
+      if (s.cards.length !== want.length) out.push(`${where} @${w}: карточек ${s.cards.length}, нужно ${want.length}`);
+      for (const [st, re] of want) {
+        const c = s.cards.find(x => x.state === st);
+        if (!c) out.push(`${where} @${w}: нет дела в состоянии «${st}»`);
+        else if (!re.test(c.text)) out.push(`${where} @${w}: дело в состоянии «${st}» — «${c.text.slice(0, 140)}» (ждали ${re})`);
+        if (c && brand === 'dvorami' && s.shown.includes(c.no)) out.push(`${where} @${w}: дело №${c.no} и в списке, и в витрине ниже`);
+      }
+    }
+    if (shots && w === 390 && seed !== 'ready') {
+      fs.mkdirSync(shots, { recursive: true });
+      await page.screenshot({ path: path.join(shots, `account-${brand}-${seed}-${w}.jpg`), fullPage: true, quality: 80 });
+    }
+    await ctx.close();
+  }
+  for (const u of links) { const st = await status(u); if (st !== 200) out.push(`account: локальная ссылка ${u.replace(BASE, '')} → ${st}`); }
+  return out;
+}
+
+/* «Мои дела» ↔ дела (без браузера, и в --sync): данные дел в site/account/ = плееры стенда и версии сценариев.
+ * Версия нужна, чтобы сказать игроку «дело обновилось»; устаревшая версия сказала бы это зря. */
+function accountSync() {
+  const out = [];
+  const f = path.join(ROOT, 'account', 'index.html');
+  if (!fs.existsSync(f)) return ['нет site/account/index.html («Мои дела»)'];
+  let rows;
+  try { rows = JSON.parse((fs.readFileSync(f, 'utf8').match(/<script type="application\/json" id="cases-data">([\s\S]*?)<\/script>/) || [])[1]); }
+  catch (e) { return ['site/account/: данные дел (#cases-data) не разбираются — python3 scripts/build_cases.py']; }
+  const bySlug = Object.fromEntries((rows || []).map(x => [x.slug, x]));
+  for (const d of fs.readdirSync(path.join(ROOT, 'play'), { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    const pf = path.join(ROOT, 'play', d.name, 'index.html');
+    if (!fs.existsSync(pf)) continue;
+    const h = fs.readFileSync(pf, 'utf8');
+    const q = (h.match(/data-quest="([^"]+)"/) || [])[1], slug = (h.match(/data-case-url="[./]*moscow\/([^/"]+)/) || [])[1];
+    if (!q || !slug) continue;
+    const row = bySlug[slug];
+    if (!row || row.play !== q) { out.push(`«Мои дела»: нет плеера ${q} у дела ${slug} — python3 scripts/build_cases.py`); continue; }
+    const qf = path.resolve(ROOT, '..', 'quests', q, 'quest.json');
+    const ver = fs.existsSync(qf) ? String(JSON.parse(fs.readFileSync(qf, 'utf8')).version || '') : '';
+    if (ver !== String(row.version || '')) out.push(`«Мои дела»: версия дела ${q} — ${row.version || 'нет'}, в quest.json — ${ver} (игрокам зря скажет «дело обновилось») — python3 scripts/build_cases.py`);
+  }
   return out;
 }
 
@@ -771,6 +939,8 @@ async function mapTaps() {
   ogSync().forEach(m => err('OG-картинки', '', m));
   llmsSync(spoilers).forEach(m => err('llms.txt ↔ дела', '', m));
   ldSync().forEach(m => err('JSON-LD', '', m));
+  accountSync().forEach(m => err('«Мои дела» ↔ дела', '', m));
+  lineSelftest().forEach(m => err('линии (самопроверка)', '', m));
   // предупреждения — не красное: печатаются в конце, выкладку не блокируют
   const warns = seoLengths().map(w => 'длина сниппета: ' + w);
   // H-111: временные объекты маршрута — за 30 дней предупреждение, после срока ошибка; сначала самопроверка на фикстуре
@@ -937,6 +1107,7 @@ async function mapTaps() {
         if (!c.hero || !c.hero.startsWith(MAIN_CTA)) err(rel, vp.width, `кнопка первого экрана: «${c.hero}» вместо «${MAIN_CTA}…»`);
         if (!c.fab || !c.fab.startsWith(MAIN_CTA)) err(rel, vp.width, `плавающая кнопка: «${c.fab}» вместо «${MAIN_CTA}…»`);
       }
+      if (!isPlayer) linesIssues(rel, r, vp.width).forEach(p => err(rel, vp.width, p));
       if (!isPlayer) {
         const miss = await ctaAlwaysThere(page);
         if (miss.length) err(rel, vp.width, `при прокрутке вниз нет ни одного CTA на экране на высоте ${miss.join(', ')}`);
@@ -950,6 +1121,7 @@ async function mapTaps() {
       await ctx.close();
     }
   }
+  if (!args.only || 'account/'.includes(args.only) || args.only.includes('account')) (await accountCheck(browser, shots)).forEach(m => err('«Мои дела»', '', m));
   await browser.close();
 
   // Страницы дел: одинаковый набор и порядок блоков

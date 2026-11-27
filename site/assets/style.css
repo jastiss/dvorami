@@ -1570,3 +1570,10 @@ img.is-broken { visibility: hidden; }
   .js .lamp:not(.is-lit) .lamp-a { background: linear-gradient(transparent calc(100% - 1px), rgba(143,194,255,.18) 0) 0 4px / 100% 1.15em; }
   .js .lamp.is-lit .lamp-glow { background: radial-gradient(130% 100% at 78% 20%, rgba(255,197,61,.16), rgba(255,197,61,.04) 70%); }
 }
+
+/* Зачёркнутая цена (scripts/build_cases.py, поле дела price_old; владелец 27.11): справа от цены продажи, мельче и серым.
+   Для чтения с экрана — скрытая подпись перед числом (зачёркивание программы не озвучивают) */
+.price-old { font-family: var(--font-text); font-weight: 500; color: var(--text-3); text-decoration: line-through; text-decoration-thickness: 1.5px; white-space: nowrap; margin-left: .3em; }
+.qc-price .price-old { font-size: 16px; }
+.c-buy-card .price .price-old { font-size: 26px; vertical-align: .35em; }
+.price-note { display: block; font-size: 14px; color: var(--text-3); margin-top: 6px; }

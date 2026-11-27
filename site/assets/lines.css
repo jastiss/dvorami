@@ -1,0 +1,41 @@
+/* Линии платформы и вход в «Мои дела» — одна полоса над шапкой на всех витринах: «Дворами», «Следами», «Залами»
+   (владелец 27.11: «Залами / Дворами / Следами — всё нужно грамотно перелинковать»; «личный кабинет должен быть единым»).
+   Полоса одинакова на всех марках и темах дел: нейтральный тёмный фон, системный шрифт — это «полка платформы»,
+   а не часть оформления марки. Текущая марка — aria-current и светлая черта снизу. Линия без витрины («Залами») —
+   текст «скоро» без ссылки: ссылок в пустоту нет (site_check). Правило — docs/account.md, «Перелинковка». */
+.lines { background: #0B0B0D; color: #C9CBD1; border-bottom: 1px solid rgba(255,255,255,.08);
+  font: 500 14px/1.2 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; position: relative; z-index: 4; }
+.lines-in { max-width: 1240px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+@media (min-width: 900px) { .lines-in { padding: 0 32px; } }
+.lines-list { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 0 18px; min-width: 0; }
+.lines-list li { flex: none; }
+.lines .lines-item { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; color: #C9CBD1; text-decoration: none; white-space: nowrap; position: relative; }
+.lines a.lines-item:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+.lines .lines-item[aria-current] { color: #fff; font-weight: 700; }
+.lines-item[aria-current]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 2px; border-radius: 2px; background: #FFC53D; }
+.lines .lines-item--soon { color: #9DA1AB; cursor: default; }
+.lines-18 { display: inline-block; font-size: 11px; font-weight: 700; line-height: 1; padding: 2px 4px; border: 1px solid currentColor; border-radius: 4px; }
+.lines-soon { font-size: 12px; font-weight: 500; color: #9DA1AB; }
+.lines a.lines-my { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: #fff; text-decoration: none; white-space: nowrap; font-weight: 600; position: relative; }
+.lines a.lines-my:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+.lines-my svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* точка «есть начатое дело» — ставит site.js по сохранениям плеера на этом устройстве */
+.lines-my .lines-dot { width: 8px; height: 8px; border-radius: 50%; background: #FFC53D; position: absolute; left: 12px; top: 10px; box-shadow: 0 0 0 2px #0B0B0D; }
+.lines a:focus-visible { outline: 2px solid #8FC2FF; outline-offset: 2px; border-radius: 4px; }
+.lines .vh, .lines-band .vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* телефон: «Залами» без витрины уходит в подвал («Другие линии»), полоса остаётся в одну строку; site_check меряет на 390 */
+@media (max-width: 439px) { .lines-soon-li { display: none; } }
+@media (max-width: 359px) { .lines-list { gap: 0 12px; } }
+
+/* «Другие линии» в подвале главной, каталога, страниц дел и «Следами»: цвета берёт из темы страницы (--line, --text, --text-2) */
+.lines-band { border-bottom: 1px solid var(--line, rgba(255,255,255,.16)); }
+.lines-band .wrap { padding-top: 28px; padding-bottom: 28px; display: grid; gap: 14px; }
+.lines-band-h { margin: 0; font: 700 15px/1.2 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2, #D5D9E6); }
+.lines-band ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px 32px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .lines-band ul { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 860px; } }
+.lines-band li { font-size: 16px; line-height: 1.4; color: var(--text-2, #D5D9E6); }
+.lines-band li b { display: block; font-size: 17px; color: var(--text, #F3F1EA); }
+.lines-band li a { color: inherit; text-decoration: none; display: block; padding: 4px 0; }
+.lines-band li a b { text-decoration: underline; text-underline-offset: 3px; }
+.lines-band li a:hover b { text-decoration-thickness: 2px; }
+.lines-band .lines-18 { margin-left: 4px; vertical-align: 2px; }

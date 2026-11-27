@@ -62,6 +62,74 @@ LOGO = ('<svg viewBox="0 0 512 512" aria-hidden="true" focusable="false">'
         '<path class="logo-key" fill="currentColor" fill-rule="evenodd" d="M230.9 194.4L295.2 258.8L319.5 234.5L313.5 228.5L319.5 222.5L323.6 222.5L373.5 237.5L381.5 264L388.6 257.5L396.5 265.5L385.5 277.1L389.5 290.5L382.5 296.5L378.5 289.5L352.2 315.8L363.7 327.3L446.5 244.5L493.6 291.5L410.8 374.3L421.2 384.8L454.5 351.5L499.6 359.5L508.6 401.6L473.3 436.9L482.6 446.2A30.7 30.7 0 0 1 439.2 489.6L188.2 238.6A121.5 121.5 0 1 1 230.9 194.4ZM316 281L337 260L351 274L330 295ZM440 404L460.5 383.5L474.5 397.5L454 418ZM378.7 331.4L396.1 314L406.1 324L388.7 341.4ZM404.7 305.3L421.8 288.2L431.8 298.3L414.8 315.3ZM430.5 279.5L447 263L457.1 273L440.5 289.6ZM396.7 349.4L414.1 332L424.1 342L406.7 359.4ZM422.8 323.3L439.8 306.3L449.8 316.2L432.8 333.3ZM448.5 297.6L465.1 281L475 291L458.5 307.5Z"/>'
         '<circle class="logo-light" cx="124.9" cy="134.9" r="67.6" fill="#F9BD39"/></svg>')
 
+# ---------- Линии платформы и «Мои дела» (владелец 27.11; docs/account.md, «Перелинковка») ----------
+# Полоса над шапкой — одна на всех витринах трёх марок. Источник — эта функция: страницы дел собираются здесь,
+# в остальные страницы (LINES_PAGES) полоса вставляется между метками <!-- lines:start --> / <!-- lines:end -->.
+# Линия без витрины — текст «скоро» без ссылки (url None): ссылок в пустоту нет, site_check это проверяет.
+LINES = [
+    {'id': 'dvorami', 'name': 'Дворами', 'url': '', 'note': 'семейные квесты-прогулки'},
+    {'id': 'sledami', 'name': 'Следами', 'url': 'sledami/', 'adult': True, 'note': 'детективные прогулки для взрослых'},
+    {'id': 'zalami', 'name': 'Залами', 'url': None, 'note': 'дела в музеях'},  # витрины нет — «скоро»; появится — путь сюда
+]
+MY_ICON = ('<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 7v11a1.5 1.5 0 0 0 1.5 1.5h14a1.5 1.5 0 0 0 1.5-1.5V9.5'
+           'A1.5 1.5 0 0 0 19 8h-7l-2-2.5H5A1.5 1.5 0 0 0 3.5 7Z"/><path d="M8 13.5h8"/></svg>')
+# Страницы вне шаблона дел: (файл, путь до корня site/, марка)
+LINES_PAGES = [('index.html', '', 'dvorami'), (os.path.join('moscow', 'index.html'), '../', 'dvorami'),
+               (os.path.join('sledami', 'index.html'), '../', 'sledami'), (os.path.join('account', 'index.html'), '../', 'dvorami'),
+               (os.path.join('legal', 'privacy', 'index.html'), '../../', 'dvorami'), (os.path.join('legal', 'consent', 'index.html'), '../../', 'dvorami')]
+
+
+def account_href(root, brand):
+    return f'{root}account/' + ('?brand=sledami' if brand == 'sledami' else '')
+
+
+def lines_html(root, brand):
+    """Полоса «Дворами · Следами 18+ · Залами скоро — Мои дела». brand — марка страницы (текущая линия)."""
+    items = []
+    for ln in LINES:
+        adult = '<span class="lines-18" aria-hidden="true">18+</span><span class="vh">, 18 плюс</span>' if ln.get('adult') else ''
+        if ln['url'] is None:
+            items.append(f'<li class="lines-soon-li"><span class="lines-item lines-item--soon">{ln["name"]}<span class="vh"> — {ln["note"]},</span>'
+                         f'<span class="lines-soon">скоро</span></span></li>')
+            continue
+        cur = ' aria-current="true"' if ln['id'] == brand else ''
+        href = (root + ln['url'] or './') + ('' if ln['id'] == brand else f'?from={brand}')  # главная: './', не пустой href
+        track = '' if ln['id'] == brand else f' data-city-href data-track="brand_cross" data-track-to="{ln["id"]}" data-track-place="lines"'
+        items.append(f'<li><a class="lines-item" href="{href}"{cur}{track}>{ln["name"]}{adult}</a></li>')
+    return (f'<nav class="lines" aria-label="Линии «Дворами» и мои дела"><div class="lines-in">'
+            f'<ul class="lines-list">{"".join(items)}</ul>'
+            f'<a class="lines-my" href="{account_href(root, brand)}" data-track="account_open" data-track-place="lines">{MY_ICON}<span>Мои дела</span></a>'
+            f'</div></nav>')
+
+
+def lines_band(root, brand='dvorami'):
+    """«Другие линии» в подвале (главная, каталог, страницы дел, «Следами»; «Мои дела» — строкой в ссылках подвала): о «Следами» — только название, формат и 18+
+    (docs/sledami/concept.md, 7а: семейная витрина остаётся семейной)."""
+    out = []
+    for ln in LINES:
+        if ln['id'] == brand:
+            continue
+        adult = '<span class="lines-18" aria-hidden="true">18+</span><span class="vh">, 18 плюс</span>' if ln.get('adult') else ''
+        if ln['url'] is None:
+            out.append(f'<li><b>{ln["name"]}</b>{ln["note"].capitalize()}&nbsp;— скоро.</li>')
+        else:
+            out.append(f'<li><a href="{root}{ln["url"]}?from={brand}" data-city-href data-track="brand_cross" data-track-to="{ln["id"]}" data-track-place="footer">'
+                       f'<b>{ln["name"]}{adult}</b>{ln["note"].capitalize()}.</a></li>')
+    return (f'<div class="lines-band"><div class="wrap"><h2 class="lines-band-h">Другие линии</h2><ul>{"".join(out)}</ul></div></div>')
+
+
+def price_old_html(c):
+    """Зачёркнутая цена справа от цены продажи (владелец 27.11, «для стимулирования продаж»). Поле дела price_old:
+    {'rub': 1590, 'sr': 'прежняя цена', 'note': None}; по умолчанию поля нет — ничего не показываем.
+    sr — что слышит человек с программой чтения с экрана (зачёркивание она не озвучивает); note — видимая подпись
+    (например «до 31 декабря»). Включать в боевом — только по решению владельца о формулировке (A-… в APPROVALS):
+    «прежняя» цена, по которой не продавали, — недостоверная реклама (38-ФЗ, ст. 5)."""
+    po = c.get('price_old')
+    if not po:
+        return ''
+    note = f'<span class="price-note">{po["note"]}</span>' if po.get('note') else ''
+    return (f' <s class="price-old"><span class="visually-hidden">{esc(po.get("sr", "прежняя цена"))} </span>{po["rub"]}&nbsp;₽</s>{note}')
+
 
 def esc(s):
     return html.escape(s, quote=True)
@@ -185,6 +253,7 @@ def head(c):
 <link rel="stylesheet" href="../../assets/style.css">
 <link rel="stylesheet" href="../../assets/case.css">
 <link rel="stylesheet" href="../../assets/case-media.css">
+<link rel="stylesheet" href="../../assets/lines.css">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
 {json.dumps(ld, ensure_ascii=False, indent=1)}
@@ -299,7 +368,7 @@ def body(c):
         quote = f'<blockquote class="c-quote">{c["cast"]["quote"]}<footer>{c["cast"]["quote_by"]}</footer></blockquote>'
     return f'''<body class="case-page t-{c['theme']}">
 <a class="skip" href="#main">К содержанию</a>
-
+{lines_html('../../', 'dvorami')}
 <header class="site-header">
   <div class="wrap">
     <a class="logo" href="../../" aria-label="Дворами — на главную">{LOGO}<span>дворами</span></a>
@@ -422,7 +491,7 @@ def body(c):
   <div class="wrap">
     {sec_head('buy', c['buy']['h2'], 'h-buy')}
     <div class="c-buy-card" data-cta>
-      <span class="price">990&nbsp;₽</span>
+      <span class="price">990&nbsp;₽{price_old_html(c)}</span>
       <strong class="one">{ONE_CODE}</strong>
       <span class="per">{ONE_CODE_NOTE}</span>
       <span class="status">{st}</span>
@@ -449,9 +518,10 @@ def body(c):
 <a class="fab" id="fab" href="#buy" aria-hidden="true" tabindex="-1">{MAIN_CTA} · 990&nbsp;₽{ARROW.replace('<svg ', '<svg class="ico" ')}</a>
 
 <footer class="site-footer">
+  {lines_band('../../')}
   <div class="wrap">
     <a class="logo" href="../../" aria-label="Дворами — на главную">{LOGO}<span>дворами</span></a>
-    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../#faq">Вопросы</a><a href="../../#reviews">Отзывы</a><a href="../../legal/privacy/">Политика конфиденциальности</a><a data-tg="channel" href="{TG}" target="_blank" rel="noopener">Telegram-канал @dvorami_quest</a></nav>
+    <nav class="footer-links" aria-label="В подвале"><a href="../">Квесты по Москве</a><a href="../../account/">Мои дела</a><a href="../../#faq">Вопросы</a><a href="../../#reviews">Отзывы</a><a href="../../legal/privacy/">Политика конфиденциальности</a><a data-tg="channel" href="{TG}" target="_blank" rel="noopener">Telegram-канал @dvorami_quest</a></nav>
   </div>
 </footer>
 <script src="../../assets/site.js" defer></script>
@@ -460,10 +530,17 @@ def body(c):
 '''
 
 
-CARD_STATUS = {'soon': '<span class="qc-badge qc-badge--soon">Скоро в&nbsp;продаже</span><span class="qc-price"><b>990&nbsp;₽</b> за&nbsp;дело</span>',
+CARD_STATUS = {'soon': '<span class="qc-badge qc-badge--soon">Скоро в&nbsp;продаже</span><span class="qc-price"><b>990&nbsp;₽{old}</b> за&nbsp;дело</span>',
                'dev': '<span class="qc-badge">В&nbsp;разработке</span>'}
-# Каталоги, куда вставляются карточки дел (между метками cards:start / cards:end): файл, путь до корня site/, место (для аналитики)
-CATALOGS = [('index.html', '', 'home'), (os.path.join('moscow', 'index.html'), '../', 'moscow')]
+
+
+def card_status(c):
+    return CARD_STATUS[c['status']].replace('{old}', price_old_html(c))
+
+
+# Каталоги, куда вставляются карточки дел (между метками cards:start / cards:end): файл, путь до корня site/, место (для аналитики).
+# «Мои дела» — тоже каталог: в пустом кабинете это витрина дел, в заполненном — «Другие дела» (account.js прячет уже начатые).
+CATALOGS = [('index.html', '', 'home'), (os.path.join('moscow', 'index.html'), '../', 'moscow'), (os.path.join('account', 'index.html'), '../', 'account')]
 
 
 def meta_html(meta):
@@ -478,11 +555,10 @@ def meta_html(meta):
 def card_html(c, root, place, first, ratings=None):
     """Карточка дела в каталоге — из поля card дела (H-5: один источник; site_check сверяет её со страницей дела)."""
     k = c['card']
-    home = place == 'home'
-    h = 'h3' if home else 'h2'
-    li_id = '' if home else f' id="case-{c["no"]}"'
-    lazy = '' if (first and not home) else ' loading="lazy"'
-    href = ('moscow/' if home else '') + c['slug'] + '/'
+    h = 'h2' if place == 'moscow' else 'h3'  # на главной и в «Моих делах» карточки — под заголовком секции
+    li_id = f' id="case-{c["no"]}"' if place == 'moscow' else ''
+    lazy = '' if (first and place == 'moscow') else ' loading="lazy"'
+    href = {'home': 'moscow/', 'moscow': '', 'account': '../moscow/'}[place] + c['slug'] + '/'
     ask = k.get('ask')
     # H-37: на кнопке — вопрос дела; для чтения с экрана — и куда ведёт (видимый текст входит в имя кнопки)
     cta = (f'<a class="qc-btn" href="{href}" aria-label="{esc(ask)} Подробнее о деле №{c["no"]}" data-track="quest_card" '
@@ -495,7 +571,7 @@ def card_html(c, root, place, first, ratings=None):
             f'        <span class="qc-where">{k["where"]}</span>\n'
             f'        <p>{k["teaser"]}</p>\n'
             f'        <p class="qc-meta">{meta_html(k["meta"])}</p>\n'
-            f'        <div class="qc-foot">{CARD_STATUS[c["status"]]}</div>\n'
+            f'        <div class="qc-foot">{card_status(c)}</div>\n'
             f'        {cta}\n'
             f'      </li>\n')
 
@@ -516,6 +592,70 @@ def build_catalogs(cases):
         print('→', os.path.relpath(path, REPO), '(карточки дел)')
 
 
+def play_pages():
+    """Дела, которые можно пройти на стенде: site/play/<id>/index.html с data-quest и data-case-url → {slug: id}."""
+    out = {}
+    pdir = os.path.join(SITE, 'play')
+    for d in sorted(os.listdir(pdir)) if os.path.isdir(pdir) else []:
+        f = os.path.join(pdir, d, 'index.html')
+        if not os.path.exists(f):
+            continue
+        with open(f, encoding='utf-8') as fh:
+            h = fh.read()
+        q, u = re.search(r'data-quest="([^"]+)"', h), re.search(r'data-case-url="[./]*moscow/([^/"]+)/?"', h)
+        if q and u:
+            out[u.group(1)] = q.group(1)
+    return out
+
+
+def quest_version(qid):
+    try:
+        with open(os.path.join(REPO, 'quests', qid, 'quest.json'), encoding='utf-8') as fh:
+            return str(json.load(fh).get('version') or '')
+    except (OSError, ValueError):
+        return ''
+
+
+def build_account(cases):
+    """Данные дел для «Моих дел» (site/assets/account.js): номер, название, где, обложка, точки, статус, плеер и версия
+    сценария (дело обновилось — сказать). Без текстов дела: только то, что и так есть в карточке."""
+    plays = play_pages()
+    rows = []
+    for c in cases:
+        qid = plays.get(c['slug'])
+        rows.append({'no': c['no'], 'slug': c['slug'], 'brand': 'dvorami', 'short': strip(c['short']), 'where': strip(c['card']['where']),
+                     'img': c['card']['img'], 'points': c['points'], 'status': c['status'], 'url': f"moscow/{c['slug']}/",
+                     'play': qid, 'version': quest_version(qid) if qid else ''})
+    data = json.dumps(rows, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
+    path = os.path.join(SITE, 'account', 'index.html')
+    with open(path, encoding='utf-8') as fh:
+        page = fh.read()
+    page, n = re.subn(r'(<!-- cases-data:start[^>]*-->\n).*?(<!-- cases-data:end -->)',
+                      lambda m: m.group(1) + f'<script type="application/json" id="cases-data">{data}</script>\n' + m.group(2), page, flags=re.S)
+    if n != 1:
+        raise SystemExit('account/index.html: нет меток <!-- cases-data:start --> / <!-- cases-data:end -->')
+    with open(path, 'w', encoding='utf-8') as fh:
+        fh.write(page)
+    print('→', os.path.relpath(path, REPO), '(данные «Моих дел»)')
+
+
+def build_lines():
+    """Полоса линий (и «Другие линии» в подвале, где есть метки) на страницах вне шаблона дел."""
+    for rel, root, brand in LINES_PAGES:
+        path = os.path.join(SITE, rel)
+        with open(path, encoding='utf-8') as fh:
+            page = fh.read()
+        page, n = re.subn(r'(<!-- lines:start[^>]*-->\n).*?(<!-- lines:end -->)',
+                          lambda m: m.group(1) + lines_html(root, brand) + '\n' + m.group(2), page, flags=re.S)
+        if n != 1:
+            raise SystemExit(f'{rel}: нет меток <!-- lines:start --> / <!-- lines:end -->')
+        page = re.sub(r'(<!-- lines-band:start[^>]*-->\n).*?(<!-- lines-band:end -->)',
+                      lambda m: m.group(1) + lines_band(root, brand) + '\n' + m.group(2), page, flags=re.S)
+        with open(path, 'w', encoding='utf-8') as fh:
+            fh.write(page)
+        print('→', os.path.relpath(path, REPO), '(линии)')
+
+
 def main():
     files = sorted(f for f in os.listdir(DATA) if re.match(r'c\d+_.*\.py$', f))
     cases = []
@@ -529,6 +669,8 @@ def main():
             fh.write(page)
         print('→', os.path.relpath(out, REPO))
     build_catalogs(sorted(cases, key=lambda c: c['no']))
+    build_account(sorted(cases, key=lambda c: c['no']))
+    build_lines()
     # T-121: OG-картинка дела рисуется из тех же данных (card) — напомнить, если цифры или вопрос поменялись
     sys.path.insert(0, HERE)
     import make_og

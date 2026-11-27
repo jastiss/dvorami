@@ -232,3 +232,24 @@
     });
   }).catch(function () { /* нет сети — остаётся рейтинг из сборки */ });
 })();
+
+/* «Мои дела» в полосе линий (assets/lines.css): точка, если на этом устройстве есть начатое и ещё не раскрытое дело.
+   Читаем только сохранения плеера (dvorami:play:<id>), ничего не пишем и не отправляем (docs/account.md). */
+(function () {
+  'use strict';
+  var links = document.querySelectorAll('.lines-my');
+  if (!links.length) return;
+  var open = false;
+  try {
+    for (var i = 0; i < window.localStorage.length && !open; i++) {
+      var k = window.localStorage.key(i);
+      if (!k || k.indexOf('dvorami:play:') !== 0) continue;
+      try { var s = JSON.parse(window.localStorage.getItem(k) || 'null'); open = !!(s && s.phase && s.phase !== 'idle' && s.phase !== 'done'); } catch (e) { /* испорченное сохранение */ }
+    }
+  } catch (e) { return; }
+  if (!open) return;
+  [].forEach.call(links, function (a) {
+    if (a.querySelector('.lines-dot')) return;
+    a.insertAdjacentHTML('beforeend', '<span class="lines-dot" aria-hidden="true"></span><span class="vh">: есть начатое дело</span>');
+  });
+})();

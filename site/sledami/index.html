@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="../assets/fonts.css">
 <link rel="stylesheet" href="sledami.css">
 <link rel="stylesheet" href="../assets/city.css">
+<link rel="stylesheet" href="../assets/lines.css">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">
 {
@@ -51,6 +52,9 @@
 <script src="../assets/analytics.js" defer></script>
 </head>
 <body>
+<!-- lines:start — полоса линий и «Мои дела» собирает scripts/build_cases.py (lines_html); руками не править -->
+<nav class="lines" aria-label="Линии «Дворами» и мои дела"><div class="lines-in"><ul class="lines-list"><li><a class="lines-item" href="../?from=sledami" data-city-href data-track="brand_cross" data-track-to="dvorami" data-track-place="lines">Дворами</a></li><li><a class="lines-item" href="../sledami/" aria-current="true">Следами<span class="lines-18" aria-hidden="true">18+</span><span class="vh">, 18 плюс</span></a></li><li class="lines-soon-li"><span class="lines-item lines-item--soon">Залами<span class="vh"> — дела в музеях,</span><span class="lines-soon">скоро</span></span></li></ul><a class="lines-my" href="../account/?brand=sledami" data-track="account_open" data-track-place="lines"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 7v11a1.5 1.5 0 0 0 1.5 1.5h14a1.5 1.5 0 0 0 1.5-1.5V9.5A1.5 1.5 0 0 0 19 8h-7l-2-2.5H5A1.5 1.5 0 0 0 3.5 7Z"/><path d="M8 13.5h8"/></svg><span>Мои дела</span></a></div></nav>
+<!-- lines:end -->
 <svg style="position:absolute;width:0;height:0" aria-hidden="true" focusable="false">
  <defs>
   <radialGradient id="glow"><stop offset="0" stop-color="#F2B33D" stop-opacity=".95"/><stop offset=".5" stop-color="#F2B33D" stop-opacity=".4"/><stop offset="1" stop-color="#F2B33D" stop-opacity="0"/></radialGradient>
@@ -407,11 +411,14 @@
 </main>
 
 <footer class="site-footer">
+<!-- lines-band:start — «Другие линии» собирает scripts/build_cases.py (lines_band); руками не править -->
+<div class="lines-band"><div class="wrap"><h2 class="lines-band-h">Другие линии</h2><ul><li><a href="../?from=sledami" data-city-href data-track="brand_cross" data-track-to="dvorami" data-track-place="footer"><b>Дворами</b>Семейные квесты-прогулки.</a></li><li><b>Залами</b>Дела в музеях&nbsp;— скоро.</li></ul></div></div>
+<!-- lines-band:end -->
  <div class="wrap">
   <p class="foot-brand"><span class="seal" aria-label="18 плюс">18+</span> «Следами»&nbsp;— детективные прогулки для взрослых.</p>
   <ul>
    <li><a href="https://t.me/dvorami_quest" data-tg="channel" target="_blank" rel="noopener">Telegram-канал</a></li>
-   <li><a href="../?from=sledami" data-city-href data-track="brand_cross" data-track-to="dvorami">Гуляете с&nbsp;детьми? Семейные дела&nbsp;— на&nbsp;«Дворами»</a></li>
+   <li><a href="../account/?brand=sledami" data-track="account_open" data-track-place="footer">Мои дела</a></li>
    <li><a href="../legal/privacy/">Политика конфиденциальности</a></li>
   </ul>
  </div>
