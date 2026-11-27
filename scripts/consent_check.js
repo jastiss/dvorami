@@ -162,6 +162,37 @@ const initCalls = page => page.evaluate(() =>
     else if (inits.length) ok('в плеере вебвизор выключен');
     await s.ctx.close();
 
+    /* A-81: цели «Пробы» на главной — до согласия ничего не уходит, после «Согласен» — reachGoal probe_reveal / probe_pick,
+       после «Отказаться» — по-прежнему ничего */
+    if (tag === 390) {
+      const goals = page => page.evaluate(() => (window.ym && window.ym.a ? Array.prototype.map.call(window.ym.a, a => Array.prototype.slice.call(a)) : [])
+        .filter(c => c[1] === 'reachGoal').map(c => c[2]));
+      s = await open(browser, vp, '/?analytics=on&debug=analytics');
+      await s.page.evaluate(() => document.querySelector('#probe').scrollIntoView());
+      await s.page.locator('[data-lamp] .lamp-btn').click();
+      await s.page.waitForTimeout(300);
+      if (s.ym.length || (await goals(s.page)).length) err(`${tag}: «Проба» до согласия отправила данные в Метрику`);
+      else ok('«Проба» до согласия: запросов к Метрике нет');
+      await s.page.locator('.dv-consent [data-consent="yes"]').click();
+      await s.page.waitForTimeout(600);
+      await s.page.locator('[data-lamp] .lamp-next a').click();
+      await s.page.waitForTimeout(300);
+      const g = await goals(s.page);
+      if (!g.includes('probe_reveal')) err(`${tag}: после согласия цель probe_reveal не ушла (A-81)`);
+      if (!g.includes('probe_pick')) err(`${tag}: «Выбрать дело» из пробы не отправило probe_pick (A-81)`);
+      if (g.includes('probe_reveal') && g.includes('probe_pick')) ok('«Проба» после согласия: probe_reveal и probe_pick');
+      await s.ctx.close();
+      s = await open(browser, vp, '/?analytics=on&debug=analytics');
+      await s.page.locator('.dv-consent [data-consent="no"]').click();
+      await s.page.evaluate(() => document.querySelector('#probe').scrollIntoView());
+      await s.page.locator('[data-lamp] .lamp-btn').click();
+      await s.page.locator('[data-lamp] .lamp-next a').click();
+      await s.page.waitForTimeout(500);
+      if (s.ym.length || (await goals(s.page)).length) err(`${tag}: «Проба» после отказа отправила данные в Метрику`);
+      else ok('«Проба» после отказа: запросов к Метрике нет');
+      await s.ctx.close();
+    }
+
     /* Страница согласия: скриншоты и отсутствие ошибок */
     s = await open(browser, vp, '/legal/consent/');
     if (shots) { await s.page.screenshot({ path: path.join(shots, `consent-${tag}-full.jpg`), fullPage: true, quality: 80 }); }
