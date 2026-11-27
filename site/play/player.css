@@ -488,9 +488,10 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-opt .pl-ph { padding: 10px; } .pl-opt .pl-ph::before { width: 20px; height: 20px; right: 10px; top: 10px; } .pl-opt .pl-ph::after { display: none; }
 .pl-opt .pl-ph b { display: none; }
 .pl-frame--layers { cursor: pointer; }
-/* H-86: метка «Новое с прошлого раза» на карточке доски — словом, а не только цветом */
-.pl-fresh-tag { display: inline-block; margin-right: 6px; padding: 1px 8px; border: 2px solid var(--accent-text); border-radius: 999px; color: var(--accent-text);
-  font: 600 13px/1.3 var(--font-text); letter-spacing: .04em; text-transform: uppercase; vertical-align: 1px; }
+/* H-86: метка «Новое с прошлого раза» на карточке доски — словом, а не только цветом.
+   T-123: роль «метка» (--tag-font, как ярлык шага и выбор развилки), а не свой размер 13 px */
+.pl-fresh-tag { display: inline-block; margin-right: 6px; padding: 3px 8px; border: 2px solid var(--accent-text); border-radius: 999px; color: var(--accent-text);
+  font: var(--tag-font); letter-spacing: var(--tag-track); text-transform: uppercase; vertical-align: 1px; }
 /* Картинки экрана (std/images.md, «Картинки в плеере», владелец 27.11 — меньше прокрутки): альбомные или квадратные, не выше 42%
    окна; вертикальная показывается квадратом (обрезка чуть выше середины — там головы героев), целиком — по нажатию, в шторке.
    Высоту знает и раскладка экранов (player.js, FIG_MAX) */

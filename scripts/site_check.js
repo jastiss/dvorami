@@ -16,6 +16,8 @@
  *   - карточка дела в каталоге (главная, /moscow/) = страница дела: номер, название, статус, цифры, метро; карточки двух каталогов одинаковые;
  *   - карточка дела: первая фраза тизера — вопрос (H-31/H-38); на карточке нет «Один код — вся компания» ни в каком виде (владелец 25.11) и обложка не затемнена полосой;
  *   - ошибки в консоли и ошибки JS; предупреждения о неиспользованном preload шрифтов.
+ *   - без браузера (--sync — только они): цифры страницы и карточки дела = quests/<id>/quest.json (точки без эпилога, км, часы,
+ *     финиш; T-127) и OG-картинка дела = её данным (platform/site/og-manifest.json, scripts/make_og.py; T-121).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
  */
@@ -291,6 +293,191 @@ function lockedFor(id) {
   return lockedCache[id];
 }
 
+/* T-127 (H-93): цифры витрины = сценарий. Страница дела site/moscow/<slug>/ ↔ quests/<id>/quest.json, где slug начинается
+ * с «<id>-» (zilart-sinyaya-ptica ↔ quests/zilart). Сверяется то, что есть в данных дела:
+ *  - число точек основного маршрута: ветки «if» — по флагам дела (q.flags; нет флага — «A», ветки «по часам» — «open»),
+ *    развилка fork — тоже по флагу дела. ЭПИЛОГ НЕ СЧИТАЕТСЯ: точка с id "epilogue" (ЗИЛАРТ, т.11 «К началу» — дорога назад
+ *    к перголе без загадки) — путь к финишу, а не остановка; поэтому quest.json с 11 точками = «10 остановок» в summary и на витрине
+ *    (окончательно решает T-124). Все «N точек/остановок» на странице дела и в summary/вступлении сценария — это N;
+ *  - км: длина маршрута по walk_m (с эпилогом — по нему идут) ≈ «около X км» сценария (±0,5 км); на странице — X (±0,3),
+ *    или больше X, если в подписи цифры сказано «от метро» (Коломенское: 2 км между точками + дорога от метро = 4 км), и тогда
+ *    «X км» тоже есть на странице;
+ *  - время: «A–B часа» сценария = цифра «ч» на странице;
+ *  - финиш: метро из фразы «Финиш — …» сценария («того же метро» — метро старта) есть в пункте «Финиш» страницы; места
+ *    «— старт» / «— финиш» в JSON-LD с координатами — не дальше 150 м от первой / последней точки маршрута;
+ *  - возраст: в quest.json его нет — не сверяется (появится поле — добавить сюда).
+ * Тексты сценария с веткой («if»: "ext=B") сверяются с маршрутом этой ветки (Коломенское: «9 остановок … около 3 км»). */
+const EPILOGUE = p => p.id === 'epilogue';
+function questSync() {
+  const out = [];
+  const QDIR = path.resolve(__dirname, '..', 'quests');
+  const caseDir = path.join(ROOT, 'moscow');
+  const slugs = fs.readdirSync(caseDir, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name);
+  const num = s => parseFloat(String(s).replace(',', '.'));
+  const plain = s => String(s).replace(/<[^>]*>/g, ' ').replace(/&nbsp;| /g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
+  const stem = n => n.slice(0, Math.max(3, n.length - 2)); // «Коломенской» ~ «Коломенская»
+  const cat = fs.readFileSync(path.join(caseDir, 'index.html'), 'utf8');
+  const dist = (a, b) => Math.hypot((a[0] - b[0]) * 111320, (a[1] - b[1]) * 111320 * Math.cos(a[0] * Math.PI / 180));
+  for (const id of fs.readdirSync(QDIR).sort()) {
+    const qf = path.join(QDIR, id, 'quest.json');
+    if (!fs.existsSync(qf)) continue;
+    const where = `quests/${id}/quest.json`;
+    const slug = slugs.find(s => s.startsWith(id + '-'));
+    if (!slug) { out.push(`${where}: нет страницы дела site/moscow/${id}-…/ — цифры не с чем сверить`); continue; }
+    const q = JSON.parse(fs.readFileSync(qf, 'utf8'));
+    const html = fs.readFileSync(path.join(caseDir, slug, 'index.html'), 'utf8');
+    const pg = `moscow/${slug}/`;
+    const defaults = Object.assign({}, ...Object.keys(q.clock || {}).map(k => ({ [k]: 'open' })), q.flags || {});
+    const fv = (fl, k) => fl[k] != null ? String(fl[k]) : 'A';
+    const passes = (cond, fl) => { // как passes() в site/play/player.js
+      if (!cond) return true;
+      if (typeof cond === 'string') {
+        const m = cond.match(/^\s*([\w-]+)\s*(!?=)\s*(.+?)\s*$/);
+        if (!m) return true;
+        const hit = m[3].split('|').map(s => s.trim()).includes(fv(fl, m[1]));
+        return m[2] === '=' ? hit : !hit;
+      }
+      return Object.keys(cond).every(k => [].concat(cond[k]).map(String).includes(fv(fl, k)));
+    };
+    const route = fl => (q.points || []).filter(p => passes(p.if, fl));
+    const stops = fl => route(fl).filter(p => !EPILOGUE(p)).length;
+    const walkM = fl => route(fl).reduce((s, p) => {
+      const w = p.walk_m;
+      if (Array.isArray(w)) { const v = w.find(x => passes(x.if, fl)) || w[0]; return s + (+(v && v.m) || 0); }
+      return s + (+w || 0);
+    }, 0);
+    // тексты сценария: summary и реплики вступления; у реплики с веткой — свои флаги
+    const texts = [{ t: q.summary || '', fl: defaults, main: true }];
+    (function walk(x, cond) {
+      if (Array.isArray(x)) return x.forEach(e => walk(e, cond));
+      if (typeof x === 'string') { texts.push({ t: x, cond }); return; }
+      if (x && typeof x === 'object' && typeof x.text === 'string') texts.push({ t: x.text, cond: x.if });
+    })(q.intro || []);
+    for (const tx of texts.slice(1)) {
+      if (!tx.cond || passes(tx.cond, defaults)) { tx.fl = defaults; tx.main = true; continue; }
+      const m = typeof tx.cond === 'string' && tx.cond.match(/^\s*([\w-]+)\s*=\s*([^|!]+?)\s*$/);
+      tx.fl = m ? Object.assign({}, defaults, { [m[1]]: m[2] }) : null; // сложное условие ветки — не сверяем
+    }
+    const N = stops(defaults);
+    let kmMain = null, hoursMain = null, finish = null, startMetro = null;
+    for (const tx of texts) {
+      if (!tx.fl) continue;
+      const t = plain(tx.t);
+      const n = t.match(/(\d+)\s+(?:остановок|остановки|точек|точки)/);
+      if (n && +n[1] !== stops(tx.fl)) out.push(`${where}: в тексте сценария «${n[0]}», а в маршруте ${stops(tx.fl)} (эпилог не считается) — «${t.slice(0, 70)}…»`);
+      const k = t.match(/около\s+(\d+(?:,\d+)?)\s*км/);
+      if (k && Math.abs(num(k[1]) - walkM(tx.fl) / 1000) > 0.5) out.push(`${where}: в тексте сценария «${k[0]}», а по walk_m маршрут ${(walkM(tx.fl) / 1000).toFixed(1)} км`);
+      if (!tx.main) continue;
+      if (k && kmMain == null) kmMain = k[1];
+      const h = t.match(/(\d+(?:,\d+)?\s*[–-]\s*\d+(?:,\d+)?)\s*час/);
+      if (h && hoursMain == null) hoursMain = h[1].replace(/\s|-/g, s => s === '-' ? '–' : '');
+      const st = t.match(/Старт\s*—[^.]*?«([^»]+)»/);
+      if (st && !startMetro) startMetro = st[1];
+      const f = t.match(/Финиш\s*—\s*([^.]+)/);
+      if (f && !finish) finish = f[1];
+    }
+    // страница дела: цифры первого экрана, «Что нужно знать», JSON-LD
+    const facts = [...(html.match(/<section id="facts"[\s\S]*?<\/section>/) || [''])[0].matchAll(/<li><span class="n">([\s\S]*?)<\/span>([\s\S]*?)<\/li>/g)].map(m => ({ n: plain(m[1]), label: plain(m[2]) }));
+    const practical = Object.fromEntries([...html.matchAll(/<dt>([\s\S]*?)<\/dt><dd>([\s\S]*?)<\/dd>/g)].map(m => [plain(m[1]), plain(m[2])]));
+    const body = plain(html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<head>[\s\S]*?<\/head>/g, ' '));
+    const pf = facts.find(f => /точ|останов/.test(f.label));
+    if (!pf) out.push(`${pg}: в цифрах страницы нет числа точек — сверить с ${where} не с чем`);
+    else if (+pf.n !== N) out.push(`${pg}: на странице ${pf.n} ${pf.label}, а в ${where} ${N} точек основного маршрута (эпилог не считается)`);
+    for (const m of new Set([...body.matchAll(/(\d+)\s+(?:точ[а-я]*|останов[а-я]*)/g)].map(m => m[0]))) {
+      if (+m.match(/\d+/)[0] !== N) out.push(`${pg}: в тексте страницы «${m}», а в ${where} ${N} точек основного маршрута`);
+    }
+    const kf = facts.find(f => /км/.test(f.n));
+    const kmQ = kmMain != null ? num(kmMain) : Math.round(walkM(defaults) / 500) / 2;
+    if (kf) {
+      const kmP = num(kf.n.replace(/[^\d,]/g, ''));
+      const viaMetro = /метро/.test(kf.label) && kmP > kmQ && body.includes(`${String(kmQ).replace('.', ',')} км`);
+      if (Math.abs(kmP - kmQ) > 0.3 && !viaMetro) out.push(`${pg}: на странице «${kf.n}», а в ${where} около ${kmQ} км (по walk_m ${(walkM(defaults) / 1000).toFixed(1)})`);
+    }
+    // карточка дела в каталоге (/moscow/) — те же точки и км (с карточкой страницу сверяет и проверка каталогов в браузере)
+    const cm = (cat.match(/<li class="qcard"[\s\S]*?<\/li>/g) || []).find(li => li.includes(`href="${slug}/"`));
+    const cmeta = cm ? plain((cm.match(/<p class="qc-meta">([\s\S]*?)<\/p>/) || [])[1] || '') : null;
+    if (!cmeta) out.push(`${pg}: нет карточки дела в /moscow/ — цифры карточки не с чем сверить`);
+    else {
+      const cn = cmeta.match(/(\d+)\s+(?:точ|останов)/);
+      if (cn && +cn[1] !== N) out.push(`${pg}: в карточке «${cmeta}», а в ${where} ${N} точек основного маршрута (эпилог не считается)`);
+      const ck = cmeta.match(/(\d+(?:,\d+)?)\s*км/);
+      if (ck && kf && num(ck[1]) !== num(kf.n.replace(/[^\d,]/g, ''))) out.push(`${pg}: в карточке «${ck[0]}», на странице «${kf.n}»`);
+    }
+    const hf = facts.find(f => /ч$/.test(f.n));
+    if (hf && hoursMain && hf.n.replace(/\s*ч$/, '').replace(/\s/g, '') !== hoursMain) out.push(`${pg}: на странице «${hf.n}», а в ${where} «${hoursMain} часа»`);
+    if (finish) {
+      let metro = (finish.match(/«([^»]+)»/) || [])[1];
+      if (!metro && /тог[оа] же метро/.test(finish)) metro = startMetro;
+      const pfin = practical['Финиш'] || '';
+      if (metro && !pfin.includes(stem(metro))) out.push(`${pg}: «Финиш» на странице («${pfin.slice(0, 60)}») без метро «${metro}» из ${where} («Финиш — ${finish}»)`);
+    }
+    const r = route(defaults);
+    for (const m of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
+      let ld; try { ld = JSON.parse(m[1]); } catch (e) { continue; }
+      const places = [];
+      (function walk(x) { if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object') { if (x['@type'] === 'Place' && x.geo) places.push(x); Object.values(x).forEach(walk); } })(ld);
+      for (const p of places) {
+        const end = /—\s*финиш/i.test(p.name) ? r[r.length - 1] : /—\s*старт/i.test(p.name) ? r[0] : null;
+        if (!end || end.lat == null) continue;
+        const d = dist([+p.geo.latitude, +p.geo.longitude], [end.lat, end.lon]);
+        if (d > 150) out.push(`${pg}: JSON-LD «${p.name}» в ${Math.round(d)} м от точки «${end.title}» из ${where}`);
+      }
+    }
+  }
+  return out;
+}
+
+/* T-121 (H-96): OG-картинка дела = его данные. OG рисует scripts/make_og.py из card (название, вопрос, цифры) и пишет
+ * в platform/site/og-manifest.json, что нарисовано, и хеш файла. Здесь: og:image страницы дела есть в site/assets/og/;
+ * если это не общий main.png — запись в манифесте, её текст = карточке дела в каталоге (/moscow/) и og:title страницы,
+ * хеш = файлу (подменили руками — красное); в site/assets/og/ нет картинок дел мимо манифеста.
+ * Правка card.meta без «python3 scripts/make_og.py» — красное: превью в мессенджере не должно врать (OG ЗИЛАРТа неделю
+ * показывал «12 точек · 2,8 км · от 7 лет»). */
+function ogSync() {
+  const out = [];
+  const plain = s => String(s).replace(/<[^>]*>/g, '').replace(/&nbsp;| /g, ' ').replace(/&laquo;/g, '«').replace(/&raquo;/g, '»')
+    .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+  const manFile = path.resolve(__dirname, '..', 'platform', 'site', 'og-manifest.json');
+  const man = fs.existsSync(manFile) ? JSON.parse(fs.readFileSync(manFile, 'utf8')) : {};
+  const ogDir = path.join(ROOT, 'assets', 'og');
+  const cat = fs.readFileSync(path.join(ROOT, 'moscow', 'index.html'), 'utf8');
+  const cards = {};
+  for (const m of cat.matchAll(/<li class="qcard"[^>]*data-case="(\d+)">([\s\S]*?)<\/li>/g)) {
+    cards[m[1]] = { meta: plain((m[2].match(/<p class="qc-meta">([\s\S]*?)<\/p>/) || [])[1] || ''),
+      ask: plain((m[2].match(/<a class="qc-btn"[^>]*>([\s\S]*?)<\/a>/) || [])[1] || ''),
+      href: (m[2].match(/<a class="qc-btn" href="([^"]+)"/) || [])[1] || '' };
+  }
+  const sha = f => require('crypto').createHash('sha256').update(fs.readFileSync(f)).digest('hex');
+  const used = new Set(['main.png']);
+  for (const slug of fs.readdirSync(path.join(ROOT, 'moscow'))) {
+    const pf = path.join(ROOT, 'moscow', slug, 'index.html');
+    if (!fs.existsSync(pf)) continue;
+    const h = fs.readFileSync(pf, 'utf8');
+    const og = (h.match(/<meta property="og:image" content="([^"]+)"/) || [])[1];
+    if (!og) continue;
+    const pg = `moscow/${slug}/`;
+    const f = (og.match(/\/assets\/og\/([\w.-]+)$/) || [])[1];
+    if (!f || !fs.existsSync(path.join(ogDir, f))) { out.push(`${pg}: og:image ${og} — нет файла в site/assets/og/`); continue; }
+    used.add(f);
+    if (f === 'main.png') continue;
+    const e = man[f];
+    if (!e) { out.push(`${pg}: OG ${f} нарисован не make_og.py (нет в platform/site/og-manifest.json) — python3 scripts/make_og.py`); continue; }
+    if (e.file_sha !== sha(path.join(ogDir, f))) out.push(`${pg}: OG ${f} заменён мимо make_og.py (хеш ≠ манифесту) — python3 scripts/make_og.py`);
+    const card = Object.values(cards).find(k => k.href === slug + '/');
+    const title = plain((h.match(/<meta property="og:title" content="([^"]+)"/) || [])[1] || '').split(' — ')[0];
+    const inp = e.input || {};
+    const t = s => String(s || '').replace(/ /g, ' ');
+    if (!card) out.push(`${pg}: нет карточки дела в /moscow/ — OG не с чем сверить`);
+    else {
+      if (t(inp.meta) !== card.meta) out.push(`${pg}: на OG «${t(inp.meta)}», в карточке «${card.meta}» — python3 scripts/make_og.py`);
+      if (t(inp.ask) !== card.ask) out.push(`${pg}: вопрос на OG «${t(inp.ask)}», в карточке «${card.ask}» — python3 scripts/make_og.py`);
+    }
+    if (t(inp.title) !== title) out.push(`${pg}: название на OG «${t(inp.title)}», в og:title «${title}» — python3 scripts/make_og.py`);
+  }
+  for (const f of fs.readdirSync(ogDir)) if (!used.has(f) && !(f in man)) out.push(`site/assets/og/${f}: картинка не нужна ни одной странице дела и не из make_og.py`);
+  return out;
+}
+
 // Касания по точкам карты: 8 направлений вокруг каждой видимой точки-ссылки — в 12 px от центра,
 // а у тесных точек (центр Москвы) — чуть ближе середины до соседней: касание уходит к ближайшей точке
 async function mapTaps() {
@@ -332,6 +519,11 @@ async function mapTaps() {
     const s = fs.readFileSync(f, 'utf8');
     if (/wikipedia\.org|wikimedia\.org/i.test(s)) err(path.relative(ROOT, f), '', 'ссылка на Wikipedia/Wikimedia');
     if (/Купить квест/.test(s)) err(path.relative(ROOT, f), '', 'подпись «Купить квест» — должно быть «Взять дело»');
+  }
+  questSync().forEach(m => err('сценарий ↔ витрина', '', m));
+  ogSync().forEach(m => err('OG-картинки', '', m));
+  if ('sync' in args) { // --sync: только сверка цифр со сценарием, без браузера
+    stop(); errors.forEach(e => console.log(' ✗ ' + e)); console.log(errors.length ? `site_check --sync: ${errors.length} ошибок` : 'site_check --sync: OK'); process.exit(errors.length ? 1 : 0);
   }
 
   let pages = listPages();

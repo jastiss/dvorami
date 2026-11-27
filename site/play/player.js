@@ -1428,6 +1428,7 @@
   var LAY_SAMPLE = 'Сначала из-за спинки скамейки показался хвост. Потом — весь кот, и голубь сказал: «Курлык! Где же улика, 1931?»';
   // плеер реплики, строка заголовка шага, штамп «Верно», зазор частей, буквы доски, отступ первой части экрана, запас на перенос строк
   var V_VOICE = 64, V_HEAD = 46, V_STAMP = 56, V_GAP = 16, V_BOARD = 110, V_FRAME = 16, V_SAFE = 10;
+  var LOW_H = 760, LOW_SCROLL = 0.15;   // T-123: низкое окно и допуск прокрутки на нём (доля высоты окна)
   function measureLay() {
     var acs = getComputedStyle(app), topEl = document.querySelector('.pl-top');
     var probe = document.createElement('div');
@@ -1441,7 +1442,11 @@
     var w = app.clientWidth - (parseFloat(acs.paddingLeft) || 0) - (parseFloat(acs.paddingRight) || 0);
     // всё, что не экран: шапка с полосой, отступ, строка «назад · где мы», зазор, кнопка «Дальше» с подложкой, низ с навигацией
     var chrome = (topEl ? topEl.offsetHeight : 65) + (parseFloat(acs.paddingTop) || 0) + 44 + 8 + 92 + (parseFloat(acs.paddingBottom) || 0);
-    return { v: LAY_V, w: Math.round(w > 200 ? w : 358), h: Math.max(300, Math.round((window.innerHeight || 700) - chrome - V_SAFE)),
+    // T-123 (H-97): на низком окне (< 760 px, 360×740 и ниже) экран может быть на ~15% окна выше видимого — немного прокрутки
+    // вместо лишнего «Дальше» (без допуска на 360×740 нажатий было на 13% больше, чем на 390×844). Кнопка «Дальше» прибита
+    // к низу и видна всегда. LAY_V не меняем: сохранённая раскладка (S.lay) остаётся своей — у играющих экраны не перескакивают
+    var ih = window.innerHeight || 700, extra = ih < LOW_H ? Math.round(ih * LOW_SCROLL) : 0;
+    return { v: LAY_V, w: Math.round(w > 200 ? w : 358), h: Math.max(300, Math.round(ih + extra - chrome - V_SAFE)),
       cw: r.width > 100 ? r.width / LAY_SAMPLE.length : 9.6, lh: r.height > 10 ? Math.round(r.height) : 27, ih: window.innerHeight || 0, voice: voiceOn() };
   }
   function VV() { return lay().voice ? V_VOICE : 0; }   // место плеера реплики на экране (T-93: без записей его нет)
@@ -2190,6 +2195,8 @@
     if (e.defaultPrevented || !e.target.closest || e.target.closest(TAP_SKIP)) return;
     if (String(window.getSelection ? window.getSelection() : '')) return;
     if (e.clientX < (window.innerWidth || 0) * 2 / 3) return;
+    // T-123 (H-99): касание правой трети — только на сенсорном экране; на компьютере щелчок по тексту не листает (как и совет)
+    if (window.matchMedia && !matchMedia('(pointer: coarse)').matches) return;
     flipFwd('tap');
   });
   var swipe = null;

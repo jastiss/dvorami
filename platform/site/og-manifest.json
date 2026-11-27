@@ -1,0 +1,32 @@
+{
+ "kolomenskoe.png": {
+  "slug": "kolomenskoe-tuman",
+  "input": {
+   "no": 3,
+   "slug": "kolomenskoe-tuman",
+   "theme": "tuman",
+   "title": "Дело о тумане в овраге",
+   "where": "Квест-прогулка по Коломенскому без гида",
+   "ask": "Какой нынче век?",
+   "meta": "Метро «Коломенская» · 8 точек · 4 км · 2–2,5 часа · 0+",
+   "template": 3
+  },
+  "input_sha": "d98efcaa9dfe0ed7e24e3ba91e4f64ea629d66ee41464ebabd92fd25294acc46",
+  "file_sha": "130e9998c738373fd2449c4298679c325cbaa4b5d2f0c5e650df1def9d27d459"
+ },
+ "zilart.png": {
+  "slug": "zilart-sinyaya-ptica",
+  "input": {
+   "no": 1,
+   "slug": "zilart-sinyaya-ptica",
+   "theme": "avangard",
+   "title": "Дело о Синей птице",
+   "where": "Квест-прогулка по ЗИЛАРТу без гида",
+   "ask": "Что за Синяя птица?",
+   "meta": "Метро «ЗИЛ» · 10 точек · 3 км · 2,5–3 часа · 0+",
+   "template": 3
+  },
+  "input_sha": "7a669063e139a8885fdadb14d0044e621b058ad95ed583b63af2df0a5161b0af",
+  "file_sha": "6a243c50c88fb4629ba3e4b9c3f5da768cc4abfbbed58dc3c4204956d2dc7b17"
+ }
+}

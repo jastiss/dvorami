@@ -13,10 +13,10 @@
 собираются здесь же из поля card дела — руками их не править.
 """
 import html
-import importlib.util
 import json
 import os
 import re
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -110,10 +110,12 @@ def frag(name):
 
 
 def load(path):
-    spec = importlib.util.spec_from_file_location(os.path.basename(path)[:-3], path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod.CASE
+    # Всегда из исходника, без __pycache__: импорт берёт старый .pyc, если правка в ту же секунду не поменяла размер файла
+    # (ловили 27.11: «3 км» → «4 км» → «3 км» — собралось «4 км»)
+    ns = {'__file__': path, '__name__': os.path.basename(path)[:-3]}
+    with open(path, encoding='utf-8') as fh:
+        exec(compile(fh.read(), path, 'exec'), ns)
+    return ns['CASE']
 
 
 def head(c):
@@ -486,6 +488,11 @@ def main():
             fh.write(page)
         print('→', os.path.relpath(out, REPO))
     build_catalogs(sorted(cases, key=lambda c: c['no']))
+    # T-121: OG-картинка дела рисуется из тех же данных (card) — напомнить, если цифры или вопрос поменялись
+    sys.path.insert(0, HERE)
+    import make_og
+    for c in make_og.stale(cases):
+        print(f'⚠ OG дела №{c["no"]} ({make_og.og_file(c)}) устарел — python3 scripts/make_og.py (иначе site_check красный)')
 
 
 if __name__ == '__main__':
