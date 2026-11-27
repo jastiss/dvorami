@@ -3,7 +3,8 @@
  *   1) нормализация: регистр, ё/е, кавычки, дефисы, пробелы, числа цифрой и словом («3» = «три», «1 931» = «1931»);
  *   2) «почти»: одна опечатка в ответе от 5 букв или верные слова вперемешку с лишними — не засчитывается, мягкая подсказка;
  *   2б) латинская раскладка (H-70): «hfvf» = «рама», и в «почти»; кириллица и латинские ответы не ломаются;
- *   2в) бот (scripts/answer_match.py, quest_bot) засчитывает то же, что плеер: сверка matches() на наборе случаев (нужен python3);
+ *   2в) бот (scripts/answer_match.py, quest_bot) засчитывает то же, что плеер: сверка matches() на наборе случаев (нужен python3)
+ *       и проверка шага целиком check_text() = checkText() (answers → all → replies → missing → «почти») на каждой загадке дела;
  *   3) каждая загадка дела (шаги ask, вопросы на ходу walk_ask, финал; обе ветки А/Б) принимает свой эталон, все свои
  *      допустимые формы из данных (answers) и их написание с ошибками формы, а явно неверный ответ — нет (ни «верно», ни «почти»).
  * Без зависимостей; вызывается и из scripts/player_check.js (красный — сборка стенда падает). Выход: 0 — чисто, 1 — ошибки.
@@ -109,6 +110,50 @@ function parity() {
   return err;
 }
 
+// Проверка шага целиком (answers → all → replies → missing → «почти»): бот (answer_match.check_text) = плеер (checkText).
+// Случаи — из каждой загадки дела: эталон, формы, части all по одной и вместе, ответы replies, явно неверные, опечатка, пусто.
+// В выводе — только место загадки и номер случая, без текстов (журнал Actions публичный).
+function checkCases(st) {
+  const out = [];
+  const add = t => { if (typeof t === 'string' && !out.includes(t)) out.push(t); };
+  const parts = (st.all || []).map(g => groupAns(g).filter(a => typeof a === 'string'));
+  (st.answers || []).filter(a => typeof a === 'string').forEach(a => { add(plainOf(a)); add(plainOf(a).toUpperCase()); });
+  parts.forEach(p => p.forEach(a => add(plainOf(a))));
+  if (parts.length) add(parts.map(p => plainOf(p[0] || '')).join(' и '));
+  (st.replies || []).forEach(r => (r.answers || []).forEach(a => add(plainOf(String(a)))));
+  if (st.answers || st.all) {
+    const et = etalonOf(st), word = et.split(' ').sort((a, b) => b.length - a.length)[0] || '';
+    if (word.length >= 4) { const k = Math.floor(word.length / 2); add(et.replace(word, word.slice(0, k) + (word[k] === 'ы' ? 'и' : 'ы') + word.slice(k + 1))); }
+    add(`Это ${et}, наверное`);
+  }
+  WRONG.concat(['', '!!!', '  ']).forEach(add);
+  return out;
+}
+const pyCheck = cases => JSON.parse(require('child_process').execFileSync('python3', ['-c',
+  'import sys, json; sys.path.insert(0, sys.argv[1]); from answer_match import check_text; ' +
+  'print(json.dumps([check_text(s, t) for s, t in json.load(sys.stdin)]))', __dirname],
+{ input: JSON.stringify(cases), encoding: 'utf8', maxBuffer: 64 << 20 }));
+const sameCheck = (a, b) => !!a.ok === !!b.ok && (a.reply || '') === (b.reply || '') && !!a.near === !!b.near;
+function checkParity(q, label) {
+  const cases = [];
+  const st0 = { answers: ['рама грузовика', '~летатлин', 'климатическая камера', '1931'] };
+  const st2 = { all: [{ answers: ['~лихач'], missing: 'M' }, { answers: ['гдр'], missing: 'M2' }], replies: [{ answers: ['лехачев'], text: 'R' }] };
+  [[st0, 'Летатлен'], [st0, 'климатическая камерра'], [st0, 'рама старого грузовика'], [st0, '1932'], [st0, 'ktnfnkty'],
+    [{ answers: ['рама'] }, 'рамка'], [{ answers: ['~камер'] }, 'камень'], [st2, 'лехачев'], [st2, 'лихачев'], [st2, 'лихачев и гдр'],
+    [{ all: [['изба'], ['петр']] }, 'изба'], [{ all: [['изба'], ['петр']] }, 'изба петра']].forEach(([s, t]) => cases.push({ s, t, where: 'набор' }));
+  asksOf(q).forEach(({ st, where }) => checkCases(st).forEach(t => cases.push({ s: st, t, where })));
+  let py;
+  try { py = pyCheck(cases.map(c => [c.s, c.t])); } catch (e) {
+    return ['сверка проверки шага с ботом не запустилась (python3, scripts/answer_match.py): ' + String(e.message || e).split('\n')[0]];
+  }
+  const err = [];
+  cases.forEach((c, i) => {
+    const js = A.checkText(c.s, c.t);
+    if (!sameCheck(js, py[i])) err.push(`${label}, ${c.where}: бот и плеер по-разному проверяют шаг (случай №${i + 1}: плеер ${js.ok ? 'верно' : js.near ? 'почти' : js.reply ? 'ответ на ошибку' : 'неверно'}, бот ${py[i].ok ? 'верно' : py[i].near ? 'почти' : py[i].reply ? 'ответ на ошибку' : 'неверно'})`);
+  });
+  return err;
+}
+
 function asksOf(q) {
   const out = [];
   const add = (st, where) => {
@@ -186,7 +231,7 @@ function run(opts) {
   const err = unit().map(e => 'нормализация — ' + e).concat(parity());
   const q = JSON.parse(fs.readFileSync(file, 'utf8'));
   const r = questCheck(q, path.relative(REPO, file));
-  return { errors: err.concat(r.err), asks: r.n };
+  return { errors: err.concat(r.err, checkParity(q, path.relative(REPO, file))), asks: r.n };
 }
 
 module.exports = { run };

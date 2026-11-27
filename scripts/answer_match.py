@@ -4,7 +4,8 @@
 числа («3» = «три», «1 931» = «1931», «тысяча девятьсот тридцать один» = «1931»);
 основа «~» с границей для чисел; однобуквенный ответ — только в коротком сообщении;
 латинская раскладка («hfvf» = «рама», H-70).
-Совпадение с answer.js проверяет scripts/answer_check.js (сверка на наборе случаев). «Почти» — только в плеере.
+check_text() — проверка шага целиком, как checkText() в answer.js: answers → all → replies → missing → «почти».
+Совпадение с answer.js проверяет scripts/answer_check.js (PARITY — matches, CHECK_PARITY — check_text на загадках дела).
 """
 
 import re
@@ -185,3 +186,112 @@ def matches(text, answers):
                 if _hit(t, af):
                     return True
     return False
+
+
+# ---------- «почти» и проверка шага — как near() и checkText() в answer.js ----------
+NEAR_TEXT = "Почти! Проверьте написание."
+HALF_TEXT = "Половина ответа верна. Чего не хватает?"
+
+
+def lev1(a, b):
+    """Расстояние Левенштейна ≤ 1?"""
+    if a == b:
+        return True
+    la, lb = len(a), len(b)
+    if abs(la - lb) > 1:
+        return False
+    i = j = diff = 0
+    while i < la and j < lb:
+        if a[i] == b[j]:
+            i += 1
+            j += 1
+            continue
+        diff += 1
+        if diff > 1:
+            return False
+        if la > lb:
+            i += 1
+        elif lb > la:
+            j += 1
+        else:
+            i += 1
+            j += 1
+    return diff + (la - i) + (lb - j) <= 1
+
+
+def _letters(s):
+    return sum(1 for c in s if c.isalpha())
+
+
+def _near_one(t, a):
+    tokens = t.split(" ")
+    stem = a.startswith("~")
+    s = a[1:].strip() if stem else a
+    if not s or re.search(r"[0-9]", s):  # числа и годы опечаткой не считаем
+        return False
+    at = s.split(" ")
+    if _letters(s) >= (6 if stem else 5):
+        for j in range(len(tokens) - len(at) + 1):
+            w = " ".join(tokens[j:j + len(at)])
+            if stem:
+                for L in range(len(s) - 1, len(s) + 2):
+                    if lev1(s, w[:L]):
+                        return True
+            elif lev1(s, w):
+                return True
+    # все слова составного ответа на месте и по порядку, но с лишними между ними
+    if not stem and len(at) > 1:
+        p = 0
+        for tok in tokens:
+            if p < len(at) and tok == at[p]:
+                p += 1
+        if p == len(at):
+            return True
+    return False
+
+
+def near(text, answers):
+    t = base(text)
+    if not t:
+        return False
+    alt = layout(text)
+    ts = [t] if alt is None else [t, base(alt)]
+    for a in answers or []:
+        a = str(a)
+        na = "~" + base(a[1:]) if a.startswith("~") else base(a)
+        for x in ts:
+            if _near_one(x, na):
+                return True
+    return False
+
+
+def _group(g):
+    if isinstance(g, list):
+        return g
+    return (g.get("answers") or []) if isinstance(g, dict) else []
+
+
+def check_text(st, text):
+    """Проверка текстового ответа шага — как checkText() в answer.js:
+    answers → ответ из частей (all) → ответ на типичную ошибку (replies) → «половина верна» (all.missing) → «почти».
+    Возвращает {"ok": True} или {"ok": False[, "reply": текст][, "near": True]}."""
+    st = st or {}
+    if st.get("answers") and matches(text, st["answers"]):
+        return {"ok": True}
+    groups = st.get("all") or []
+    hits = [matches(text, _group(g)) for g in groups]
+    if hits and all(hits):
+        return {"ok": True}
+    for r in st.get("replies") or []:
+        if matches(text, (r or {}).get("answers")):
+            return {"ok": False, "reply": r.get("text")}
+    if any(hits):
+        for g, h in zip(groups, hits):
+            if not h:
+                return {"ok": False, "reply": (g.get("missing") if isinstance(g, dict) else None) or HALF_TEXT}
+    pool = list(st.get("answers") or [])
+    for g in groups:
+        pool += _group(g)
+    if near(text, pool):
+        return {"ok": False, "near": True, "reply": NEAR_TEXT}
+    return {"ok": False}
