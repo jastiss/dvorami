@@ -28,4 +28,5 @@
 
 ## Инструменты
 - Коннектор **fal** (`mcp__fal__*`): изображения, озвучка, музыка, звуки, видео. Правила, выбор моделей и промптов — `docs/fal-guide.md`. **Каждая платная генерация — только после «да» владельца в APPROVALS**; траты — в `state/MEDIA_SPEND.md`.
+- Коннектор **ElevenLabs** (`mcp__ElevenLabs__*`): **вся озвучка, звуки и музыка** (владелец, 27.11). Расход — кредиты тарифа: до и после работы `account_get_usage`, строка в `state/MEDIA_SPEND.md`; повтор вызова — новая оплата. Рецепт — `quests/<id>/media/voices.md`, голоса и flows-папки — `quests/<id>/media/casting/elevenlabs.md`.
 - Скиллы `image-generation` (промпты для моделей изображений), `video-making`.

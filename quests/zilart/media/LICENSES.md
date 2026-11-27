@@ -67,3 +67,14 @@
 | `voices/tyufel-e-design.mp3` | Голос по текстовому описанию | `fal-ai/qwen-3-tts/voice-design/1.7b` (открытая модель Qwen3-TTS; лицензию модели сверить до публикации) |
 | `voices/tyufel-f-minimax.mp3` | Проба голоса | `fal-ai/minimax/speech-2.8-hd`, голос Elegant_Man |
 | `scenes/ref-sheet-4.jpg`, `site/play/zilart/media/scenes/s01…s07*.jpg` | Лист героев и 7 сцен квеста, стиль 4 (27.11, A-66) | `fal-ai/nano-banana-pro/edit` — условия те же, что у строк кастинга выше |
+
+## ElevenLabs напрямую, 2026-11-27 — озвучка, звуки, музыка (раунд 4)
+
+Тариф владельца Creator (платный): по условиям ElevenLabs коммерческое использование результатов разрешено на платных тарифах. **Подтвердить до публикации на боевом сайте.** Текст — наш сценарий. Голоса: библиотечные (Callum, Daniel, Roger, Miron, Alexei, Andrii, Max) и созданные по нашему описанию («Дворами · ЗИЛАРТ · Тюфель · дизайн 1/2»). Голос **Tyufel** — клон, его создал владелец: откуда взят образец, не подтверждено (вопрос в `casting/README.md`, раунд 4). До ответа он стоит только на стенде.
+
+| Файл | Что | Модель |
+|---|---|---|
+| `site/play/zilart/media/audio/p1-01…p1-04-*.mp3` | 4 реплики точки 1 со звуком | `eleven_v4` + наши звуки, сведение ffmpeg |
+| `casting/voices/r3-*.mp3` | пробы голосов раунда 4 | `eleven_v4` |
+| `assets/audio/sfx/sfx-*.mp3` | голубь, кот, шаги, трамвай, гудок | `eleven_text_to_sound_v3` |
+| `assets/audio/sfx/music-courtyard-mystery-30s.mp3` | музыка «тайна во дворе» | `eleven_music_v2_5` |
