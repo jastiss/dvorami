@@ -6,7 +6,10 @@
   if (!sheet) return;
   var ink = sheet.querySelector('.ink');
   var btn = sheet.querySelector('.lamp-btn');
-  var raf = 0, last = null;
+  var raf = 0, last = null, links = ink ? ink.querySelectorAll('a') : [];
+  // пока строка не освещена, ссылка в ней не ловит Tab (без JS и при reduced-motion строка видна — ссылка как обычно)
+  function tab(on) { for (var i = 0; i < links.length; i++) on ? links[i].removeAttribute('tabindex') : links[i].setAttribute('tabindex', '-1'); }
+  if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) tab(false);
   function place() {
     raf = 0;
     if (!last || !ink) return;
@@ -22,5 +25,6 @@
   }
   sheet.addEventListener('pointermove', move);
   sheet.addEventListener('pointerdown', move);
-  if (btn) btn.addEventListener('click', function () { sheet.classList.add('is-lit'); });
+  // свет включён — ссылка снова в Tab-порядке, фокус переходит на строку (кнопка исчезает, фокус не теряется)
+  if (btn) btn.addEventListener('click', function () { sheet.classList.add('is-lit'); tab(true); if (links[0]) links[0].focus(); });
 })();

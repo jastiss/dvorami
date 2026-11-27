@@ -159,21 +159,20 @@
 </section>
 
 <!-- Проба (владелец 27.11, по образцу «Следами»): фонарик проявляет ответ под пальцем или мышью — assets/lamp.js.
-     Без JS и при prefers-reduced-motion ответ виден сразу. Факт — quests/chistye-prudy/research/facts.md (бульвары на месте стены, ✅);
-     ответ не совпадает с ответами загадок дел — site_check сверяет блок с ответами всех дел (scripts/answer_leaks.js) -->
+     Без JS и при prefers-reduced-motion ответ виден сразу. Факт — quests/_site/research/facts.md (✅, ни в одном маршруте и черновике);
+     site_check сверяет пробу с ответами всех дел, со сценариями и черновиками (scripts/answer_leaks.js → checkProbes) -->
 <section id="probe" class="section probe-sec" aria-labelledby="h-probe" data-city-only="moscow">
   <div class="wrap probe">
     <div class="probe-head">
-      <span class="hand">проба на&nbsp;десять секунд</span>
+      <span class="hand">проба: ответ где-то рядом</span>
       <h2 id="h-probe" class="h2">Посветите фонариком</h2>
-      <p class="lead">В&nbsp;делах так&nbsp;же: ответ где-то рядом, на&nbsp;улице. Его нужно заметить.</p>
     </div>
     <div class="lamp" data-lamp>
       <span class="lamp-glow" aria-hidden="true"></span>
-      <svg class="lamp-map" viewBox="0 0 120 100" aria-hidden="true" focusable="false"><path class="lamp-river" d="M-4 86C18 78 38 94 60 88S100 74 124 84"/><path class="lamp-ring" d="M24 84C15 52 33 21 60 19C87 21 105 52 96 84"/><path class="lamp-kremlin" d="M53 80h14l-7-11z"/></svg>
-      <svg class="lamp-map lamp-wall ink" viewBox="0 0 120 100" aria-hidden="true" focusable="false"><path d="M24 84C15 52 33 21 60 19C87 21 105 52 96 84"/></svg>
-      <p class="lamp-q">Почему Бульварное кольцо&nbsp;— кольцо?</p>
-      <p class="lamp-a"><span class="ink">Здесь стояла стена Белого города. В&nbsp;XVIII&nbsp;веке её&nbsp;разобрали, а&nbsp;<a href="https://www.mos.ru/news/item/10385073/" target="_blank" rel="noopener">на&nbsp;её месте разбили бульвары</a>.</span></p>
+      <svg class="lamp-map" viewBox="0 0 80 130" aria-hidden="true" focusable="false"><path class="lamp-rings" d="M10 126h60M16 106h48M20.5 87h39M24.5 69h31M27.5 52h25M30 36h20M32 22h16M40 22V8"/></svg>
+      <svg class="lamp-map lamp-lattice ink" viewBox="0 0 80 130" aria-hidden="true" focusable="false"><path d="M11 126L28 106M11 126L37 106M15 126L21 106M15 126L47 106M16 106L30 87M16 106L38 87M20 106L25 87M20 106L45 87M21 87L32 69M21 87L38 69M23 126L17 106M23 126L55 106M24 87L28 69M24 87L44 69M25 69L34 52M25 69L39 52M27 106L21 87M27 106L52 87M27 69L30 52M27 69L43 52M28 52L35 36M28 52L39 36M29 87L25 69M29 87L50 69M30 36L36 22M30 36L39 22M30 52L32 36M30 52L43 36M31 69L28 52M31 69L48 52M32 36L34 22M32 36L42 22M33 52L30 36M33 52L46 36M34 126L16 106M34 126L61 106M34 36L32 22M34 36L45 22M35 106L21 87M35 106L57 87M36 87L25 69M36 87L54 69M37 69L28 52M37 69L51 52M38 36L32 22M38 36L47 22M38 52L30 36M38 52L49 36M42 36L33 22M42 36L48 22M42 52L31 36M42 52L50 36M43 69L29 52M43 69L52 52M44 87L26 69M44 87L55 69M45 106L23 87M45 106L59 87M46 126L19 106M46 126L64 106M46 36L35 22M46 36L48 22M47 52L34 36M47 52L50 36M48 36L38 22M48 36L46 22M49 69L32 52M49 69L52 52M50 36L41 22M50 36L44 22M50 52L37 36M50 52L48 36M51 87L30 69M51 87L55 69M52 52L41 36M52 52L45 36M53 106L28 87M53 106L59 87M53 69L37 52M53 69L50 52M55 69L41 52M55 69L46 52M56 87L36 69M56 87L52 69M57 126L25 106M57 126L63 106M59 87L42 69M59 87L48 69M60 106L35 87M60 106L55 87M64 106L42 87M64 106L50 87M65 126L33 106M65 126L59 106M69 126L43 106M69 126L52 106"/></svg>
+      <p class="lamp-q">Как называется форма башни на&nbsp;Шаболовке?</p>
+      <p class="lamp-a"><span class="ink"><a href="https://ria.ru/20090310/164302919.html" target="_blank" rel="noopener">Гиперболоид</a>. Башню придумал инженер Владимир Шухов и&nbsp;собрал её из&nbsp;стального кружева.</span></p>
       <div class="lamp-do">
         <div class="lamp-ctl"><p class="lamp-hint">Ведите пальцем или&nbsp;мышью по&nbsp;карточке</p><button class="lamp-btn" type="button">Включить фонарик</button></div>
         <div class="lamp-next"><p>Так устроено каждое дело: вопрос&nbsp;— в&nbsp;телефоне, ответ&nbsp;— на&nbsp;улице.</p><a class="btn" href="#quests">Выбрать дело</a></div>

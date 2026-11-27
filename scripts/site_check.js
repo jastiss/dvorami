@@ -288,7 +288,10 @@ async function ctaAlwaysThere(page) {
   return miss;
 }
 
-// «Проба» (владелец 27.11): ответ под маской проявляется светом; без JS и при reduced-motion — виден сразу
+// «Проба» (владелец 27.11): ответ под маской проявляется светом; без JS и при reduced-motion — виден сразу.
+// С JS — настоящий путь клавиатуры: Tab с последнего элемента перед пробой попадает на кнопку света (ссылка в скрытом
+// ответе — tabindex=-1), Enter проявляет ответ, фокус остаётся в пробе (на следующем шаге, если он есть), ссылка ответа снова в Tab.
+// Блок пробы на 390 — не выше 700 px (Продюсер 27.11: проба не должна отодвигать каталог больше чем на экран).
 async function lampCheck(browser, url) {
   const out = [];
   const state = p => p.evaluate(() => {
@@ -296,9 +299,11 @@ async function lampCheck(browser, url) {
     const ink = box.querySelector('.lamp-a .ink, .sheet-a .ink');
     const vis = el => { if (!el) return false; const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
     const cs = ink && getComputedStyle(ink), mask = cs && (cs.maskImage || cs.webkitMaskImage);
-    const btn = box.querySelector('.lamp-btn'), next = box.querySelector('.lamp-next a');
+    const btn = box.querySelector('.lamp-btn'), next = box.querySelector('.lamp-next a'), act = document.activeElement;
+    const sec = box.closest('section') || box;
     return { ink: !!ink, shown: vis(ink) && (!mask || mask === 'none'), btn: vis(btn) ? Math.round(btn.getBoundingClientRect().height) : 0,
-      hasNext: !!next, next: vis(next), focusNext: !!(document.activeElement && document.activeElement.closest('.lamp-next')) };
+      hasNext: !!next, next: vis(next), focusNext: !!(act && act.closest('.lamp-next')), focusIn: !!(act && act !== document.body && box.contains(act)),
+      linkTab: ink ? [...ink.querySelectorAll('a')].map(a => a.tabIndex) : [], height: Math.round(sec.getBoundingClientRect().height) };
   });
   for (const [name, opt] of [['без JS', { javaScriptEnabled: false }], ['при prefers-reduced-motion', { reducedMotion: 'reduce' }], ['с JS', { reducedMotion: 'no-preference' }]]) {
     const ctx = await browser.newContext(Object.assign({ viewport: VIEWPORTS[0], deviceScaleFactor: 1 }, opt));
@@ -307,16 +312,34 @@ async function lampCheck(browser, url) {
     await p.goto(url, { waitUntil: 'load' }); await p.waitForTimeout(300);
     const s = await state(p);
     if (!s.ink) { out.push('«Проба»: нет строки ответа (.lamp-a .ink / .sheet-a .ink)'); await ctx.close(); break; }
+    if (s.height > 700) out.push(`«Проба» ${name}: блок высотой ${s.height} px на 390 (нужно ≤ 700) — сократите текст, а не шрифт`);
     if (name !== 'с JS') {
       if (!s.shown) out.push(`«Проба» ${name}: ответ скрыт — должен быть виден сразу`);
       if (s.hasNext && !s.next) out.push(`«Проба» ${name}: не виден следующий шаг (.lamp-next)`);
+      if (s.linkTab.some(t => t < 0)) out.push(`«Проба» ${name}: ссылка в видимом ответе выключена из Tab`);
     } else if (s.shown) out.push('«Проба» с JS: ответ виден до того, как его осветили');
     else if (s.btn < 44) out.push(`«Проба»: кнопка света ${s.btn ? s.btn + ' px (нужно ≥ 44)' : 'не видна'}`);
     else {
-      await p.focus('[data-lamp] .lamp-btn'); await p.keyboard.press('Enter'); await p.waitForTimeout(200);
-      const a = await state(p);
-      if (!a.shown) out.push('«Проба»: кнопка света с клавиатуры не проявила ответ');
-      if (a.hasNext && !(a.next && a.focusNext)) out.push('«Проба»: после кнопки света следующий шаг не виден или фокус не на нём');
+      const before = await p.evaluate(() => {
+        const box = document.querySelector('[data-lamp]');
+        const all = [...document.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')]
+          .filter(e => e.tabIndex >= 0 && !e.disabled && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden');
+        const i = all.findIndex(e => box.contains(e) || (box.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING));
+        if (i < 1) return false;
+        all[i - 1].focus(); return document.activeElement === all[i - 1];
+      });
+      if (!before) out.push('«Проба»: перед пробой нет элемента, с которого начать путь Tab');
+      await p.keyboard.press('Tab');
+      const f1 = await p.evaluate(() => { const a = document.activeElement; return !a || a === document.body ? 'никуда' : a.matches('[data-lamp] .lamp-btn') ? 'btn' : a.closest('[data-lamp] .ink') ? 'ссылку в скрытом ответе' : `«${(a.innerText || a.outerHTML).trim().slice(0, 40)}»`; });
+      if (f1 !== 'btn') out.push(`«Проба»: Tab перед пробой ведёт не на кнопку света, а на ${f1}`);
+      else {
+        await p.keyboard.press('Enter'); await p.waitForTimeout(200);
+        const a = await state(p);
+        if (!a.shown) out.push('«Проба»: кнопка света с клавиатуры не проявила ответ');
+        if (!a.focusIn) out.push('«Проба»: после кнопки света фокус потерялся (ушёл со страницы пробы)');
+        if (a.hasNext && !(a.next && a.focusNext)) out.push('«Проба»: после кнопки света следующий шаг не виден или фокус не на нём');
+        if (a.linkTab.some(t => t < 0)) out.push('«Проба»: после света ссылка в ответе так и не вернулась в Tab');
+      }
     }
     await ctx.close();
   }

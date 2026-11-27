@@ -28,8 +28,9 @@
  * на дело (шапка, справка) — ответами всех дел; и посты канала docs/marketing/channel/posts/*.md (кроме status: published —
  * они уже вышли) — текст поста без шапки ответами всех дел. Исключения answer_leaks.json → ok действуют и здесь.
  * Обратная проверка: --llms=копия.txt (вместо site/llms*.txt) и --posts=папка (вместо posts/) — подставленный ответ краснеет.
- * «Проба» (section#probe на главной и витринах марок, владелец 27.11): её текст не совпадает ни с одним ответом ни одного дела —
- * checkProbes(); исключений нет, при совпадении меняется факт пробы.
+ * «Проба» (section#probe на главной и витринах марок, владелец 27.11): её текст не совпадает ни с одним ответом ни одного дела,
+ * а вопрос и ответ — с фактами черновиков и сценариев всех версий (draft*.md, scenario-v*.md) — checkProbes(); исключений нет,
+ * при совпадении меняется факт пробы.
  * Одна находка — одно поле сценария (канонический ответ и его основы вместе; одинаковые поля разных шагов — одной строкой).
  * Исключения — scripts/answer_leaks.json → ok: {"<id дела>": {"<любой ответ или основа поля>": "почему это не спойлер"}};
  * значение-объект {"why": "…", "warn": true} — известная находка ждёт решения (Сценарист): не красное, а жёлтое каждый запуск;
@@ -307,9 +308,47 @@ function coverage(id, c) {
 
 // Блок «Проба» (section#probe) на витринах вне дел — главная «Дворами», «Следами» (владелец 27.11): проба показывает
 // факт сразу, без кода, поэтому он не должен совпадать ни с одним ответом ни одного дела. Исключений нет — меняется проба.
-function probeParts(html, label) {
+// Продюсер 27.11 (рецензент: проба выдавала ответ т.8 черновика Чистых прудов): ещё и с черновиками и сценариями всех
+// версий — quests/*/story/**/draft*.md (строки таблиц), scenario-v*.md (строки «Ответ:») и тексты quest.json: общая пара значимых слов
+// (от 5 букв, по основам) у вопроса или ответа пробы и строки — это тот же факт в маршруте, проба его выдаёт.
+function probeSection(html) {
   const m = String(html).replace(/<!--[\s\S]*?-->/g, ' ').match(/<section\b[^>]*\sid="probe"[^>]*>[\s\S]*?<\/section>/i);
-  return m ? corpusOf(m[0], null, `${label}, «Проба»`) : [];
+  return m ? m[0] : '';
+}
+function probeParts(html, label) {
+  const sec = probeSection(html);
+  return sec ? corpusOf(sec, null, `${label}, «Проба»`) : [];
+}
+// вопрос и ответ пробы: .lamp-q/.lamp-a («Дворами»), .sheet-q/.sheet-a («Следами»)
+function probeQA(html) {
+  return [...probeSection(html).matchAll(/<(\w+)\b[^>]*class="[^"]*\b(?:lamp|sheet)-[qa]\b[^"]*"[^>]*>([\s\S]*?)<\/\1>/gi)].map(m => strip(m[2])).join(' ');
+}
+const stemOf = w => w.slice(0, Math.max(4, w.length - 2));
+function pairsOf(text) {
+  const w = norm(text).split(' ').filter(x => x.length >= 5 && !/^\d+$/.test(x)).map(stemOf);
+  const out = new Set();
+  for (let i = 1; i < w.length; i++) out.add(w[i - 1] + ' ' + w[i]);
+  return out;
+}
+function storyRows() {
+  const out = [], QD = path.join(REPO, 'quests');
+  const walk = d => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(path.join(d, e.name)) : /^(draft.*|scenario-v\d+)\.md$/.test(e.name) ? [path.join(d, e.name)] : []);
+  for (const id of fs.readdirSync(QD)) {
+    const qf = path.join(QD, id, 'quest.json');   // и тексты действующего сценария (реплики, вопросы, факты после ответа)
+    if (fs.existsSync(qf)) (function w(x, p) {
+      if (typeof x === 'string') { if (x.length >= 20) out.push({ where: `quests/${id}/quest.json ${p}`, text: x }); }
+      else if (x && typeof x === 'object') for (const k in x) w(x[k], p + '/' + k);
+    })(JSON.parse(fs.readFileSync(qf, 'utf8')), '');
+    const sd = path.join(QD, id, 'story');
+    if (!fs.existsSync(sd)) continue;
+    for (const f of walk(sd)) {
+      const draft = /^draft/.test(path.basename(f));
+      fs.readFileSync(f, 'utf8').split('\n').forEach((l, i) => {
+        if (draft ? /^\|/.test(l) && !/^\|[\s|:-]+$/.test(l) : /Ответ:/.test(l)) out.push({ where: `${path.relative(REPO, f)}:${i + 1}`, text: l });
+      });
+    }
+  }
+  return out;
 }
 function htmlPages(dir = SITE) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? (e.name === 'play' ? [] : htmlPages(path.join(dir, e.name)))
@@ -317,7 +356,7 @@ function htmlPages(dir = SITE) {
 }
 function checkProbes(opts = {}) {
   const c = opts.conf || conf();
-  const pages = opts.pages || htmlPages().map(f => [path.relative(REPO, f), fs.readFileSync(f, 'utf8')]);
+  const pages = (opts.pages || htmlPages().map(f => [path.relative(REPO, f), fs.readFileSync(f, 'utf8')])).filter(([, h]) => probeSection(h));
   const parts = pages.flatMap(([label, html]) => probeParts(html, label));
   if (!parts.length) return [];
   const sets = opts.quest ? [Object.assign({ id: 'fx', src: '(фикстура)' }, fieldsOf(fromQuest(opts.quest), new Set()))]
@@ -326,6 +365,14 @@ function checkProbes(opts = {}) {
   for (const T of sets) for (const f of T.fields) {
     const hit = f.terms.map(t => ({ t, p: parts.find(p => t.re.test(p.n)) })).find(h => h.p);
     if (hit) errors.push(`${hit.p.where}: совпадает с ответом «${hit.t.answer}» дела ${T.id} (${T.src}, ${f.where.join('; ')}) — проба не должна раскрывать ответ загадки, смените факт пробы`);
+  }
+  const rows = (opts.rows || storyRows()).map(r => Object.assign(r, { pairs: pairsOf(r.text) }));
+  for (const [label, html] of pages) {
+    const mine = pairsOf(probeQA(html));
+    for (const r of rows) {
+      const common = [...r.pairs].filter(x => mine.has(x));
+      if (common.length) errors.push(`${label}, «Проба»: тот же факт, что в ${r.where} (общие слова: «${common.slice(0, 3).join('», «')}») — проба выдаёт ход загадки из маршрута или черновика, смените факт пробы`);
+    }
   }
   return errors;
 }
@@ -353,6 +400,10 @@ function selftest() {
   const pr = h => checkProbes({ quest, pages: [['fx.html', h]], conf: { ok: {} } });
   if (pr('<section class="probe" id="probe"><p>Деревья стоят на подпорках</p></section>').length !== 1) out.push('«Проба»: ответ дела в блоке пробы не найден');
   if (pr('<section id="probe"><p>Бульвары на месте стены</p></section><p>подпорка</p>').length) out.push('«Проба»: ложное срабатывание на текст вне блока');
+  const rows = [{ where: 'draft-v0.md:8', text: '| 8 | Покровские ворота | Ворот нет. Бульвар на месте стены Белого города (1585–1593) | было/стало |' }];
+  const pd = h => checkProbes({ quest, pages: [['fx.html', h]], rows, conf: { ok: {} } });
+  if (pd('<section id="probe"><p class="lamp-q">Почему кольцо?</p><p class="lamp-a"><span class="ink">Здесь стояла стена Белого города.</span></p></section>').length !== 1) out.push('«Проба»: факт из черновика маршрута не найден');
+  if (pd('<section id="probe"><p class="lamp-q">Как называется форма башни?</p><p class="lamp-a"><span class="ink">Гиперболоид инженера Шухова.</span></p></section>').length) out.push('«Проба»: ложное совпадение с черновиком');
   return out;
 }
 
