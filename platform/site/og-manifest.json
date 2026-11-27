@@ -7,13 +7,13 @@
    "theme": "teatr",
    "title": "Дело о загадках Турандот",
    "where": "Квест-прогулка по Арбату без гида",
-   "ask": "Где восьмая загадка?",
+   "ask": "Кто унёс загадку?",
    "meta": "Метро «Арбатская» · 8 загадок · ≈2,5 км · 1,5–2 часа · 0+",
    "template": 3,
    "art": "0a1f9a6009849d12"
   },
-  "input_sha": "7253e36952034c712abaa576ae5521fff36a49ed909c85e42c9dec68801b37df",
-  "file_sha": "a00a29672bb0dd183c1625e4cfbfc5ff7d809f14bd34514a47e7197be5b3450e",
+  "input_sha": "9fc8a1ac60df09ac77e6ffc5451ba5463b04fd69db9653698275eef755cac629",
+  "file_sha": "41869fc282564c43011af266f6def9756e776c8448e4c6bf664c6077f3fbdef3",
   "min_px_600": 13.0
  },
  "chistye.png": {
