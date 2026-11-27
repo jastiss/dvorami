@@ -93,7 +93,7 @@ CASE = {
     },
     'world': {
         'h2': 'Спор, который длится три века',
-        'html': '<div class="c-story-grid"><div class="c-prose"><p>Одни источники пишут, что башня была выше Ивана Великого на&nbsp;полторы сажени. Другие — что вровень. Кто прав, придётся решать на&nbsp;месте, и&nbsp;к&nbsp;этому спору квест вас ещё вернёт.</p><p class="c-note">Подсказка: смотрите не&nbsp;только вверх</p></div><figure class="c-artifact">' + '{{chistye-height}}' + '</figure></div>',
+        'html': '<div class="c-story-grid"><div class="c-prose"><p>Одни источники пишут, что башня была выше Ивана Великого на&nbsp;полторы сажени. Другие дают ей 81&nbsp;метр, как у&nbsp;Ивана Великого, — вровень. Кто прав, придётся решать на&nbsp;месте, и&nbsp;к&nbsp;этому спору квест вас ещё вернёт.</p><p class="c-note">Подсказка: смотрите не&nbsp;только вверх</p></div><figure class="c-artifact">' + '{{chistye-height}}' + '</figure></div>',
     },
     'practical': [
         ('Старт', 'Метро «Чистые пруды», у&nbsp;памятника Грибоедову.'),
@@ -130,6 +130,7 @@ CASE = {
         ('https://bigenc.ru/fine_art/text/1832539', 'Большая российская энциклопедия — церковь Архангела Гавриила'),
         ('https://moskvichmag.ru/?p=188465', 'Москвич Mag — Меншикова башня'),
         ('https://www.culture.ru/materials/153294/rekord-davno-minuvshikh-dnei-samye-samye-zdaniya-rossii', 'Культура.РФ — самые высокие здания России'),
+        ('https://www.mos.ru/news/item/95092073/', 'mos.ru — Меншикова башня в&nbsp;стиле петровского барокко'),
         ('https://aif.ru/society/history/pochemu_nazyvayutsya_chistye_prudy_hotya_prud_odin', 'АиФ — Чистые пруды'),
         ('https://um.mos.ru/places/chistye-prudy/', 'Узнай Москву — Чистые пруды'),
         ('https://moskvichmag.ru/?p=306983', 'Москвич Mag — Дом-комод'),
