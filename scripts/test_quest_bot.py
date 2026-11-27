@@ -204,6 +204,13 @@ def right_ids(st, flags):
 
 
 class QuestBotTest(unittest.TestCase):
+    def _formatMessage(self, msg, standardMsg):
+        # журнал Actions публичный (рецензент 27.11): в CI падение печатает только своё сообщение (место загадки), а не
+        # стандартное unittest с текстами бота — в них бывают ответы и подсказки. Локально — как обычно, с текстами.
+        if os.environ.get("CI"):
+            return msg or "проверка не прошла (тексты бота скрыты: журнал CI публичный; запустите тест локально)"
+        return super()._formatMessage(msg, standardMsg)
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.fake = FakeTelegram()

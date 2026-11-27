@@ -28,7 +28,14 @@ function precache() {
         [u, new URL('theme.css', u).href, new URL('quest.locked.json', u).href].forEach(function (x) { if (pages.indexOf(x) === -1) pages.push(x); });
       });
       var core = CORE.map(function (f) { return new URL(f, scope).href; });
-      return Promise.all(core.map(function (u) { return fetch(u, { cache: 'reload' }).then(function (res) { return keep(cache, u, res); }); }))
+      // каркас — только полный 200: ответ 5xx или 404 (сеть есть, сервер сбоит) роняет установку, и остаётся прежний sw.js
+      // со своим кешем; иначе activate удалил бы старый кеш, а новый остался без player.js (рецензент 27.11)
+      return Promise.all(core.map(function (u) {
+        return fetch(u, { cache: 'reload' }).then(function (res) {
+          if (!res || res.status !== 200) throw new Error('sw: каркас плеера не загружен (' + (res && res.status) + ')');
+          return keep(cache, u, res);
+        });
+      }))
         .then(function () {
           return Promise.all(pages.map(function (u) {
             return fetch(u, { cache: 'reload', credentials: 'same-origin' }).then(function (res) { return keep(cache, u, res); }, function () { /* досылает warmCache */ });
