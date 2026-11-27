@@ -307,6 +307,16 @@ code { font: 500 16px/1.4 var(--font-doc); letter-spacing: .04em; }
 .pl-map svg { background-image: linear-gradient(var(--map-grid) 1px, transparent 1px), linear-gradient(90deg, var(--map-grid) 1px, transparent 1px); background-size: 24px 24px; }
 .pl-map figcaption { margin: 6px 4px 0; }
 .pl-map-img { opacity: .9; }
+/* Подложка-рисунок (поле map.image дела): вода и парк уже нарисованы на ней по тем же координатам — формы ориентиров не дублируем,
+   подписи, метро и «места» остаются. Под рисунком — поле цвета его «суши» (.pl-map-under). В тёмной теме рисунок умножается
+   на синее поле: «ночная» гуашь в цвет темы, не слепит. */
+.pl-map--img svg { background-image: none; border-radius: min(var(--radius), 10px); }
+.pl-map--img .pl-map-img { opacity: 1; mix-blend-mode: multiply; }
+.pl-map-under { fill: #3A4C8C; }
+:root[data-theme="sun"] .pl-map-under { fill: #FAE9CB; }
+:root[data-theme="sun"] .pl-map--img .pl-map-img { mix-blend-mode: normal; }
+.pl-map--img .pl-map-lm--water, .pl-map--img .pl-map-lm--park { fill: none; stroke: none; }
+.pl-map--img .pl-map-lm--river { stroke: none; }
 .pl-map-lm--water { fill: var(--map-water); }
 .pl-map-lm--park { fill: var(--map-park); stroke: var(--map-park-line); stroke-width: 1; stroke-dasharray: 3 3; }
 .pl-map-lm--river { fill: none; stroke: var(--map-water); stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }

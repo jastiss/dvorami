@@ -1379,7 +1379,8 @@
     var img = M.image ? mediaSrc(M.image) : '';
     if (img && Array.isArray(M.bounds) && M.bounds.length === 2) {
       var sw = proj(+M.bounds[0][0], +M.bounds[0][1]), ne = proj(+M.bounds[1][0], +M.bounds[1][1]);
-      under += '<image class="pl-map-img" href="' + esc(img) + '" x="' + f1(sw[0]) + '" y="' + f1(ne[1]) + '" width="' + f1(ne[0] - sw[0]) + '" height="' + f1(sw[1] - ne[1]) + '" preserveAspectRatio="none"/>';
+      // под рисунком — ровное поле цвета его «суши» (player.css): у первых точек рамка схемы выходит за рисунок, а в тёмной теме рисунок умножается на это поле
+      under += '<rect class="pl-map-under" x="0" y="0" width="' + W + '" height="' + H + '"/><image class="pl-map-img" href="' + esc(img) + '" x="' + f1(sw[0]) + '" y="' + f1(ne[1]) + '" width="' + f1(ne[0] - sw[0]) + '" height="' + f1(sw[1] - ne[1]) + '" preserveAspectRatio="none"/>';
     }
     // ориентиры: формы — под маршрутом, подписи — поверх, не на точках и не друг на друге
     var shapes = '', labels = [], taken = pos.map(function (c) { return [c[0] - 13, c[1] - 13, c[0] + 13, c[1] + 13]; });
