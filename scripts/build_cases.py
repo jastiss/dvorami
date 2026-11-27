@@ -53,6 +53,7 @@ KICKERS = {  # рукописные названия блоков — одина
     'about': 'справка о районе', 'faq': 'спрашивают', 'buy': 'взять дело',
 }
 STATUS = {'soon': 'Скоро в продаже', 'dev': 'В разработке'}
+ON_SALE = {'sale'}  # статусы, при которых в JSON-LD есть Product и Offer (сейчас таких дел нет)
 
 ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 ARROW_L = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H6M11 6.5 5.5 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
@@ -124,19 +125,25 @@ def head(c):
     og = c.get('og_image', f"{ORIGIN}/assets/og/main.png")
     faq = [{'@type': 'Question', 'name': strip(q), 'acceptedAnswer': {'@type': 'Answer', 'text': strip(a)}} for q, a in c['faq']]
     trip = {
-        '@type': ['TouristTrip', 'Product'], '@id': url + '#quest', 'name': f"{c['title']} — квест-прогулка {c['where_po']}",
+        '@type': 'TouristTrip', '@id': url + '#quest', 'name': f"{c['title']} — квест-прогулка {c['where_po']}",
         'description': strip(c['ld_description']), 'url': url, 'image': [og], 'inLanguage': 'ru',
-        'brand': {'@id': ORIGIN + '/#org'}, 'provider': {'@id': ORIGIN + '/#org'},
+        'provider': {'@id': ORIGIN + '/#org'},
         'touristType': ['Компании друзей', 'Пары', 'Семьи с детьми', 'Путешественники-одиночки'],
         'about': c['ld_about'],
         'itinerary': {'@type': 'ItemList', 'itemListOrder': 'https://schema.org/ItemListUnordered', 'numberOfItems': c['points'],
                       'itemListElement': [{'@type': 'ListItem', 'position': i + 1, 'item': p} for i, p in enumerate(c['ld_places'])]},
-        'offers': {'@type': 'Offer', 'price': '990', 'priceCurrency': 'RUB', 'url': url,
-                   'description': 'Цена за квест, один код доступа на всю компанию. ' + ('Продажи скоро откроются.' if c['status'] == 'soon' else 'Квест в разработке.'),
-                   'seller': {'@id': ORIGIN + '/#org'}},
     }
+    # Product/Offer — только когда дело продаётся (marketer.md, «SEO каждой… страницы», п. 5): Offer без возможности
+    # купить — неправда для поисковика. Статус продажи добавит Инженер вместе с покупкой (STATUS, CARD_STATUS).
+    if c['status'] in ON_SALE:
+        trip['@type'] = ['TouristTrip', 'Product']
+        trip['brand'] = {'@id': ORIGIN + '/#org'}
+        trip['offers'] = {'@type': 'Offer', 'price': '990', 'priceCurrency': 'RUB', 'url': url,
+                          'availability': 'https://schema.org/InStock',
+                          'description': 'Цена за квест, один код доступа на всю компанию.',
+                          'seller': {'@id': ORIGIN + '/#org'}}
     got = rating_of(c['slug'], load_ratings())
-    if got:  # только настоящие оценки и только от порога — как на карточке
+    if got and c['status'] in ON_SALE:  # только настоящие оценки и только от порога — как на карточке; рейтинг — свойство Product
         trip['aggregateRating'] = {'@type': 'AggregateRating', 'ratingValue': f'{got[0]:.2f}', 'ratingCount': got[1],
                                    'bestRating': 5, 'worstRating': 1}
     ld = {'@context': 'https://schema.org', '@graph': [

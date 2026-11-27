@@ -22,7 +22,7 @@
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
  */
 'use strict';
-const { chromium } = require('playwright');
+// playwright — лениво (ниже): --sync идёт первым шагом CI до установки браузера и обходится одним node (H-104)
 const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
@@ -427,6 +427,42 @@ function questSync() {
   return out;
 }
 
+/* T-65 (H-13): штампы машинного текста в текстах сайта — список docs/marketing/tone-of-voice.md («Избегаем», «Признаки
+ * машинного текста»), механическая часть — scripts/tone_stamps.json (общий с channel_post.py --check). Страницы: главная,
+ * каталог, дела, /sledami/ (плеер и юридические — нет). Текст: видимый, alt, aria-label, <title>, description и og:*.
+ * Пока ПРЕДУПРЕЖДЕНИЕ, не красное: тексты правит Автор, Инженер их не переписывает. Ложное срабатывание — в site_exceptions
+ * того же файла (страница, шаблон, кусок фразы, почему). Когда список срабатываний пуст — сделать ошибкой. */
+function toneCheck() {
+  const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'tone_stamps.json'), 'utf8'));
+  const W = '[\\p{L}\\p{N}_]'; // \b в JS не видит кириллицу — юникодная граница слова
+  const toRe = src => new RegExp(src.replace(/\\b/g, `(?:(?<=${W})(?!${W})|(?<!${W})(?=${W}))`), 'giu');
+  const rules = cfg.groups.filter(g => g.where.includes('site')).flatMap(g => g.patterns.map(p => ({ group: g.name, src: p, re: toRe(p) })));
+  const ent = { nbsp: ' ', laquo: '«', raquo: '»', quot: '"', amp: '&', mdash: '—', ndash: '–', hellip: '…', apos: "'", lt: '<', gt: '>' };
+  const decode = t => t.replace(/&(#x?[0-9a-f]+|\w+);/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1].toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : +e.slice(1)) : (ent[e] ?? m));
+  const out = [];
+  const pages = listPages().filter(p => !/^(play|legal)\//.test(p));
+  for (const pg of pages) {
+    const h = fs.readFileSync(path.join(ROOT, pg, 'index.html'), 'utf8');
+    const attrs = [...h.matchAll(/<(?:img|[a-z]+)[^>]*?\s(?:alt|aria-label)="([^"]*)"/g)].map(m => m[1]);
+    const metas = [...h.matchAll(/<meta (?:name|property)="(?:description|og:title|og:description|twitter:title|twitter:description)" content="([^"]*)"/g)].map(m => m[1]);
+    const body = h.replace(/<(script|style|svg|noscript)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<br\s*\/?>/gi, ' ').replace(/<\/(p|li|h\d|div|dt|dd|figcaption|summary|td|th|a|button)>/gi, '. ').replace(/<[^>]+>/g, ' ');
+    const text = decode([body, ...attrs, ...metas].join(' . ')).replace(/[\u00a0\s]+/g, ' ').replace(/([.?!…])(\s*\.)+/g, '$1');
+    const seen = new Set();
+    for (const r of rules) for (const m of text.matchAll(r.re)) {
+      const before = text.slice(0, m.index), after = text.slice(m.index + m[0].length);
+      const a = Math.max(...[...before.matchAll(/[.?!…]\s/g)].map(x => x.index + 2), 0), b0 = after.search(/[.?!…](\s|$)/);
+      let ctx = text.slice(a, b0 < 0 ? text.length : m.index + m[0].length + b0 + 1).trim();
+      if (ctx.length > 160) ctx = '…' + text.slice(Math.max(0, m.index - 70), m.index + m[0].length + 70).trim() + '…';
+      const exc = cfg.site_exceptions.find(e => pg.includes(e.page) && e.pattern === r.src && ctx.toLowerCase().includes(e.context.toLowerCase()));
+      const key = r.src + '|' + ctx;
+      if (exc || seen.has(key)) continue;
+      seen.add(key);
+      out.push(`${pg || '/'}: «${m[0]}» (${r.group}) — ${ctx}`);
+    }
+  }
+  return out;
+}
+
 /* T-121 (H-96): OG-картинка дела = его данные. OG рисует scripts/make_og.py из card (название, вопрос, цифры) и пишет
  * в platform/site/og-manifest.json, что нарисовано, и хеш файла. Здесь: og:image страницы дела есть в site/assets/og/;
  * если это не общий main.png — запись в манифесте, её текст = карточке дела в каталоге (/moscow/) и og:title страницы,
@@ -507,10 +543,11 @@ async function mapTaps() {
 }
 
 (async () => {
-  const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], { cwd: ROOT, stdio: 'ignore' });
-  const stop = () => { try { server.kill(); } catch (e) {} };
+  const quick = 'sync' in args;
+  const server = quick ? null : spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], { cwd: ROOT, stdio: 'ignore' });
+  const stop = () => { try { if (server) server.kill(); } catch (e) {} };
   process.on('exit', stop);
-  await waitServer();
+  if (!quick) await waitServer();
 
   // Статические проверки файлов
   const spoilers = JSON.parse(fs.readFileSync(path.join(__dirname, 'site_spoilers.json'), 'utf8'));
@@ -522,12 +559,15 @@ async function mapTaps() {
   }
   questSync().forEach(m => err('сценарий ↔ витрина', '', m));
   ogSync().forEach(m => err('OG-картинки', '', m));
+  const tone = toneCheck(); // предупреждения: не меняют код выхода (T-65)
+  const toneReport = () => { if (tone.length) { console.log(`\n ⚠ штампы машинного текста (предупреждение, правит Автор; ложные — в scripts/tone_stamps.json → site_exceptions): ${tone.length}`); tone.forEach(t => console.log('   ⚠ ' + t)); } };
   if ('sync' in args) { // --sync: только сверка цифр со сценарием, без браузера
-    stop(); errors.forEach(e => console.log(' ✗ ' + e)); console.log(errors.length ? `site_check --sync: ${errors.length} ошибок` : 'site_check --sync: OK'); process.exit(errors.length ? 1 : 0);
+    stop(); toneReport(); errors.forEach(e => console.log(' ✗ ' + e)); console.log(errors.length ? `site_check --sync: ${errors.length} ошибок` : `site_check --sync: OK${tone.length ? ` (предупреждений о тоне: ${tone.length})` : ''}`); process.exit(errors.length ? 1 : 0);
   }
 
   let pages = listPages();
   if (args.only) pages = pages.filter(p => p.includes(args.only));
+  const { chromium } = require('playwright');
   const browser = await chromium.launch();
   const checked = new Map();
   const caseSections = {};
@@ -687,6 +727,7 @@ async function mapTaps() {
   }
 
   stop();
+  toneReport();
   const uniq = [...new Set(errors)];
   if (uniq.length) {
     console.log(`site_check: ${uniq.length} ошибок на ${pages.length} страницах\n`);

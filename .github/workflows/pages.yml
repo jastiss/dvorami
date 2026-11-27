@@ -14,6 +14,8 @@ on:
       - "scripts/player_check.js"
       - "scripts/answer_check.js"
       - "scripts/answer_match.py"
+      - "scripts/site_check.js"
+      - "platform/site/og-manifest.json"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -37,6 +39,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # H-104: быстрая сверка без браузера первым шагом (секунды, только node) — цифры витрины = quest.json,
+      # OG-картинки = данным дела (site_check.js --sync). Красная — дальше не идём: ни Chromium, ни шифрования, ни выкладки.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Быстрая сверка витрины со сценарием и OG (site_check --sync)
+        run: node scripts/site_check.js --sync
       - uses: actions/configure-pages@v5
       # Плеер квеста (site/play/<id>/) читает зашифрованное дело quest.locked.json из своей папки (docs/codes.md).
       # Источник истины — quests/<id>/quest.json; в site/ открытый quest.json не попадает никогда.
@@ -50,9 +59,6 @@ jobs:
       # T-63 (H-10): прохождение дела целиком в настоящем плеере (3 ширины × 2 темы, экран кода, тестовые коды на лету).
       # Красный тест — сборка падает, стенд не обновляется (остаётся прежняя рабочая версия).
       # Идёт ДО шифрования: проверяет исходный site/ и quests/<id>/quest.json, мастер-код ему не нужен.
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
       - name: Playwright + Chromium для автотеста плеера
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.63.0
