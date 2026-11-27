@@ -1,21 +1,34 @@
 # Очередь WebFetch (H-130)
 
 Правило: 1–2 WebFetch за итерацию (CLAUDE.md, «Работа без владельца») — брать сверху. Приоритет — сколько звучащих у игрока или на витрине 🔶 закрывает адрес. Открыто — вычеркнуть с датой и итогом.
-Пакетное одобрение — вопрос A-84 в APPROVALS.
+Пакетное одобрение — вопрос A-84 в APPROVALS («A-84 да», 27.11 23:34): п. 1–9 прочитаны 28.11 Историком.
+
+## Прочитано 28.11 (A-84)
+
+| # | Адрес | Итог | Дело |
+|---|---|---|---|
+| 1 | ~~https://um.mos.ru/houses/rabochiy-i-kolkhoznitsa/~~ | ✅ 2003 (6б), «выше» — постамент 10 → 34 м (6в), 40 фрагментов (6г), эмблема «Мосфильма» (7). 🔶 остались: 24,5 м — только в комментарии читателя (5а), 1947 (7а) — сняты с витрины | №7 ВДНХ |
+| 2 | ~~https://www.mos.ru/news/item/72300073/~~ | ✅ фонтан «перед зданием» театра и «в память о спектакле», Бурганов (13); три загадки и Калаф (19); дель арте (20); Вахтангов не дожил до премьеры (21а). 🔶: 1997 и бронза (13б), ответная загадка Калафа (19а), имена масок (20а) | №6 Арбат |
+| 3 | ~~https://vdnh.ru/news/62142/~~ | ✅ Бажов и 1954 у «Каменного цветка» (10), 1954 у «Дружбы народов» (2), бассейн и струи (18). 🔶: смальта (10б). ⚠️ как опознать 16-ю фигуру — на странице нет (4), только выезд | №7 ВДНХ |
+| 4 | ~~https://www.culture.ru/s/vopros/kitay-gorod/~~ | ✅ две версии названия (2), ров 1534 (2в). 🔶: «Китай ни при чём» прямо не сказано (2а), «срединная» (2б) — сняты с витрины | №5 Китай-город |
+| 5 | ~~http://www.lib.ru/RUSSLIT/GILQROWSKIJ/gilqrowskij.txt~~ | ✅ глава «Под каланчой»: Шпейер, лорд, 100 тысяч, фальшивый нотариус; Гиляровский пишет со слов Пастухова. Крючок — карточка «Благодарю за сегодняшний спектакль» (`docs/sledami/research.md`, 4г) | «Следами» |
+| 6 | ~~https://www.mos.ru/news/item/95092073/~~ | ✅ 81 м со шпилем, «самым высоким зданием в Москве», 1707, пожар 1723 — название дела №2 и спор «вровень» на белых источниках | №2 Чистые пруды |
+| 7 | ~~https://vestnik.msal.ru/jour/article/view/245/245?locale=ru_RU~~ | на странице только аннотация (Муравьёв, 2017, № 9, с. 200–233). «В суде продажи дома нет» — 🔶; нужен PDF статьи (адреса в выдаче нет) | «Следами» |
+| 8 | https://www.culture.ru/s/vopros/knyazhna-tarakanova/ | **не открылась** 28.11: три попытки, ROBOTS_UNREACHABLE (соседняя страница сайта открылась — сбой, похоже, временный). Повторить первой | «Следами» |
+| 9 | ~~https://moskvichmag.ru/gorod/u-muzeya-mvd-u-mendeleevskoj-otkryli-pamyatnik-kriminalistu-arkadiyu-koshko/~~ | ✅ памятник в сквере у музея МВД у «Менделеевской», Петровка — прежний план; 1913 — «первое место по раскрываемости в Европе» | «Следами» |
+
+## Ждут
 
 | # | Адрес | Закрывает | Дело |
 |---|---|---|---|
-| 1 | https://um.mos.ru/houses/rabochiy-i-kolkhoznitsa/ | 9 мест: 24,5 м, разборка 2003, «выше», эмблема «Мосфильма» | №7 ВДНХ |
-| 2 | https://www.mos.ru/news/item/72300073/ | 7 мест: Турандот, ф. 19, 20, 13 | №6 Арбат |
-| 3 | https://vdnh.ru/news/62142/ | 6 мест: Бажов, 1954, опознание 16-й фигуры | №7 ВДНХ |
-| 4 | https://www.culture.ru/s/vopros/kitay-gorod/ | 5 мест: «не от Китая» | №5 Китай-город |
-| 5 | http://www.lib.ru/RUSSLIT/GILQROWSKIJ/gilqrowskij.txt | развязка №1: Шпейер, цитата | «Следами» |
-| 6 | https://www.mos.ru/news/item/95092073/ | название дела №2 «выше Ивана Великого», 1707 | «Следами» |
-| 7 | https://vestnik.msal.ru/jour/article/view/245/245?locale=ru_RU | речь прокурора: дом на Тверской | «Следами» |
-| 8 | https://www.culture.ru/s/vopros/knyazhna-tarakanova/ | «Тараканова», Орлов, 1775 | «Следами» |
-| 9 | https://moskvichmag.ru/gorod/u-muzeya-mvd-u-mendeleevskoj-otkryli-pamyatnik-kriminalistu-arkadiyu-koshko/ | место памятника Кошко (маршрут №1) | «Следами» |
+| 8 | https://www.culture.ru/s/vopros/knyazhna-tarakanova/ | повтор: «Тараканова», Орлов, 1775 | «Следами» |
 | 10 | https://www.tretyakovgallery.ru/for-visitors/samostoyatelnye-gruppy/ и …/excursions/rules/ | правила групп (T-142) — 27.11 отказ PROVENANCE_REQUIRED | Залами |
 | 11 | http://nwpi.krc.karelia.ru/atlas/home/ot-pjatin-novgorodskih-do-respubliki-karelija/kfssr-1940-1956/index.html | ф. 16а: 31 марта, «после войны» | №7 ВДНХ |
 | 12 | https://um.mos.ru/houses/ivanovskiy_monastyr/ | Досифея: молва, годы | «Следами» |
+| 13 | https://old.vdnh.ru/about/history/otkrytie-vskhv/ | ф. 1а: 1 августа, 1959, 1992 — сценарий т. 2 | №7 ВДНХ |
+| 14 | https://www.pnp.ru/social/zachem-perenosili-pamyatnik-mininu-i-pozharskomu.html | ф. 9б: 1931, «из центра», парады — 3 места на витрине и в сценарии (Р-1…Р-3) | №4 Красная площадь |
+| 15 | https://www.mos.ru/upload/documents/files/1044/AktKosmos(2)IZM.pdf | ф. 11: «Механизация» — сценарий т. 7 (факт и реплика) | №7 ВДНХ |
+| 16 | https://um.mos.ru/monuments/pamyatnik-b-okudzhave/ | ф. 12а: 2002, Франгулян — сценарий т. 7 | №6 Арбат |
+| 17 | https://kremlin-architectural-ensemble.kreml.ru/en-Us/architecture/view/kutafya-bashnya-moskovskogo-kremlya/ | ф. 3: мост над Неглинной — «Что узнаете» (Р-4) | №4 Красная площадь |
 
-Остальные адреса — `quests/_audit/factcheck-cases4-7-2026-11-27.md` (разд. 4) и `docs/sledami/research.md` (разд. 4в).
+Остальные адреса — `quests/_audit/factcheck-cases4-7-2026-11-27.md` (разд. 4: п. 8–10, 13–16) и `docs/sledami/research.md` (разд. 4, 4в, 4г).
