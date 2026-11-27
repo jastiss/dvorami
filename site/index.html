@@ -158,6 +158,30 @@
   </div>
 </section>
 
+<!-- Проба (владелец 27.11, по образцу «Следами»): фонарик проявляет ответ под пальцем или мышью — assets/lamp.js.
+     Без JS и при prefers-reduced-motion ответ виден сразу. Факт — quests/chistye-prudy/research/facts.md (бульвары на месте стены, ✅);
+     ответ не совпадает с ответами загадок дел — site_check сверяет блок с ответами всех дел (scripts/answer_leaks.js) -->
+<section id="probe" class="section probe-sec" aria-labelledby="h-probe" data-city-only="moscow">
+  <div class="wrap probe">
+    <div class="probe-head">
+      <span class="hand">проба на&nbsp;десять секунд</span>
+      <h2 id="h-probe" class="h2">Посветите фонариком</h2>
+      <p class="lead">В&nbsp;делах так&nbsp;же: ответ где-то рядом, на&nbsp;улице. Его нужно заметить.</p>
+    </div>
+    <div class="lamp" data-lamp>
+      <span class="lamp-glow" aria-hidden="true"></span>
+      <svg class="lamp-map" viewBox="0 0 120 100" aria-hidden="true" focusable="false"><path class="lamp-river" d="M-4 86C18 78 38 94 60 88S100 74 124 84"/><path class="lamp-ring" d="M24 84C15 52 33 21 60 19C87 21 105 52 96 84"/><path class="lamp-kremlin" d="M53 80h14l-7-11z"/></svg>
+      <svg class="lamp-map lamp-wall ink" viewBox="0 0 120 100" aria-hidden="true" focusable="false"><path d="M24 84C15 52 33 21 60 19C87 21 105 52 96 84"/></svg>
+      <p class="lamp-q">Почему Бульварное кольцо&nbsp;— кольцо?</p>
+      <p class="lamp-a"><span class="ink">Здесь стояла стена Белого города. В&nbsp;XVIII&nbsp;веке её&nbsp;разобрали, а&nbsp;<a href="https://www.mos.ru/news/item/10385073/" target="_blank" rel="noopener">на&nbsp;её месте разбили бульвары</a>.</span></p>
+      <div class="lamp-do">
+        <div class="lamp-ctl"><p class="lamp-hint">Ведите пальцем или&nbsp;мышью по&nbsp;карточке</p><button class="lamp-btn" type="button">Включить фонарик</button></div>
+        <div class="lamp-next"><p>Так устроено каждое дело: вопрос&nbsp;— в&nbsp;телефоне, ответ&nbsp;— на&nbsp;улице.</p><a class="btn" href="#quests">Выбрать дело</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="quests" class="section quests-sec" aria-labelledby="h-quests">
   <div class="wrap">
     <div class="quests-head">
@@ -552,5 +576,6 @@
 </footer>
 <script src="assets/site.js" defer></script>
 <script src="assets/city.js" defer></script>
+<script src="assets/lamp.js" defer></script>
 </body>
 </html>

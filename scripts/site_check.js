@@ -16,6 +16,8 @@
  *   - карточка дела в каталоге (главная, /moscow/) = страница дела: номер, название, статус, цифры, метро; карточки двух каталогов одинаковые;
  *   - карточка дела: первая фраза тизера — вопрос (H-31/H-38); на карточке нет «Один код — вся компания» ни в каком виде (владелец 25.11) и обложка не затемнена полосой;
  *   - ошибки в консоли и ошибки JS; предупреждения о неиспользованном preload шрифтов.
+ *   - «Проба» ([data-lamp], владелец 27.11): без JS и при reduced-motion ответ виден, с JS — скрыт до света, кнопка ≥ 44 px
+ *     проявляет его с клавиатуры и переводит фокус на следующий шаг; текст пробы ≠ ответам дел (answer_leaks.checkProbes, и в --sync).
  *   - без браузера (--sync — только они): цифры страницы и карточки дела = quests/<id>/quest.json (точки без эпилога, км, часы,
  *     финиш; T-127) и OG-картинка дела = её данным (platform/site/og-manifest.json, scripts/make_og.py; T-121, шрифт ≥ 11 px на 600 px — H-114);
  *     site/llms*.txt = делам (номер, название, точки, км, часы, статус, ссылки) и без спойлеров (H-108); временные объекты
@@ -282,6 +284,41 @@ async function ctaAlwaysThere(page) {
     if (!ok) miss.push(Math.round(100 * step / 10) + '%');
   }
   return miss;
+}
+
+// «Проба» (владелец 27.11): ответ под маской проявляется светом; без JS и при reduced-motion — виден сразу
+async function lampCheck(browser, url) {
+  const out = [];
+  const state = p => p.evaluate(() => {
+    const box = document.querySelector('[data-lamp]');
+    const ink = box.querySelector('.lamp-a .ink, .sheet-a .ink');
+    const vis = el => { if (!el) return false; const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
+    const cs = ink && getComputedStyle(ink), mask = cs && (cs.maskImage || cs.webkitMaskImage);
+    const btn = box.querySelector('.lamp-btn'), next = box.querySelector('.lamp-next a');
+    return { ink: !!ink, shown: vis(ink) && (!mask || mask === 'none'), btn: vis(btn) ? Math.round(btn.getBoundingClientRect().height) : 0,
+      hasNext: !!next, next: vis(next), focusNext: !!(document.activeElement && document.activeElement.closest('.lamp-next')) };
+  });
+  for (const [name, opt] of [['без JS', { javaScriptEnabled: false }], ['при prefers-reduced-motion', { reducedMotion: 'reduce' }], ['с JS', { reducedMotion: 'no-preference' }]]) {
+    const ctx = await browser.newContext(Object.assign({ viewport: VIEWPORTS[0], deviceScaleFactor: 1 }, opt));
+    const p = await ctx.newPage();
+    await p.route('**/*', r => r.request().url().startsWith(BASE) ? r.continue() : r.abort());
+    await p.goto(url, { waitUntil: 'load' }); await p.waitForTimeout(300);
+    const s = await state(p);
+    if (!s.ink) { out.push('«Проба»: нет строки ответа (.lamp-a .ink / .sheet-a .ink)'); await ctx.close(); break; }
+    if (name !== 'с JS') {
+      if (!s.shown) out.push(`«Проба» ${name}: ответ скрыт — должен быть виден сразу`);
+      if (s.hasNext && !s.next) out.push(`«Проба» ${name}: не виден следующий шаг (.lamp-next)`);
+    } else if (s.shown) out.push('«Проба» с JS: ответ виден до того, как его осветили');
+    else if (s.btn < 44) out.push(`«Проба»: кнопка света ${s.btn ? s.btn + ' px (нужно ≥ 44)' : 'не видна'}`);
+    else {
+      await p.focus('[data-lamp] .lamp-btn'); await p.keyboard.press('Enter'); await p.waitForTimeout(200);
+      const a = await state(p);
+      if (!a.shown) out.push('«Проба»: кнопка света с клавиатуры не проявила ответ');
+      if (a.hasNext && !(a.next && a.focusNext)) out.push('«Проба»: после кнопки света следующий шаг не виден или фокус не на нём');
+    }
+    await ctx.close();
+  }
+  return out;
 }
 
 // Зашифрованное дело для плеера — как в pages.yml, но с тестовыми кодами (не в репозитории)
@@ -667,6 +704,8 @@ async function mapTaps() {
   const al = LEAKS.check(LEAKS.allIds());
   al.errors.forEach(m => err('ответ загадки на витрине', '', m));
   al.warns.concat(al.info).forEach(w => warns.push('ответы на витрине: ' + w));
+  // владелец 27.11: «Проба» (фонарик на главной, лампа «Следами») — не ответ и не ход загадки ни одного дела
+  LEAKS.checkProbes().forEach(m => err('«Проба» ↔ ответы дел', '', m));
   // H-110: колонка «Где у игрока» в quests/<id>/research/facts.md — мёртвый путь в quest.json и ❌ у игрока — ошибка,
   // не ✅ у игрока, сокращённый путь, ссылка на текст без ключевых слов факта — предупреждение (scripts/facts_check.py)
   try {
@@ -729,12 +768,16 @@ async function mapTaps() {
       r.problems.forEach(p => err(rel, vp.width, p));
       // T-61: на телефоне касание рядом с точкой карты попадает в её ссылку (зона ≥ 44 px; в тесном центре — до середины до соседней)
       if (vp.width === 390) (await page.evaluate(mapTaps)).forEach(p => err(rel, vp.width, p));
-      // T-62: на главной лента каталога не длиннее нужного — «Как это выглядит» начинается выше 1688 px (второй экран телефона)
+      // T-62: на главной лента каталога не длиннее нужного. Порог поднят 26.11 (1688 → 1800 px от верха страницы): владелец вернул
+      // обложкам 4:3 — его указание важнее H-9. 27.11 над лентой встала «Проба» (указание владельца) — меряем саму ленту:
+      // от #quests до «Как это выглядит» не больше 812 px (= прежние 1800 − 988 px первого экрана)
       if (vp.width === 390 && rel === '') {
-        const y = await page.evaluate(() => { const s = document.querySelector('.screens-sec'); return s ? Math.round(s.getBoundingClientRect().top + scrollY) : 0; });
-        // порог поднят 26.11 (1688 → 1800): владелец вернул обложкам 4:3 — его указание важнее H-9
-        if (y >= 1800) err(rel, vp.width, `блок «Как это выглядит» начинается на ${y} px (нужно выше 1800): лента каталога выросла`);
+        const y = await page.evaluate(() => { const s = document.querySelector('.screens-sec'), q = document.getElementById('quests'); return s && q ? Math.round(s.getBoundingClientRect().top - q.getBoundingClientRect().top) : 0; });
+        if (y >= 812) err(rel, vp.width, `лента каталога (от #quests до «Как это выглядит») — ${y} px (нужно меньше 812): лента выросла`);
       }
+      // владелец 27.11: «Проба» ([data-lamp]: фонарик главной, лампа «Следами») — без JS и при reduced-motion ответ виден сразу;
+      // с JS скрыт, кнопка света ≥ 44 px, с клавиатуры проявляет ответ и переводит фокус на следующий шаг
+      if (vp.width === 390 && await page.$('[data-lamp]')) (await lampCheck(browser, BASE + '/' + rel)).forEach(p => err(rel, vp.width, p));
       // владелец 27.11: город в заголовке витрины (site/assets/city.js) — барабан переключает город, тексты меняются вместе с ним,
       // выбор запоминается, ссылка на вторую марку несёт город; блок «Другой формат» ведёт на вторую марку
       if (vp.width === 390 && await page.$('[data-city-drum]')) {

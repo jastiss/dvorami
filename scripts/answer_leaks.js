@@ -28,6 +28,8 @@
  * на дело (шапка, справка) — ответами всех дел; и посты канала docs/marketing/channel/posts/*.md (кроме status: published —
  * они уже вышли) — текст поста без шапки ответами всех дел. Исключения answer_leaks.json → ok действуют и здесь.
  * Обратная проверка: --llms=копия.txt (вместо site/llms*.txt) и --posts=папка (вместо posts/) — подставленный ответ краснеет.
+ * «Проба» (section#probe на главной и витринах марок, владелец 27.11): её текст не совпадает ни с одним ответом ни одного дела —
+ * checkProbes(); исключений нет, при совпадении меняется факт пробы.
  * Одна находка — одно поле сценария (канонический ответ и его основы вместе; одинаковые поля разных шагов — одной строкой).
  * Исключения — scripts/answer_leaks.json → ok: {"<id дела>": {"<любой ответ или основа поля>": "почему это не спойлер"}};
  * значение-объект {"why": "…", "warn": true} — известная находка ждёт решения (Сценарист): не красное, а жёлтое каждый запуск;
@@ -303,6 +305,31 @@ function coverage(id, c) {
   return T.terms.filter(t => !words.some(w => w && (` ${t.key.replace(/^~/, '')}`.includes(` ${w}`) || w.startsWith(t.key.replace(/^~/, ''))))).map(t => t.answer);
 }
 
+// Блок «Проба» (section#probe) на витринах вне дел — главная «Дворами», «Следами» (владелец 27.11): проба показывает
+// факт сразу, без кода, поэтому он не должен совпадать ни с одним ответом ни одного дела. Исключений нет — меняется проба.
+function probeParts(html, label) {
+  const m = String(html).replace(/<!--[\s\S]*?-->/g, ' ').match(/<section\b[^>]*\sid="probe"[^>]*>[\s\S]*?<\/section>/i);
+  return m ? corpusOf(m[0], null, `${label}, «Проба»`) : [];
+}
+function htmlPages(dir = SITE) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? (e.name === 'play' ? [] : htmlPages(path.join(dir, e.name)))
+    : e.name.endsWith('.html') ? [path.join(dir, e.name)] : []);
+}
+function checkProbes(opts = {}) {
+  const c = opts.conf || conf();
+  const pages = opts.pages || htmlPages().map(f => [path.relative(REPO, f), fs.readFileSync(f, 'utf8')]);
+  const parts = pages.flatMap(([label, html]) => probeParts(html, label));
+  if (!parts.length) return [];
+  const sets = opts.quest ? [Object.assign({ id: 'fx', src: '(фикстура)' }, fieldsOf(fromQuest(opts.quest), new Set()))]
+    : allIds().map(id => Object.assign({ id }, terms(id, c))).filter(T => !T.skip);
+  const errors = [];
+  for (const T of sets) for (const f of T.fields) {
+    const hit = f.terms.map(t => ({ t, p: parts.find(p => t.re.test(p.n)) })).find(h => h.p);
+    if (hit) errors.push(`${hit.p.where}: совпадает с ответом «${hit.t.answer}» дела ${T.id} (${T.src}, ${f.where.join('; ')}) — проба не должна раскрывать ответ загадки, смените факт пробы`);
+  }
+  return errors;
+}
+
 function selftest() {
   const out = [];
   const quest = { flags: { s: 'b' }, points: [{ n: 1, id: 'x', steps: [
@@ -322,10 +349,14 @@ function selftest() {
   if (L.length !== 3 || L.some(p => p.text.includes('Дело 2'))) out.push('llms.txt: строки дела выбраны неверно (своя + общие, без чужих)');
   const ll = check(['fx'], { quest, parts: L.map(p => Object.assign(p, { n: ' ' + norm(p.text) + ' ' })), conf: { ok: {} } }).errors;
   if (ll.length !== 1 || !/llms\.txt:2/.test(ll[0])) out.push('llms.txt: ответ в строке дела не найден');
+  // «Проба» вне дел: ответ любого дела в section#probe — ошибка, текст вне пробы — не её дело
+  const pr = h => checkProbes({ quest, pages: [['fx.html', h]], conf: { ok: {} } });
+  if (pr('<section class="probe" id="probe"><p>Деревья стоят на подпорках</p></section>').length !== 1) out.push('«Проба»: ответ дела в блоке пробы не найден');
+  if (pr('<section id="probe"><p>Бульвары на месте стены</p></section><p>подпорка</p>').length) out.push('«Проба»: ложное срабатывание на текст вне блока');
   return out;
 }
 
-module.exports = { check, allIds, selftest, coverage, terms, conf };
+module.exports = { check, allIds, selftest, coverage, terms, conf, checkProbes };
 
 if (require.main === module) {
   const args = Object.fromEntries(process.argv.slice(2).map(a => { const m = a.match(/^--([\w-]+)(?:=(.*))?$/); return m ? [m[1], m[2] == null ? true : m[2]] : [a, true]; }));
