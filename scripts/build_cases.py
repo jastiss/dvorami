@@ -211,9 +211,43 @@ def media_size(path):
         return ''
 
 
+def none_attrs(k):
+    """Явные исключения единообразия сетки (scripts/card_grid_check.js, владелец 27.11: у двух карточек из восьми нет года):
+    year_none / credit_none / art_none / photo_none: «почему» → data-year-none="…" и т. д. на карточке."""
+    return ''.join(f' data-{f}-none="{esc(k[f + "_none"])}"' for f in ('year', 'credit', 'art', 'photo') if k.get(f + '_none'))
+
+
+def world_card(k):
+    """Карточка «вокруг дела» из данных (world.cards — вместо сырого world.html):
+      yr | year_none, title, text, credit | credit_none, art {file, alt, credit[, fit]} | art_none.
+    Слот картинки — вверху карточки, кадр 4:3 (case-media.css): репродукция вписывается целиком (fit 'contain', по умолчанию —
+    картины не кадрируем), снимок места — 'cover'. Файл — site/assets/art/<дело>/<файл>.jpg (1200×900, JPEG); пока его нет,
+    карточка такая же, как без картинки. Под картинкой — подпись-атрибуция art.credit: автор, лицензия, источник
+    (team/std/images.md); без неё сборка падает. p.credit — источник самой карточки (где хранится работа, ссылка)."""
+    art, fig, cls = k.get('art'), '', 'c-world-card'
+    if art and os.path.exists(os.path.join(SITE, 'assets', 'art', art['file'])):
+        if not art.get('credit'):
+            raise SystemExit(f'world.cards «{strip(k["title"])}»: у картинки {art["file"]} нет art.credit (автор, лицензия, источник)')
+        size = media_size(os.path.join(SITE, 'assets', 'art', art['file'])) or ' width="1200" height="900"'
+        fit = ' c-world-fig--cover' if art.get('fit') == 'cover' else ''
+        fig = (f'<figure class="c-world-fig{fit}"><img class="c-world-art" src="../../assets/art/{art["file"]}" alt="{esc(art["alt"])}"'
+               f'{size} loading="lazy" decoding="async"><figcaption class="c-credit">{art["credit"]}</figcaption></figure>')
+        cls += ' has-art'
+    yr = f'<span class="yr">{k["yr"]}</span>' if k.get('yr') else ''
+    credit = f'<p class="credit">{k["credit"]}</p>' if k.get('credit') else ''
+    return f'<article class="{cls}"{none_attrs(k)}>{fig}{yr}<h3>{k["title"]}</h3><p>{k["text"]}</p>{credit}</article>'
+
+
+def world_block(w):
+    if w.get('cards'):
+        return '<div class="c-world-grid">\n' + '\n'.join(world_card(k) for k in w['cards']) + '\n</div>'
+    return world_html(w['html'])
+
+
 def world_html(html):
-    """Карточки «вокруг дела»: data-art="<дело>/<файл>.jpg" превращается в картинку, только если файл лежит
-    в site/assets/art/. Подпись с владельцем и правами — в p.credit самой карточки (team/std/images.md)."""
+    """Карточки «вокруг дела» сырым HTML (дела, ещё не переведённые на world.cards): data-art="<дело>/<файл>.jpg"
+    превращается в картинку, только если файл лежит в site/assets/art/. Подпись с владельцем и правами — в p.credit
+    самой карточки (team/std/images.md)."""
     def sub(m):
         rel, alt = m.group(1), m.group(2)
         path = os.path.join(SITE, 'assets', 'art', rel)
@@ -236,7 +270,7 @@ def spot_html(sp):
     else:
         pic = f'<img src="../../assets/ill/spots/{sp["img"]}.svg" alt="{esc(sp["alt"])}" width="1200" height="900" loading="lazy" decoding="async">'
     warn = f'<p class="warn">{sp["warn"]}</p>' if sp.get('warn') else ''
-    return f'<li class="c-spot"><figure>{pic}</figure><h3>{sp["title"]}</h3><p>{sp["text"]}</p>{warn}</li>'
+    return f'<li class="c-spot"{none_attrs(sp)}><figure>{pic}</figure><h3>{sp["title"]}</h3><p>{sp["text"]}</p>{warn}</li>'
 
 
 def body(c):
@@ -356,7 +390,7 @@ def body(c):
 <section id="world" class="c-sec on-paper" aria-labelledby="h-world">
   <div class="wrap">
     {sec_head('world', c['world']['h2'], 'h-world', c['world'].get('lead'))}
-    {world_html(c['world']['html'])}
+    {world_block(c['world'])}
   </div>
 </section>
 

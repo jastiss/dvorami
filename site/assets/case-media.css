@@ -2,6 +2,11 @@
    с правками case.css; при случае слить в case.css рядом с .c-spot и .c-world-card. */
 .c-spot .c-credit, .c-world-card .credit { font-size: 14px; line-height: 1.4; opacity: .8; }
 .c-spot .c-credit { margin-top: 6px; }
-/* репродукции не кадрируем: у каждой своя пропорция */
-.c-world-art { display: block; width: 100%; height: auto; border-radius: var(--card-radius); margin-bottom: 16px; }
+/* Картинка карточки «вокруг дела» (build_cases.py, world_card): кадр 4:3 вверху, как у «Что увидите»; репродукции
+   не кадрируем — вписываются целиком на нейтральном поле (у каждой своя пропорция), снимок места (fit 'cover') — на весь кадр.
+   Подпись-атрибуция — сразу под картинкой. Без картинки карточка прежняя. */
+.c-world-fig { margin: 0 0 16px; }
+.c-world-fig .c-credit { margin-top: 6px; font-size: 14px; line-height: 1.4; opacity: .8; }
+.c-world-art { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: contain; background: rgba(127, 127, 127, .12); border-radius: var(--card-radius); }
+.c-world-fig--cover .c-world-art { object-fit: cover; }
 .t-avangard .c-world-art { border: 2px solid currentColor; }

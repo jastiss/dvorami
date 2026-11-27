@@ -25,6 +25,8 @@
  *     предупреждением — длина <title> > 60 и description > 160 на страницах дел (H-108);
  *     ответы загадок из сценария на витрине дела и в его карточках (scripts/answer_leaks.js, исключения — answer_leaks.json);
  *     колонка «Где у игрока» в research/facts.md ↔ quest.json (scripts/facts_check.py, H-110; формат — docs/facts-format.md).
+ *     карточки одной сетки витрины дела одинаковые (scripts/card_grid_check.js, владелец 27.11): год, источник, картинка —
+ *     у всех, если у большинства; исключение — year_none/credit_none/art_none/photo_none: «почему» в данных дела;
  *     дрейф сюжета (scripts/story_drift.js, T-140): витрина сверена с текущей версией сценария (platform/site/story-sync.json),
  *     герои «Кто ведёт дело» — среди speakers quest.json, снятое из сценария (quests/<id>/retired.json) — нигде на витрине.
  * Выход: 0 — всё чисто, 1 — список ошибок.
@@ -729,6 +731,14 @@ async function mapTaps() {
   const al = LEAKS.check(LEAKS.allIds());
   al.errors.forEach(m => err('ответ загадки на витрине', '', m));
   al.warns.concat(al.info).forEach(w => warns.push('ответы на витрине: ' + w));
+  // владелец 27.11 (в сетке «художники» ЗИЛАРТа у двух карточек из восьми нет года): поле, которое есть у большинства карточек
+  // сетки витрины дела (год, источник, картинка, снимок), — у всех; исключение — явное year_none/…: «почему» в данных дела;
+  // снимок или репродукция в карточке — с подписью-атрибуцией, width/height, lazy (scripts/card_grid_check.js)
+  const CG = require('./card_grid_check.js');
+  CG.selftest().forEach(m => err('сетки карточек (самопроверка)', '', m));
+  const cg = CG.check();
+  cg.errors.forEach(m => err('сетка карточек', '', m));
+  cg.warns.forEach(w => warns.push('сетка карточек: ' + w));
   // владелец 27.11: «Проба» (фонарик на главной, лампа «Следами») — не ответ и не ход загадки ни одного дела
   LEAKS.checkProbes().forEach(m => err('«Проба» ↔ ответы дел', '', m));
   // T-140: дрейф сюжета — витрина сверена с текущей версией сценария (platform/site/story-sync.json), герои «Кто ведёт дело» —
