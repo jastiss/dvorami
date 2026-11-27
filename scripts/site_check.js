@@ -559,10 +559,11 @@ async function mapTaps() {
   }
   questSync().forEach(m => err('сценарий ↔ витрина', '', m));
   ogSync().forEach(m => err('OG-картинки', '', m));
-  const tone = toneCheck(); // предупреждения: не меняют код выхода (T-65)
-  const toneReport = () => { if (tone.length) { console.log(`\n ⚠ штампы машинного текста (предупреждение, правит Автор; ложные — в scripts/tone_stamps.json → site_exceptions): ${tone.length}`); tone.forEach(t => console.log('   ⚠ ' + t)); } };
+  const tone = toneCheck(); // T-65: штампы машинного текста — ошибка (красная проверка с 27.11)
+  tone.forEach(t => err('тон текста', '', t));
+  const toneReport = () => { if (tone.length) { console.log(`\n ✗ штампы машинного текста (ОШИБКА, правит Автор; ложные — в scripts/tone_stamps.json → site_exceptions): ${tone.length}`); tone.forEach(t => console.log('   ✗ ' + t)); } };
   if ('sync' in args) { // --sync: только сверка цифр со сценарием, без браузера
-    stop(); toneReport(); errors.forEach(e => console.log(' ✗ ' + e)); console.log(errors.length ? `site_check --sync: ${errors.length} ошибок` : `site_check --sync: OK${tone.length ? ` (предупреждений о тоне: ${tone.length})` : ''}`); process.exit(errors.length ? 1 : 0);
+    stop(); toneReport(); errors.forEach(e => console.log(' ✗ ' + e)); console.log(errors.length ? `site_check --sync: ${errors.length} ошибок` : `site_check --sync: OK${tone.length ? ` (штампов тона: ${tone.length})` : ''}`); process.exit(errors.length ? 1 : 0);
   }
 
   let pages = listPages();
