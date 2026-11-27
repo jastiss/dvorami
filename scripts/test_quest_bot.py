@@ -20,8 +20,9 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-os.environ.setdefault("TELEGRAM_BOT_TOKEN", "TEST:TOKEN")
-os.environ.setdefault("TELEGRAM_CHAT_ID", "4242")
+# поддельные токен и чат — даже если в окружении настоящие: тест ничего не отправляет (tg.call подменён)
+os.environ["TELEGRAM_BOT_TOKEN"] = "TEST:TOKEN"
+os.environ["TELEGRAM_CHAT_ID"] = "4242"
 import tg  # noqa: E402
 import quest_bot as qb  # noqa: E402
 
