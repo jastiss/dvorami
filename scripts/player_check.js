@@ -53,6 +53,11 @@
  *     улики (data-clue) засчитывается только её текстом сразу под ним, реплика с картинкой и текстом — текстом под картинкой;
  *   - H-111: временные объекты ("temporary", scripts/temporary_check.js) — за 30 дней до срока предупреждение, после — ошибка
  *     ([--today=ГГГГ-ММ-ДД] — проверить на другую дату).
+ *   - 27.11, офлайн: первый заход с service worker (sw.js) — страница, player.js и дело попадают в кеш (warmCache), без связи
+ *     перезагрузка открывает то же место;
+ *   - 27.11, чтение с экрана: неверный ответ (поле, вариант, карточки) объявлен в постоянной области #sr-say, поле помечено
+ *     aria-invalid и ссылается на сообщение, после перерисовки фокус остаётся на нажатом варианте или «Проверить»; живая
+ *     область «где» в шапке не перезаписывается на «Дальше» внутри точки.
  * Выход: 0 — всё чисто, 1 — список ошибок.
  */
 'use strict';
@@ -240,8 +245,11 @@ const SRC = (function srcShare(q) {
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p.endsWith('/')) p += 'index.html';
-  const f = path.join(REPO, p);
-  if (!f.startsWith(REPO) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+  let f = path.join(REPO, p);
+  // офлайн-прогон (sw.js): service worker берёт дело с сервера мимо page.route — сервер отдаёт то же, что route у остальных прогонов
+  const own = p === `/${PAGE}quest.locked.json` || p === `/${PAGE}quest.json`;
+  if (own) f = p.endsWith('locked.json') ? (SEALED ? BUNDLE.locked : '') : (SEALED ? '' : QUEST);
+  if (!f || (!own && !f.startsWith(REPO)) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' });
   fs.createReadStream(f).pipe(res);
 });
@@ -397,6 +405,11 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       const lastGoal = async name => (await goals()).filter(([g]) => g === name).pop();
       const state = () => page.evaluate(() => window.__dvorami.state());
       const click = sel => page.click(sel);
+      // 27.11: неверный ответ объявлен для чтения с экрана — текст сообщения появился в постоянной области #sr-say
+      const srSaid = async where => {
+        const ok = await page.waitForFunction(() => { const s = document.getElementById('sr-say'), w = [...document.querySelectorAll('#app .pl-wrong')].pop(); return !!(s && w && s.textContent && s.textContent === w.textContent); }, null, { timeout: 2000 }).then(() => true, () => false);
+        if (!ok) err(`${tag} · ${where}`, 'сообщение о неверном ответе не объявлено для чтения с экрана (#sr-say)');
+      };
       const check = async where => {
         screens++; (await page.evaluate(audit)).forEach(m => err(`${tag} · ${where}`, m));
       };
@@ -456,6 +469,9 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           if (wrong && bad) {
             await click(`${sel} [data-act="choose"][data-id="${bad.id}"]`);
             if (!(await page.$(`${sel} .pl-wrong`))) err(tag, `${sat}: нет сообщения о неверном варианте`);
+            // экран перерисован — фокус остаётся на нажатом варианте, а не уходит в начало страницы (27.11)
+            if (!(await page.evaluate(([s2, id]) => { const a = document.activeElement; return !!(a && a.closest(s2) && a.dataset.act === 'choose' && a.dataset.id === id); }, [sel, String(bad.id)]))) err(tag, `${sat}: после неверного варианта фокус потерян`);
+            await srSaid(sat + ' · неверный вариант');
             await check(sat + ' · неверный вариант');
           }
           await click(`${sel} [data-act="choose"][data-id="${right}"]`);
@@ -466,6 +482,8 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
           if (wrong) {
             await click(`${sel} [data-act="check"]`);
             if (!(await page.$(`${sel} .pl-wrong`))) err(tag, `${sat}: нет сообщения о неверном выборе`);
+            if (!(await page.evaluate(s2 => { const a = document.activeElement; return !!(a && a.closest(s2) && a.dataset.act === 'check'); }, sel))) err(tag, `${sat}: после неверного выбора фокус потерян`);
+            await srSaid(sat + ' · неверный выбор');
           }
           for (const id of want) await click(`${sel} [data-sel="${id}"]`);
           await check(sat + ' · выбрано');
@@ -777,6 +795,9 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
             if (gw.some(([, prm]) => JSON.stringify(prm).includes('неверно'))) err(tag, `${sat}: текст ответа ушёл в параметры цели answer_wrong`);
             if (!(await page.$('.pl-wrong'))) err(tag, `${sat}: нет сообщения о неверном ответе`);
             if (!(await page.evaluate(() => { const i = document.getElementById('ans'); const r = i && i.getBoundingClientRect(), w = document.querySelector('#active .pl-wrong').getBoundingClientRect(); return i && i.dataset.same === '1' && document.activeElement === i && r.top >= 56 && w.bottom <= innerHeight; }))) err(tag, `${sat}: неверный ответ перерисовал поле (фокус потерян) или поле с сообщением ушли с экрана`);
+            // 27.11: чтение с экрана слышит неверный ответ — поле помечено и ссылается на сообщение, оно объявлено в постоянной области
+            if (!(await page.evaluate(() => { const i = document.getElementById('ans'), d = i && document.getElementById(i.getAttribute('aria-describedby') || '-'); return i.getAttribute('aria-invalid') === 'true' && d && d.classList.contains('pl-wrong'); }))) err(tag, `${sat}: поле неверного ответа без aria-invalid / aria-describedby на сообщение`);
+            await srSaid(sat + ' · неверный ответ');
             await check(sat + ' · неверный ответ');
             // опечатка — «Почти! Проверьте написание», шаг не засчитан
             const typo = !nearSeen && nearTypo(st);
@@ -1201,6 +1222,66 @@ const settle = () => new Promise(r => { let y = -1, n = 0; const f = () => { if 
       if (!strips && Q.format >= 5) err(tag, 'H-62: в полевом тесте ни одного плеера реплики — проверка субтитров ничего не проверила');
       notes.push(`H-62 субтитры: плееров ${strips}, реплик под ними ${lines}, хвост «Подробнее» раскрывается голосом на ${folds} экранах`);
       await o.ctx.close();
+    }
+
+    // --- 27.11: «где» в шапке — живая область (aria-live); «Дальше» внутри точки её не перезаписывает, иначе чтение с экрана
+    //     повторяет «Дело № N · K из M» на каждом экране ---
+    {
+      const pi = Math.min(1, Q.points.length - 1);
+      const o = await open({}, QS, pi);
+      const page = o.page;
+      await page.evaluate(() => { window.__whereMut = 0; new MutationObserver(m => { window.__whereMut += m.length; }).observe(document.getElementById('where'), { childList: true, characterData: true, subtree: true, attributes: true }); });
+      let moved = 0;
+      for (let i = 0; i < 3; i++) {
+        const b = await page.$('#app .pl-bar [data-act="fwd"]'); if (!b) break;
+        const p0 = await page.evaluate(() => window.__dvorami.state().p);
+        await b.click();
+        if ((await page.evaluate(() => window.__dvorami.state().p)) !== p0) break;
+        moved++;
+      }
+      const n = await page.evaluate(() => window.__whereMut);
+      if (!moved) notes.push('шапка «где»: на точке ' + Q.points[pi].n + ' нет экранов для «Дальше» — проверка живой области пропущена');
+      else if (n) err(tag, `шапка: «Дальше» внутри точки (${moved} раза) перезаписал живую область «где» (${n} изменений) — чтение с экрана повторяет её на каждом экране`);
+      await o.ctx.close();
+    }
+
+    // --- офлайн (плейбук Инженера, принцип 1; 27.11): первый заход — sw.js берёт страницу под управление, плеер отдаёт ему
+    //     уже загруженное (warmCache); связь пропала — перезагрузка открывает то же место. До 27.11 страница и дело при первом
+    //     заходе в кеш не попадали: в арке без связи в первый же день — пустой экран браузера ---
+    {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'allow' });
+      const page = await ctx.newPage();
+      page.on('pageerror', e => err(tag, 'офлайн: JS: ' + e.message));
+      const pi = Math.min(1, Q.points.length - 1);
+      await page.addInitScript(([qid, code, ver, pi2]) => {
+        try {
+          if (localStorage.getItem('dvorami:play:' + qid)) return;   // перезагрузка — своё сохранение, не подменяем
+          if (code) localStorage.setItem('dvorami:code:' + qid, code);
+          localStorage.setItem('dvorami:play:' + qid, JSON.stringify({ v: 1, quest: qid, version: ver, phase: 'walk', p: pi2, k: 0, f: 0, t_start: Date.now() - 6e5, field: false }));
+        } catch (e) {}
+      }, [QID, SEALED ? BUNDLE.code : '', RAW.version == null ? null : RAW.version, pi]);
+      await page.goto(`${BASE}/${PAGE}${QS}`, { waitUntil: 'load' });
+      const where = () => page.evaluate(() => { const s = window.__dvorami.state(); return `${s.phase} т.${s.p + 1} экран ${s.f}`; });
+      if (!(await page.waitForSelector('#tabs:not([hidden])', { timeout: 15000 }).then(() => true, () => false))) err(tag, 'офлайн: плеер с service worker не открылся');
+      else {
+        const ctl = await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 10000 }).then(() => true, () => false);
+        const warm = ctl && await page.waitForFunction(pg => caches.keys().then(ns => Promise.all(ns.map(n => caches.open(n).then(c => c.keys())))).then(all => {
+          const u = [].concat(...all).map(r => r.url.split('?')[0]);
+          return u.some(x => x.endsWith(pg)) && u.some(x => /\/quest\.(locked\.)?json$/.test(x)) && u.some(x => /\/player\.js$/.test(x));
+        }), `/${PAGE}`, { timeout: 10000, polling: 300 }).then(() => true, () => false);
+        if (!ctl) err(tag, 'офлайн: sw.js не взял страницу плеера под управление');
+        else if (!warm) err(tag, 'офлайн: после первого захода в кеше нет страницы плеера, player.js или дела (warmCache → sw.js)');
+        const before = await where();
+        await ctx.setOffline(true);
+        const back = await page.reload({ waitUntil: 'load' }).then(() => page.waitForSelector('#tabs:not([hidden])', { timeout: 15000 })).then(() => true, () => false);
+        if (!back) err(tag, 'офлайн: без связи перезагрузка не открыла плеер (первый заход, сохранение и код на телефоне)');
+        else {
+          const after = await where();
+          if (after !== before) err(tag, `офлайн: без связи открылось не то место (${before} → ${after})`);
+          else notes.push(`офлайн: первый заход → связь пропала → перезагрузка открыла то же место (${after})`);
+        }
+      }
+      await ctx.close();
     }
 
     // --- прокрутка на 360×740 (владелец 27.11): все экраны дела в просмотре пройденного, плашка «Пройденное» скрыта ---

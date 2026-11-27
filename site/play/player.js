@@ -62,7 +62,10 @@
       '<dialog class="pl-sheet" id="sheet" aria-labelledby="sheet-title"><div class="pl-sheet-head"><h2 id="sheet-title"></h2>' +
       '<button type="button" class="pl-x" data-act="close" aria-label="Закрыть">' + ico('close') + '</button></div>' +
       '<div class="pl-sheet-body" id="sheet-body"></div></dialog>' +
-      '<div class="pl-toast" id="toast" role="status" aria-live="polite"></div>');
+      '<div class="pl-toast" id="toast" role="status" aria-live="polite"></div>' +
+      // объявления для чтения с экрана (неверный ответ): область живёт с загрузки, текст меняется — так его читают все
+      // программы; сообщение, вставленное в страницу сразу с текстом, VoiceOver и NVDA часто пропускают (27.11)
+      '<div class="visually-hidden" id="sr-say" role="status" aria-live="polite"></div>');
   })();
   var sheet = document.getElementById('sheet');
   function themeColor() {
@@ -655,11 +658,26 @@
     if (!form) return commit('same');
     var old = box.querySelector('.pl-wrong');
     if (old) old.remove();
-    form.insertAdjacentHTML('afterend', wrongHtml(st, o));
     var inp = form.elements.ans;
+    form.insertAdjacentHTML('afterend', wrongHtml(st, o, inp.id + '-err'));
+    inp.setAttribute('aria-invalid', 'true'); inp.setAttribute('aria-describedby', inp.id + '-err');
     try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); }
     inp.select();
     box.querySelector('.pl-wrong').scrollIntoView({ block: 'nearest', behavior: smooth() });
+    announceWrong(box);
+  }
+  // Неверный ответ — вслух для чтения с экрана (#sr-say); фокус остаётся там, где был игрок (поле, вариант, «Проверить»)
+  function announceWrong(box) {
+    var el = document.getElementById('sr-say'), w = box && box.querySelector('.pl-wrong');
+    if (!el || !w) return;
+    el.textContent = '';
+    setTimeout(function () { el.textContent = w.textContent; }, 60);   // пусто → текст: повтор того же сообщения тоже прочтут
+  }
+  function ctxBox(ctx) { return document.getElementById(ctx === 'step' ? 'active' : 'walk-' + ctxIndex(ctx)); }
+  function focusIn(ctx, sel) {
+    var box = ctxBox(ctx), el = box && box.querySelector(sel);
+    if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }
+    announceWrong(box);
   }
   // Порядок вариантов (H-73): перемешан, чтобы верный не угадывался по месту; для игрока постоянный — от id дела, точки, шага
   // и его seed в сохранении. Не перемешиваются: "shuffle": false; нумерованные варианты (id из одного знака: А–Г, 1–3 —
@@ -706,6 +724,7 @@
     log('wrong', { step: lbl, text: opt.label || id, kind_of: 'choice' });
     o.wrong = opt.label || id; o.reply = opt.reply || '';
     commit('same', '.pl-wrong');
+    focusIn(ctx, '[data-act="choose"][data-id="' + String(id).replace(/["\\]/g, '\\$&') + '"]');
   }
   // Выбор нескольких (pick — карточки доски; strike — вычеркнуть лишнее на снимке)
   function toggleSel(id, ctx) {
@@ -742,6 +761,7 @@
     log('wrong', { step: lbl, text: label || '—', kind_of: st.type === 'pick' ? 'pick' : 'strike' });
     o.wrong = label || '—'; o.reply = reply;
     commit('same', '.pl-wrong');
+    focusIn(ctx, '[data-act="check"]');
   }
   function hint(level, ctx) {
     ctx = ctx || 'step';
@@ -1020,8 +1040,8 @@
     }
     return out;
   }
-  function wrongHtml(st, o) {
-    return '<p class="pl-wrong" role="status">' + (o.reply
+  function wrongHtml(st, o, id) {
+    return '<p class="pl-wrong"' + (id ? ' id="' + id + '"' : '') + '>' + (o.reply
       ? (st.type === 'pick' || st.type === 'strike' ? '' : '«' + esc(o.wrong) + '» — ') + inline(o.reply)
       : '«' + esc(o.wrong) + '» — не подходит. Попробуйте ещё раз' + ((st.hints || []).length ? ' или откройте подсказку.' : '.')) + '</p>';
   }
@@ -1035,7 +1055,7 @@
     var revealed = st.type !== 'free' && hints.length && o.hint >= hints.length;
     var stick = main ? ' pl-stick' : '';
     var aid = ctx === 'step' ? 'ans' : 'ans-' + ctx.replace(':', '');
-    var wrong = o.wrong ? wrongHtml(st, o) : '';
+    var wrong = o.wrong ? wrongHtml(st, o, aid + '-err') : '';
     recap = recap || '';
     if (!revealed) {
       if (st.type === 'choice') {
@@ -1070,7 +1090,8 @@
       } else {
         h += '<form class="pl-form" data-form="answer" autocomplete="off">' +
           '<label class="visually-hidden" for="' + aid + '">Ваш ответ</label>' +
-          '<input class="pl-input" id="' + aid + '" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + esc(st.placeholder || (st.type === 'free' ? 'Ваш ответ' : 'Одно-два слова')) + '" value="' + esc(o.last) + '">' +
+          '<input class="pl-input" id="' + aid + '" name="ans" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="' + esc(st.placeholder || (st.type === 'free' ? 'Ваш ответ' : 'Одно-два слова')) + '" value="' + esc(o.last) + '"' +
+            (o.wrong ? ' aria-invalid="true" aria-describedby="' + aid + '-err"' : '') + '>' +
           '<button class="pl-btn" type="submit">Ответить</button></form>' + wrong + recap;
       }
     } else h += recap;
@@ -2108,8 +2129,12 @@
     // шапка дела и прогресс по точкам
     var shown = (S.phase === 'walk' || S.phase === 'step' || S.phase === 'point_done') ? pt().n : (S.phase === 'done' ? n : 0);
     var where = document.getElementById('where');
-    where.innerHTML = esc(CASE_NO ? caseName() : '') + (shown ? (CASE_NO ? ' · ' : '') + '<b>' + shown + ' из ' + n + '</b>' : '');
-    where.setAttribute('aria-label', (CASE_NO ? caseName() : '') + (shown ? ', точка ' + shown + ' из ' + n : ''));
+    var whereHtml = esc(CASE_NO ? caseName() : '') + (shown ? (CASE_NO ? ' · ' : '') + '<b>' + shown + ' из ' + n + '</b>' : '');
+    // живая область (aria-live): перезапись тем же текстом чтение с экрана объявляет заново на каждом экране — пишем только новое
+    if (where.dataset.v !== whereHtml) {
+      where.innerHTML = whereHtml; where.dataset.v = whereHtml;
+      where.setAttribute('aria-label', (CASE_NO ? caseName() : '') + (shown ? ', точка ' + shown + ' из ' + n : ''));
+    }
     // Один индикатор прогресса: отрезок на точку; текущий заполняется по ходу точки (дорога → шаги)
     var prog = '', passed = 0, part = playing || S.paused ? pointPart() : 0;
     for (var i = 0; i < n; i++) {
@@ -3062,7 +3087,7 @@
   }
   function codeView(value, error) {
     var where = document.getElementById('where');
-    where.textContent = CASE_NO ? caseName() : '';
+    where.textContent = CASE_NO ? caseName() : ''; delete where.dataset.v;
     if (menuBtn) menuBtn.hidden = true;
     var buy = document.body.dataset.caseUrl;
     var L = LOCKED || {};
@@ -3124,6 +3149,22 @@
     if (S.phase !== 'idle') { log('reload'); save(); }
     themeColor();
     render();
+    warmCache();
+  }
+  // Офлайн с первого захода (sw.js): страница, скрипты, стили и дело загрузились раньше, чем sw.js начал управлять страницей,
+  // и мимо его кеша — отдаём ему их список. Без этого перезагрузка в арке без связи в первый же день не открывала плеер (27.11).
+  function warmCache() {
+    try {
+      if (!navigator.serviceWorker || !window.performance || !performance.getEntriesByType) return;
+      navigator.serviceWorker.ready.then(function (reg) {
+        if (!reg || !reg.active) return;
+        var urls = [location.href.split('#')[0]];
+        performance.getEntriesByType('resource').forEach(function (r) {
+          if (r.name.indexOf(location.origin + '/') === 0 && urls.indexOf(r.name) === -1) urls.push(r.name);
+        });
+        reg.active.postMessage({ warm: urls });
+      }).catch(function () { /* без офлайна */ });
+    } catch (e) { /* без офлайна */ }
   }
   function getJSON(url) {
     return fetch(url, { cache: 'no-cache' }).then(function (r) {
@@ -3141,6 +3182,7 @@
       }
       LOCKED = L;
       themeColor();
+      warmCache();
       var saved = store.get(CODE_KEY);
       if (fromLink) { codeView(showCode(fromLink)); return tryCode(fromLink, 'link'); }
       if (saved) { codeView(''); return tryCode(saved, 'saved'); }
