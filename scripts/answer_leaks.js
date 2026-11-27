@@ -36,7 +36,10 @@
  * значение-объект {"why": "…", "warn": true} — известная находка ждёт решения (Сценарист): не красное, а жёлтое каждый запуск;
  * {"why": "…", "only": "006-otvet-zil-gagarin.md"} — исключение только для находок в этих местах (тот же ответ на витрине — красное).
  * Причина обязательна (от 15 знаков); исключение, которое больше ничего не снимает, — предупреждение «снять».
- * Пользуется site_check.js (и --sync): найденный ответ без исключения — ошибка. */
+ * Пользуется site_check.js (и --sync): найденный ответ без исключения — ошибка.
+ * T-144: scripts/channel_post.py --check берёт ответы отсюда же — node scripts/answer_leaks.js --posts-json=файл,файл|папка
+ * (JSON {файл: {errors, warns}}; текст поста и опрос, все дела, исключения ok). Обратная проверка: архивный пост с «космонавтов»
+ * (archive/docs/marketing/channel/posts/006-otvet-zil-gagarin.md) краснеет. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -215,6 +218,24 @@ function extraParts(slug, opts) {
     parts.push({ where: `${opts.posts ? f + ' (копия)' : path.relative(REPO, path.join(dir, f))} (пост канала${status ? ', ' + status : ''})`, text: strip(fm ? t.slice(fm[0].length) : t) });
   }
   return parts.map(p => Object.assign(p, { n: ' ' + norm(p.text) + ' ' }));
+}
+
+// T-144: посты канала для scripts/channel_post.py --check — тот же источник правды, что у витрины и site_check: ответы всех дел,
+// исключения answer_leaks.json → ok (с "only"). Каждый файл — отдельно, чтобы находка называла свой пост; статус не смотрим —
+// какие посты проверять (не published, или тот, что публикуется), решает channel_post.py.
+function postText(t) { const fm = t.match(/^---\n([\s\S]*?)\n---\n?/); return { status: fm && (fm[1].match(/^status:\s*"?([\w-]+)/m) || [])[1], body: fm ? t.slice(fm[0].length) : t, fm: fm ? fm[1] : '' }; }
+function checkPosts(files, opts = {}) {
+  const out = {}, ids = opts.ids || allIds();
+  for (const f of files) {
+    const abs = path.resolve(f), rel = abs.startsWith(REPO + path.sep) ? path.relative(REPO, abs) : abs;
+    const p = postText(fs.readFileSync(abs, 'utf8'));
+    // опрос (poll_question, poll_options) — во frontmatter, а виден в канале так же, как текст
+    const poll = (p.fm.match(/^poll_(question|options):.*$/gm) || []).map(l => l.replace(/^poll_\w+:\s*/, '')).join(' ');
+    const parts = [{ where: `${rel} (пост канала${p.status ? ', ' + p.status : ''})`, text: strip(p.body + ' ' + poll) }].map(x => Object.assign(x, { n: ' ' + norm(x.text) + ' ' }));
+    const r = check(ids, { parts, conf: opts.conf, quest: opts.quest });
+    out[rel] = { errors: r.errors, warns: r.warns };
+  }
+  return out;
 }
 
 // ---------- проверка ----------
@@ -404,14 +425,32 @@ function selftest() {
   const pd = h => checkProbes({ quest, pages: [['fx.html', h]], rows, conf: { ok: {} } });
   if (pd('<section id="probe"><p class="lamp-q">Почему кольцо?</p><p class="lamp-a"><span class="ink">Здесь стояла стена Белого города.</span></p></section>').length !== 1) out.push('«Проба»: факт из черновика маршрута не найден');
   if (pd('<section id="probe"><p class="lamp-q">Как называется форма башни?</p><p class="lamp-a"><span class="ink">Гиперболоид инженера Шухова.</span></p></section>').length) out.push('«Проба»: ложное совпадение с черновиком');
+  // T-144: посты канала для channel_post.py — находка называет свой файл, исключение с "only" действует
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'leaks-posts-'));
+  const pf = path.join(tmp, 'channel', 'posts');
+  fs.mkdirSync(pf, { recursive: true });
+  fs.writeFileSync(path.join(pf, 'a.md'), '---\nstatus: draft\npoll_question: Что у пруда?\n---\nДеревья стоят на <b>подпорках</b>.');
+  fs.writeFileSync(path.join(pf, 'b.md'), '---\nstatus: draft\n---\nСемнадцать точек и ложный путь.');
+  const cp = (ok) => checkPosts([path.join(pf, 'a.md'), path.join(pf, 'b.md')], { ids: ['fx'], quest, conf: { ok: ok ? { fx: ok } : {} } });
+  const r1 = cp();
+  const ka = Object.keys(r1).find(k => k.endsWith('a.md')), kb = Object.keys(r1).find(k => k.endsWith('b.md'));
+  if (!ka || r1[ka].errors.length !== 1 || !r1[ka].errors[0].includes('a.md')) out.push('посты канала: ответ в посте не найден или находка не называет пост');
+  if (!kb || r1[kb].errors.length) out.push('посты канала: ложное срабатывание (неверный вариант, число словом)');
+  if (cp({ 'подпорка': { why: 'фикстура: исключение только для постов', only: 'channel/posts/' } })[ka].errors.length) out.push('посты канала: исключение с "only": "channel/posts/" не сняло находку в посте');
+  fs.rmSync(tmp, { recursive: true, force: true });
   return out;
 }
 
-module.exports = { check, allIds, selftest, coverage, terms, conf, checkProbes, caseCorpus, corpusOf, extraParts, norm, strip }; // корпус витрины — и для scripts/story_drift.js
+module.exports = { check, checkPosts, allIds, selftest, coverage, terms, conf, checkProbes, caseCorpus, corpusOf, extraParts, norm, strip }; // корпус витрины — и для scripts/story_drift.js
 
 if (require.main === module) {
   const args = Object.fromEntries(process.argv.slice(2).map(a => { const m = a.match(/^--([\w-]+)(?:=(.*))?$/); return m ? [m[1], m[2] == null ? true : m[2]] : [a, true]; }));
   if (args.selftest) { const s = selftest(); s.forEach(m => console.log(' ✗ ' + m)); console.log(s.length ? 'answer_leaks --selftest: ОШИБКА' : 'answer_leaks --selftest: OK'); process.exit(s.length ? 1 : 0); }
+  if (args['posts-json']) { // T-144: для scripts/channel_post.py — файлы постов через запятую (или папка), ответ — JSON по файлам
+    const list = String(args['posts-json']).split(',').filter(Boolean).flatMap(f => fs.existsSync(f) && fs.statSync(f).isDirectory() ? fs.readdirSync(f).filter(x => x.endsWith('.md')).sort().map(x => path.join(f, x)) : [f]);
+    console.log(JSON.stringify(checkPosts(list)));
+    process.exit(0);
+  }
   const ids = args.quest ? [args.quest] : allIds();
   if (args.terms) {
     const c = conf();

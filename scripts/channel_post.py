@@ -28,7 +28,10 @@ Frontmatter:
 
 Флаги:
     --check     проверить все draft/approved посты (разметка, длина, картинка, спойлеры,
-                рубрика и визуал, признаки машинного текста) и выйти
+                рубрика и визуал, признаки машинного текста) и выйти; --check=путь — файл или папка
+                (обратная проверка: --check=archive/docs/marketing/channel/posts/006-otvet-zil-gagarin.md — красное)
+    Спойлеры: ответы загадок — scripts/answer_leaks.js (T-144, один источник с витриной, исключения answer_leaks.json),
+    улики и разгадки — scripts/site_spoilers.json.
     --dry-run   показать, что было бы опубликовано, без отправки
 Запуск в CI — без флагов: публикует один готовый пост.
 
@@ -39,6 +42,7 @@ import json
 import os
 import pathlib
 import re
+import subprocess
 import sys
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -56,9 +60,6 @@ POLL_Q_LIMIT = 300
 ALLOWED_TAGS = {"b", "strong", "i", "em", "u", "s", "strike", "del",
                 "a", "code", "pre", "blockquote", "tg-spoiler", "span", "br"}
 
-# Короткие и служебные слова-ответы не берём в спойлер-проверку (ловим по site_spoilers.json).
-GENERIC = {"вода", "круг", "шар", "линия", "прямая", "замок", "замки", "храм",
-           "собор", "церковь", "озеро", "пруд", "талант", "марка", "марки"}
 
 
 # ---------------------------------------------------------------- frontmatter
@@ -93,45 +94,41 @@ FM_ORDER = ["rubric", "slot", "date", "time", "status", "image", "visual", "mess
 
 # ---------------------------------------------------------------- проверки
 def spoiler_terms():
+    """Ручной список улик и разгадок (scripts/site_spoilers.json — то, чего нет среди ответов сценария); ответы загадок —
+    в answer_leaks() ниже. Ключи «_…» — пояснения."""
     terms = set()
     sp = ROOT / "scripts" / "site_spoilers.json"
     if sp.exists():
         data = json.loads(sp.read_text(encoding="utf-8"))
         for k, v in data.items():
-            if k == "_":
+            if k.startswith("_") or not isinstance(v, list):
                 continue
             for w in v:
-                terms.add(w.lower())
-    # слова-ответы — из действующего дела и из копии формата 3 (quest-v3.1.json): спойлером остаются оба набора
-    for qf in glob.glob(str(ROOT / "quests" / "*" / "quest.json")) + glob.glob(str(ROOT / "quests" / "*" / "quest-v*.json")):
-        try:
-            q = json.loads(pathlib.Path(qf).read_text(encoding="utf-8"))
-        except Exception:
-            continue
-
-        def walk(o):
-            if isinstance(o, dict):
-                for kk, vv in o.items():
-                    # replies — реакции на «почти» и неверные варианты, а не ответы: «ответ», «висят» из них
-                    # краснили каждый пост канала (27.11, T-141); так же их пропускает scripts/answer_leaks.js
-                    if kk == "replies":
-                        continue
-                    if kk in ("answers", "answer"):
-                        vals = vv if isinstance(vv, list) else [vv]
-                        for a in vals:
-                            a = str(a).strip().lower()
-                            # ~стем — служебный префикс движка (совпадение по началу слова);
-                            # как спойлер-слово он слишком общий, берём только полные слова.
-                            if a.startswith("~"):
-                                continue
-                            if len(a) >= 5 and not a.isdigit() and a not in GENERIC:
-                                terms.add(a)
-                    walk(vv)
-            elif isinstance(o, list):
-                for vv in o:
-                    walk(vv)
-        walk(q)
+                terms.add(str(w).lower())
     return terms
+
+
+def answer_leaks(paths):
+    """Ответы загадок всех дел в постах — из scripts/answer_leaks.js (T-144): один источник правды с витриной и site_check —
+    ответы из quest.json / сценария, исключения scripts/answer_leaks.json → ok (с причиной, "only"). Прежний свой список из
+    quest.json краснил посты 001, 002, 009, 010 на «автомобиль», «грузовик», «Тюфелева роща», признанные не спойлерами.
+    Возвращает {путь: [ошибки]}; не запустилось — у каждого поста ошибка: без проверки ответов пост не публикуется."""
+    paths = [str(pathlib.Path(p).resolve()) for p in paths]
+    if not paths:
+        return {}
+    try:
+        r = subprocess.run(["node", str(ROOT / "scripts" / "answer_leaks.js"), "--posts-json=" + ",".join(paths)],
+                           capture_output=True, text=True, timeout=180, cwd=str(ROOT))
+        data = json.loads(r.stdout)
+    except Exception as e:  # нет node, сбой скрипта
+        msg = f"ответы загадок не проверены (node scripts/answer_leaks.js не запустился: {str(e).splitlines()[0][:120]})"
+        return {p: [msg] for p in paths}
+    out = {}
+    for p in paths:
+        rel = os.path.relpath(p, ROOT) if p.startswith(str(ROOT) + os.sep) else p
+        got = data.get(rel)
+        out[p] = ["ответ загадки: " + e for e in got["errors"]] if got else [f"ответы загадок не проверены: answer_leaks.js не вернул {rel}"]
+    return out
 
 
 # Признаки машинного текста — docs/marketing/tone-of-voice.md, «Признаки машинного текста».
@@ -193,7 +190,7 @@ def visible_len(s):
     return len(re.sub(r"<[^>]+>", "", re.sub(r"&(amp|lt|gt|quot);", "x", s)))
 
 
-def check_post(path, terms):
+def check_post(path, terms, leaks=None):
     meta, body = parse(path)
     errs, warns = [], []
     status = meta.get("status", "draft")
@@ -234,7 +231,10 @@ def check_post(path, terms):
            + meta.get("poll_options", "")).lower()
     hits = sorted({t for t in terms if t in low})
     if hits:
-        errs.append("возможные спойлеры (ответы/разгадки): " + ", ".join(hits))
+        errs.append("возможные спойлеры (улики и разгадки из site_spoilers.json): " + ", ".join(hits))
+    if leaks is None:
+        leaks = answer_leaks([path])
+    errs += leaks.get(str(pathlib.Path(path).resolve()), [])
 
     if status not in ("draft", "approved", "published"):
         warns.append(f"неизвестный status: {status}")
@@ -336,17 +336,19 @@ def publish_photo(token, chat, img_path, caption, dry):
 
 # ---------------------------------------------------------------- main
 def main(argv):
-    check = "--check" in argv
+    check = any(a == "--check" or a.startswith("--check=") for a in argv)
     dry = "--dry-run" in argv
     terms = spoiler_terms()
 
     if check:
         bad = False
-        for path in sorted(glob.glob(str(POSTS / "*.md"))):
-            meta, _ = parse(path)
-            if meta.get("status") == "published":
-                continue
-            errs, warns = check_post(path, terms)
+        # --check=путь (файл или папка) — обратная проверка на чужой копии, напр. архивном посте
+        only = next((a.split("=", 1)[1] for a in argv if a.startswith("--check=")), None)
+        files = sorted(glob.glob(str(pathlib.Path(only) / "*.md"))) if only and pathlib.Path(only).is_dir() else [only] if only else sorted(glob.glob(str(POSTS / "*.md")))
+        files = [p for p in files if parse(p)[0].get("status") != "published"]
+        leaks = answer_leaks(files)  # один вызов node на все посты
+        for path in files:
+            errs, warns = check_post(path, terms, leaks)
             tag = pathlib.Path(path).name
             for w in warns:
                 print(f"  ⚠ {tag}: {w}")
