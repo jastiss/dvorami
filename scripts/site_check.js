@@ -20,7 +20,9 @@
  *     финиш; T-127) и OG-картинка дела = её данным (platform/site/og-manifest.json, scripts/make_og.py; T-121, шрифт ≥ 11 px на 600 px — H-114);
  *     site/llms*.txt = делам (номер, название, точки, км, часы, статус, ссылки) и без спойлеров (H-108); временные объекты
  *     (scripts/temporary_check.js, H-111): за 30 дней до срока — предупреждение, после — ошибка ([--today=ГГГГ-ММ-ДД]);
- *     предупреждением — длина <title> > 60 и description > 160 на страницах дел (H-108).
+ *     предупреждением — длина <title> > 60 и description > 160 на страницах дел (H-108);
+ *     ответы загадок из сценария на витрине дела и в его карточках (scripts/answer_leaks.js, исключения — answer_leaks.json);
+ *     колонка «Где у игрока» в research/facts.md ↔ quest.json (scripts/facts_check.py, H-110; формат — docs/facts-format.md).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
  */
@@ -658,6 +660,20 @@ async function mapTaps() {
   const tj = TMP.judge(TMP.allQuests(), args.today, true);
   tj.errors.forEach(m => err('временные объекты', '', m));
   tj.warns.forEach(w => warns.push('временный объект: ' + w));
+  // ответы загадок из сценария (quest.json, у дел без него — «Ответ:» сценария) на витрине дела и в его карточках —
+  // ошибка; осознанные находки — scripts/answer_leaks.json с причиной (scripts/answer_leaks.js); сначала самопроверка
+  const LEAKS = require('./answer_leaks.js');
+  LEAKS.selftest().forEach(m => err('ответы на витрине (самопроверка)', '', m));
+  const al = LEAKS.check(LEAKS.allIds());
+  al.errors.forEach(m => err('ответ загадки на витрине', '', m));
+  al.warns.concat(al.info).forEach(w => warns.push('ответы на витрине: ' + w));
+  // H-110: колонка «Где у игрока» в quests/<id>/research/facts.md — мёртвый путь в quest.json и ❌ у игрока — ошибка,
+  // не ✅ у игрока, сокращённый путь, ссылка на текст без ключевых слов факта — предупреждение (scripts/facts_check.py)
+  try {
+    const fc = JSON.parse(require('child_process').execFileSync('python3', [path.join(__dirname, 'facts_check.py'), '--json'], { encoding: 'utf8' }));
+    fc.errors.forEach(m => err('факты ↔ сценарий', '', m));
+    fc.warns.forEach(w => warns.push('факты: ' + w));
+  } catch (e) { err('факты ↔ сценарий', '', `scripts/facts_check.py не запустился: ${String(e.message).split('\n')[0]}`); }
   const warnReport = () => { if (warns.length) { console.log(`\n ! предупреждения (не красное): ${warns.length}`); warns.forEach(w => console.log('   ! ' + w)); } };
   const tone = toneCheck(); // T-65: штампы машинного текста — ошибка (красная проверка с 27.11)
   tone.forEach(t => err('тон текста', '', t));
