@@ -471,7 +471,7 @@
   function newSeed() { return Math.floor(Math.random() * 4294967296) >>> 0; }
   function fill(s) {
     s.res = s.res || []; s.board = s.board || []; s.events = s.events || [];
-    s.cards = s.cards || []; s.struck = s.struck || {}; s.arrows = s.arrows || {}; s.wa = s.wa || []; s.sel = s.sel || [];
+    s.cards = s.cards || []; s.struck = s.struck || {}; s.arrows = s.arrows || {}; s.wa = s.wa || []; s.sel = s.sel || []; s.lit = s.lit || {};
     if (s.letter === undefined) s.letter = null;
     if (s.reply === undefined) s.reply = '';
     s.hist = s.hist || {};
@@ -865,7 +865,7 @@
     if (typeof l === 'string') return '<div class="pl-prose">' + proseFold(l) + '</div>';
     if (!l || typeof l !== 'object') return '';
     if (l.arrow) return arrowOff(l) ? '' : arrowHtml(l.arrow, l.text);
-    if (l.doc === 'letter') return letterHtml(l.state || LETTER_CTX || S.letter, { reveal: l.reveal });
+    if (l.doc === 'letter') return letterHtml(l.state || LETTER_CTX || S.letter, { reveal: l.reveal, tap: l.tap });
     if (l.doc === 'card') return CARDS[l.id] ? cardHtml(l.id, { full: true }) : '';
     // картинка с текстом или звуком (T-134): под картинкой — реплика (data-say, её отмечает плеер) или звуковая улика,
     // а не тихо выброшенный текст: плеер экрана считает такую реплику озвученной (voiceHtml)
@@ -1023,13 +1023,19 @@
       ? '<span class="pl-tip pl-tip--circles" role="img" aria-label="кончик полоски: две линии до края и кружки по обе стороны, каждый обведён дважды">' + rings + rings + '</span>'
       : s.tip === 'stuck' ? '<span class="pl-tip pl-tip--stuck" role="img" aria-label="кончик присох к трубочке"></span>' : '';
     var desc = [];
-    if (s.ruled) desc.push('под буквами — двойная линия по линейке');
-    var h = '<figure class="pl-letter' + (s.ruled ? ' is-ruled' : '') + (s.stamp ? ' has-stamp' : '') + '" data-arrow-at="letter">' +
-      '<div class="pl-letter-strip"><div class="pl-letter-text">' + lines + '</div>' + tip +
+    // «на просвет» по касанию ({doc: "letter", tap: "ruled"}): линии под буквами и подпись состояния открываются, когда игрок
+    // коснулся полоски или нажал кнопку под ней (владелец 28.11: «Коснитесь полоски — она повернётся на просвет» — не работало);
+    // открытое запоминается в сохранении (S.lit)
+    var tap = opt.tap === 'ruled' && !!s.ruled && !(S.lit && S.lit[s.id]), lit = opt.tap === 'ruled' && !!s.ruled && !tap;
+    var act = tap ? ' data-act="lit" data-id="' + esc(s.id) + '"' : '';
+    if (s.ruled && !tap) desc.push('под буквами — двойная линия по линейке');
+    var h = '<figure class="pl-letter' + (s.ruled && !tap ? ' is-ruled' : '') + (tap ? ' is-tap' : '') + (lit && opt.fresh ? ' is-lit' : '') + (s.stamp ? ' has-stamp' : '') + '" data-arrow-at="letter"' + (opt.tap ? ' data-tap="' + esc(opt.tap) + '"' : '') + '>' +
+      '<div class="pl-letter-strip"' + act + '><div class="pl-letter-text">' + lines + '</div>' + tip +
       (s.stamp ? '<span class="pl-letter-stamp">' + esc(s.stamp) + '</span>' : '') + '</div>' +
       (desc.length ? '<span class="visually-hidden">' + esc(desc.join('; ')) + '</span>' : '') +
       (s.back ? '<div class="pl-letter-back"><span class="pl-label">Оборот</span><div class="pl-hand">' + prose(s.back) + '</div></div>' : '') +
-      (s.caption ? '<figcaption>' + inline(s.caption) + '</figcaption>' : '') + '</figure>';
+      (tap ? '<button type="button" class="pl-btn pl-btn--ghost pl-btn--sm pl-letter-lit"' + act + '>Посмотреть на просвет</button>' : '') +
+      (s.caption && !tap ? '<figcaption>' + inline(s.caption) + '</figcaption>' : '') + '</figure>';
     if (s.img) h = figureHtml({ img: s.img, alt: s.alt || 'Письмо' }) + h;
     return h;
   }
@@ -1729,12 +1735,12 @@
   function partPx(pt, p) {
     var h = ((pt.tag && pt.tag.tag) || pt.title ? V_HEAD : 0) + linesPx(pt.lines) + (pt.board ? V_BOARD : 0);
     if (pt.kind === 'result') {
-      var n = pt.res && p ? stepCards(p.steps[pt.step]).length : 0;
+      var n = pt.last && p ? stepCards(p.steps[pt.step]).length : 0;
       h += (pt.res ? V_STAMP : 0) + (n ? V_GAP + 50 + 24 * n : 0);
     }
     return h;
   }
-  function partOf(fr) { return { kind: fr.kind, step: fr.step, lines: fr.lines, res: fr.res, tag: fr.tag, title: fr.title, board: fr.board }; }
+  function partOf(fr) { return { kind: fr.kind, step: fr.step, lines: fr.lines, res: fr.res, last: fr.last, tag: fr.tag, title: fr.title, board: fr.board }; }
   function hasAudio(fr) { return typeof fr.audio === 'string' && !!fr.audio; }
   function soft(fr) { return fr.kind === 'beat' || fr.kind === 'result'; }
   function hasDoc(fr) { return asLines(fr.lines).some(function (l) { return l && typeof l === 'object' && !!l.doc; }); }
@@ -1887,7 +1893,7 @@
   function doneEst(p) {
     var ids = [];
     [].concat(p.steps || [], [p]).forEach(function (st) { stepCards(st).forEach(function (id) { if (ids.indexOf(id) === -1) ids.push(id); }); });
-    return V_FRAME + V_STAMP + 68 + (p.kids ? 60 : 0) + (p.clue ? 210 : 0) + (ids.length ? 16 + 50 + 26 * ids.length : 0);
+    return V_FRAME + V_STAMP + 68 + (p.clue ? 210 : 0) + (ids.length ? 16 + 50 + 26 * ids.length : 0);
   }
   function finaleFrames() {
     var F = [{ id: 'fc', kind: 'closed' }];
@@ -1915,9 +1921,12 @@
     var okl = st.ok && (r.st !== 'skipped' || st.ok_on_skip) ? asLines(st.ok) : [];
     if (r.st !== 'ok' && !okl.length) return;
     var nc = stepCards(st).length;
-    var rb = beatsOf(okl, V_STAMP + (nc ? V_GAP + 50 + 24 * nc : 0));
+    var rb = beatsOf(okl, V_STAMP);
     if (!rb.length) rb = [[]];
-    rb.forEach(function (b, j) { F.push({ id: 's' + i + 'r' + j, kind: 'result', step: i, lines: b, res: j ? null : r }); });
+    // названия карточек — выводы шага: список «Легло на доску улик» стоит на последнем экране разбора, после объяснения (владелец 28.11:
+    // «„Писал Сева — чертёжник…“ — откуда мы узнали это»: список шёл сразу под штампом, до рассказа); у последнего шага точки списка
+    // нет: сразу за ним экран «Точка пройдена» со всеми карточками точки
+    rb.forEach(function (b, j) { F.push({ id: 's' + i + 'r' + j, kind: 'result', step: i, lines: b, res: j ? null : r, last: j === rb.length - 1 && i < p.steps.length - 1 }); });
   }
   // stage: 0 — дорога, 1 — на месте (шаги до k включительно), 2 — точка пройдена
   function pointFrames(pi, stage, k, res, wa) {
@@ -1958,12 +1967,15 @@
     }
     return out;
   }
-  // карточка «идём»: подпись, расстояние, «Как дойти», ветка по часам, карта, «Дойдёте — нажмите…», полевой список свёрнутым
-  function goPx(p) { return V_GAP + 40 + 28 + 30 + 44 + 60 + 34 + (pointClockKeys(p).length ? 92 : 0) + (S && S.field && p.check && p.check.length ? 60 : 0); }
+  // карточка «идём»: подпись, «Дойдёте — нажмите…», ветка по часам, свёрнутое «Напомнить дорогу», полевой список свёрнутым
+  function goPx(p) { return V_GAP + 40 + 34 + 44 + 32 + (pointClockKeys(p).length ? 92 : 0) + (S && S.field && p.check && p.check.length ? 60 : 0); }
+  // Куда идти, сказано один раз — на первом экране дороги (владелец 28.11: «сначала сказали куда идти, потом история, а потом
+  // опять куда идти»). Здесь, после разговора в пути, — только «Мы на месте»; маршрут, расстояние и карта свёрнуты под «Напомнить дорогу»
   function goHtml(p, road, now, fold) {
-    return '<section class="pl-card pl-road pl-road--go"><span class="pl-label">Точка ' + p.n + ' · идём</span>' + (distHtml(p) || '<p class="pl-dist">' + esc(plain(p.place)) + '</p>') +
-      (road && road.length ? moreHtml('Как дойти', linesHtml(road)) : '') + clockHtml(p, now && S.phase === 'walk') + mapBtn(p) +
-      '<p class="pl-small pl-road-note">Дойдёте — нажмите «Мы на месте».</p></section>' + checkBlock(p, fold);
+    var again = (distHtml(p) || '<p class="pl-dist">' + esc(plain(p.place)) + '</p>') + (road && road.length ? linesHtml(road) : '') + mapBtn(p);
+    return '<section class="pl-card pl-road pl-road--go"><span class="pl-label">Точка ' + p.n + ' · идём</span>' +
+      '<p class="pl-small pl-road-note">Дойдёте — нажмите «Мы на месте».</p>' + clockHtml(p, now && S.phase === 'walk') +
+      moreHtml('Напомнить дорогу', again) + '</section>' + checkBlock(p, fold);
   }
   function liveSec() { return S.phase === 'intro' ? -1 : S.phase === 'done' ? Q.points.length : S.p; }
   function framesOf(sec) {
@@ -2149,7 +2161,7 @@
       if (ao) { var sp = splitTx(body); tx = tx.concat(sp.tx); body = sp.vis; tip = tip || sp.tip; }
       var v = i === 0 ? voice + (ao ? '<!--cc-->' : '') : '';
       if (pt.kind === 'result') {
-        var cards = pt.res && p ? stepCards(p.steps[pt.step]) : [];
+        var cards = pt.last && p ? stepCards(p.steps[pt.step]) : [];
         h += '<section class="pl-result">' + (pt.res ? '<div class="pl-result-top">' + resultStamp(pt.res) + '</div>' : '') + v +
           (body.length ? '<div class="pl-lines">' + linesHtml(body) + '</div>' : '') +
           (cards.length ? '<aside class="pl-toboard"><span class="pl-label">Легло на доску улик</span><ul>' + cards.map(function (id) { return '<li>' + inline(CARDS[id].title) + '</li>'; }).join('') + '</ul></aside>' : '') + '</section>';
@@ -2189,7 +2201,7 @@
       var got = S.cards.filter(function (x) { return x.n === p.n && CARDS[x.id]; });
       if (got.length) h += '<aside class="pl-toboard"><span class="pl-label">На доску улик ' + (got.length === 1 ? 'легла карточка' : 'легли карточки') + ' · ' + got.length + '</span><ul>' +
         got.map(function (x) { return '<li>' + inline(CARDS[x.id].title) + '</li>'; }).join('') + '</ul></aside>';
-      return h + kidsHtml(p.kids);
+      return h;   // задание для детей — один раз, на экране прихода (владелец 28.11: «задание для детей дважды повторилось»)
     }
     if (fr.kind === 'closed') return closedHtml();
     if (fr.kind === 'fork') return forkHtml(p, c);
@@ -2987,6 +2999,16 @@
     sel: function (el) { toggleSel(el.dataset.sel, ctxOf(el)); },
     check: function (el) { checkSel(ctxOf(el)); },
     letter: function () { openSheet('letter'); },
+    // письмо на просвет: фигура перерисовывается на месте, экран не прокручивается
+    lit: function (el) {
+      var fig = el.closest('.pl-letter'), id = el.dataset.id;
+      if (!fig || !id) return;
+      S.lit = S.lit || {}; S.lit[id] = 1; save();
+      fig.insertAdjacentHTML('afterend', letterHtml(id, { tap: fig.dataset.tap, fresh: true }));
+      var next = fig.nextElementSibling; fig.remove();
+      var sr = document.getElementById('sr-say');
+      if (sr) sr.textContent = 'На просвет: под буквами видны линии.';
+    },
     card: function (el) { openSheet('card:' + el.dataset.id); },
     zoom: openZoom,
     zoomclose: closeZoom,

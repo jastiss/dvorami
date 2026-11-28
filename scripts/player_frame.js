@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Кадр плеера для витрины («Как это выглядит» на главной): экран дела в настоящем плеере site/play/<id>/.
  *   node scripts/player_frame.js --quest=zilart --point=0 --step=3 --out=site/assets/play/frame-riddle.jpg
- *   node scripts/player_frame.js --quest=zilart --point=2 --phase=walk --out=site/assets/play/frame-walk.jpg
+ *   node scripts/player_frame.js --quest=zilart --point=2 --phase=walk --open --out=site/assets/play/frame-walk.jpg
  *   [--theme=dark|light] [--quality=80]
  * Дело открывается без кода (данные quests/<id>/quest.json подставляются, как в player_check --data), прогресс — точка
  * --point (индекс с нуля) и шаг --step; плеер листается «Дальше» до поля ответа (phase=step) или до «Мы на месте» (walk).
@@ -52,6 +52,8 @@ const PORT = 8000 + Math.floor(Math.random() * 900);
     await n.click(); await page.waitForTimeout(350);
   }
   if (!(await page.$(target))) { console.error(`не дошли до экрана ${target}`); await b.close(); srv.kill(); process.exit(1); }
+  // --open: раскрыть «Напомнить дорогу» на экране «идём» — в кадре видно расстояние, маршрут и кнопку карты
+  if (args.open) await page.evaluate(() => [].forEach.call(document.querySelectorAll('#frame .pl-road--go details'), d => { d.open = true; }));
   await page.evaluate(() => { if (document.activeElement) document.activeElement.blur(); scrollTo(0, 0); });
   await page.waitForTimeout(250);
   await page.screenshot({ path: args.out, type: 'jpeg', quality: +(args.quality || 80) });

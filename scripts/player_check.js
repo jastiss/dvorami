@@ -37,6 +37,9 @@
  *   - T-105: варианты выбора перемешаны (постоянно для игрока, верный не всегда первый, без внутренних id на кнопках);
  *     сохранение старой версии дела — экран «Вышла новая версия дела» (продолжить / заново); последняя подсказка поля с вводом
  *     засчитывается как ответ (поля «любой вариант» — пропуск с пометкой); доля полей «с места» по пометке src (H-72, предупреждение).
+ *   - сценарий (владелец 28.11): детское задание одно на точку и не повторяется; последняя подсказка поля начинается с ответа; реплики в дороге
+ *     не повторяют направление; начало точек одинаковое (сцена у всех или ни у кого); подсказки интерфейса про слои и касание письма — только
+ *     там, где это работает; название точки со словом вычеркнутой версии — предупреждение;
  *   - данные: детское задание не на первой точке; «на картинке / на рисунке» в детском задании или вопросе — только при картинке у точки;
  *     предупреждение, если у верного варианта выбора первое слово не такое, как у всех остальных;
  *   - доска формата 5: на 390 в конце дела первая улика — на первом экране доски; опровергнутые версии — строкой, раскрываются;
@@ -239,6 +242,56 @@ const anyChoice = st => st.type === 'choice' && optIds(st).length > 0 && optIds(
     for (const [i, w] of [].concat(p.walk_ask || []).entries()) if (w && PIC.test(textOf(w))) err('данные', `точка ${p.n} на ходу ${i + 1}: вопрос ссылается на картинку, а картинки у точки нет (img null)`);
   }
 })(Q);
+
+// Правила сценария после замечаний владельца 28.11 (ЗИЛАРТ 5.6 → 5.7; team/std/riddles.md, spoilers.md, author.md). По всем веткам дела (RAW):
+//   - детское задание — одно на точку (одно действие) и не повторяется в деле;
+//   - у поля с вводом последняя подсказка начинается с засчитываемого ответа (а не с ответа на предыдущую подсказку:
+//     «Кому было написано письмо?» — «Только домой…»);
+//   - «куда идти» — один раз: маршрут даёт строка walk, реплики героев в дороге не ведут («Идём к…», «Сверните…») и не считают минуты;
+//   - начало точек одинаковое: либо у всех точек есть сцена (scene), либо ни у одной — иначе у части точек плеер ставит экран-плакат с номером;
+//   - подсказка интерфейса обещает только то, что работает: «картинки можно трогать» — рядом есть картинка со слоями (layers),
+//     «коснитесь письма» — письмо на этом шаге открывается касанием ({doc: "letter", tap: …});
+//   - предупреждение: название точки или шага повторяет слово версии, которую в этой точке вычёркивают («Кино отменяется»).
+(function scriptRules(raw, q) {
+  const N = x => ANS.norm(String(x || ''));
+  const pts = raw.points || [];
+  const seenKids = new Map();
+  for (const p of pts) {
+    const kids = [].concat(p.kids || []).map(k => typeof k === 'string' ? k : (k && k.text) || '');
+    if (kids.length > 1) err('данные', `точка ${p.n}: детских заданий ${kids.length} — на точку одно задание, одно действие`);
+    for (const k of kids) { const key = N(k); if (seenKids.has(key)) err('данные', `точка ${p.n}: детское задание повторяет задание точки ${seenKids.get(key)}`); else seenKids.set(key, p.n); }
+    const fields = [].concat(p.steps || []).filter(st => st && Array.isArray(st.answers) && Array.isArray(st.hints) && st.hints.length && st.answers.every(a => typeof a === 'string'));
+    for (const st of fields) {
+      const last = N(st.hints[st.hints.length - 1]);
+      const hit = st.answers.some(a => { const stem = a[0] === '~', n = N(stem ? a.slice(1) : a); return n && (stem ? last.split(' ').slice(0, 3).some(w => w.startsWith(n)) : (last === n || last.startsWith(n + ' '))); });
+      if (!hit) err('данные', `точка ${p.n}${st.if ? ' (' + st.if + ')' : ''}: последняя подсказка «${String(st.hints[st.hints.length - 1]).slice(0, 40)}…» не начинается с ответа на вопрос «${String(st.text || '').slice(-50)}»`);
+    }
+    const LEAD = /(^|[.!?…]\s+)(Идём|Идем|Пойдём|Пойдем|Идите|Пройдите|Сверните|Поверните|Дальше идём|Дальше идем|Шагайте|Нам туда)(?=[\s,.!:])/, MIN = /\d+\s*минут|минут\s+(пять|шесть|семь|восемь|девять|десять)|(пять|шесть|семь|восемь|девять|десять)\s+минут/i;
+    for (const l of [].concat(p.walk || [])) {
+      if (!l || typeof l !== 'object' || !l.who || !l.text) continue;
+      if (LEAD.test(l.text) || MIN.test(l.text)) err('данные', `точка ${p.n}: реплика в дороге повторяет направление («${l.text.slice(0, 50)}…») — куда и сколько идти, говорит строка walk, один раз`);
+    }
+    for (const st of p.steps || []) {
+      const lines = [].concat(st.lines || []);
+      for (const l of lines) {
+        if (!l || typeof l !== 'object' || !l.arrow || !/коснитесь|нажмите|потяните|проведите|трогать/i.test(l.text || '')) continue;
+        if (l.arrow === 'image' && !lines.some(x => x && typeof x === 'object' && Array.isArray(x.layers) && x.layers.filter(Boolean).length > 1)) err('данные', `точка ${p.n}: подсказка «${l.text}» — а картинки со слоями на этом шаге нет`);
+        if (l.arrow === 'letter' && !lines.some(x => x && typeof x === 'object' && x.doc === 'letter' && x.tap)) err('данные', `точка ${p.n}: подсказка «${l.text}» — а письмо на этом шаге касанием не открывается (нет tap)`);
+      }
+    }
+  }
+  const qp = q.points || [], withScene = qp.filter(p => [].concat(p.scene || []).length || p.img);
+  if (withScene.length && withScene.length < qp.length) err('данные', `начало точек разное: сцена (scene) есть у ${withScene.length} точек из ${qp.length}, нет у ${qp.filter(p => !withScene.includes(p)).map(p => p.n).join(', ')} — там плеер покажет плакат с номером`);
+  // версии, вычеркнутые в точке: слова их названий в названии точки и шагов — возможный спойлер
+  const cards = {};
+  (function scan(x) { if (Array.isArray(x)) x.forEach(scan); else if (x && typeof x === 'object') { if (x.id && x.title && (x.kind === 'version' || x.struck_label)) cards[x.id] = x; Object.values(x).forEach(scan); } })(raw);
+  const stems = t => N(t).split(' ').filter(w => w.length >= 4).map(w => w.slice(0, 4));
+  for (const p of qp) {
+    const struck = [].concat(...(p.steps || []).map(st => [].concat(st.strike || []))).map(id => cards[id]).filter(Boolean);
+    const titles = [p.title].concat((p.steps || []).map(st => st.title)).filter(Boolean);
+    for (const c of struck) for (const t of titles) { const hit = stems(c.title).filter(w => stems(t).includes(w)); if (hit.length) warn('данные', `точка ${p.n}: название «${t}» повторяет слово версии «${c.title}», которую здесь вычёркивают, — проверьте, не раскрывает ли оно вывод (std/spoilers)`); }
+  }
+})(RAW, Q);
 
 // H-72: доля полей «с места». Пометка у поля: "src": "place" — ответ можно получить только на месте; "text" — из текста дела,
 // доски или письма; "both" — нужны оба. Считается по ветке, которую проходит тест (флаги по умолчанию / --flags).
