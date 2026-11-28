@@ -30,10 +30,14 @@
  *     у всех, если у большинства; исключение — year_none/credit_none/art_none/photo_none: «почему» в данных дела;
  *     дрейф сюжета (scripts/story_drift.js, T-140): витрина сверена с текущей версией сценария (platform/site/story-sync.json),
  *     герои «Кто ведёт дело» — среди speakers quest.json, снятое из сценария (quests/<id>/retired.json) — нигде на витрине.
- *   - линии и «Мои дела» (владелец 27.11, docs/account.md, раздел 8): на каждой витрине полоса над шапкой с «Мои дела» своей марки
+ *   - линии и «Мои дела» (владелец 27.11, docs/account.md, раздел 14): на каждой витрине полоса над шапкой с «Мои дела» своей марки
  *     и ссылкой на другую марку, «Залами» — живой ссылкой или «скоро», пункты не наезжают; «Мои дела» в подвале; «Другие линии»
  *     в подвале главной, каталога, дел и «Следами»; видимых ссылок в пустоту нет (linesIssues, самопроверка lineSelftest);
- *     «Мои дела» на 390 и 1280, обе темы, пусто и с делами (accountCheck); данные дел кабинета = плееры и версии quest.json (accountSync, и в --sync).
+ *     блок «Другие линии» (section#other) на главной и «Следами» — с каждой другой линией и выше SEO/GEO-справки и FAQ
+ *     (владелец 28.11; otherIssues, самопроверка otherSelftest, и в --sync);
+ *     кабинет «Мои дела» (владелец 28.11, docs/account.md, раздел 10): вход демо-аккаунтом, все разделы, перенос дел с телефона,
+ *     ошибки входа и регистрации, 390 и 1280 × обе темы (accountCheck); сеть — только из site/account/api.js, плашка «Демо»
+ *     в режиме mock (accountStatic, и в --sync); данные дел кабинета = плееры и версии quest.json (accountSync, и в --sync).
  * Выход: 0 — всё чисто, 1 — список ошибок.
  * Правило команды: перед сдачей любой правки сайта — этот скрипт зелёный.
  */
@@ -357,81 +361,232 @@ function lineSelftest() {
   return out;
 }
 
-/* «Мои дела» (site/account/, docs/account.md): 390 и 1280, обе темы (?brand=sledami), пусто и с делами на устройстве.
- * Нет горизонтальной прокрутки и общих проблем inPage (контраст кнопок, обрезанный текст); пустое состояние — только без дел;
- * состояния «на паузе — продолжить с точки N», «раскрыто», «готово к старту», «идёт»; уже начатые дела не дублируются в витрине;
- * тема «Следами» — свой фон и текущая линия. Снимки — в --shots. */
-function accountSeeds() {
-  const now = Date.now();
-  const play = (q, o) => JSON.stringify(Object.assign({ v: 1, quest: q, phase: 'idle', p: 0, k: 0, paused: false, t_start: null, t_end: null, events: [] }, o));
-  return {
-    empty: { store: {}, cards: [] },
-    mine: { store: {
-      'dvorami:play:zilart': play('zilart', { phase: 'walk', p: 4, paused: true, t_start: now - 26 * 36e5, events: [{ t: now - 26 * 36e5, kind: 'start', point: null }, { t: now - 25 * 36e5, kind: 'walk', point: 5 }, { t: now - 25 * 36e5 + 6e4, kind: 'stop', point: 5 }] }),
-      'dvorami:code:zilart': 'TEST-CODE',
-      'dvorami:play:kolomenskoe': play('kolomenskoe', { phase: 'done', p: 8, t_start: now - 5 * 864e5 - 96e5, t_end: now - 5 * 864e5 }),
-      'dvorami:rating:kolomenskoe': '4' },
-      cards: [['paused', /Продолжить с\s+точки\s+5/i], ['done', /Раскрыто[\s\S]*Ваша оценка/i]] },
-    ready: { store: { 'dvorami:code:zilart': 'TEST-CODE', 'dvorami:play:kolomenskoe': play('kolomenskoe', { phase: 'intro', t_start: now - 6e5, events: [{ t: now - 6e5, kind: 'start' }] }) },
-      cards: [['active', /Идёт[\s\S]*вступлении[\s\S]*Продолжить/i], ['ready', /Готово к старту[\s\S]*Начать дело/i]] },
-  };
-}
+/* «Мои дела» (site/account/, docs/account.md, разделы 7 и 10; владелец 28.11: «нормальный современный личный кабинет с виджетами,
+ * навигацией, куда можно зайти по логину/паролю»). На заглушке api.js (режим mock), как увидит владелец на стенде:
+ *   - без входа — форма входа, плашка «Демо», без горизонтальной прокрутки; без JS форма не видна (пароль не уйдёт в адрес);
+ *   - неверный пароль — «Неверная почта или пароль» без подсказок; регистрация с настоящей почтой — отказ «это демо»;
+ *   - вход демо-аккаунтом → «Обзор» с виджетами (продолжить с точки N, сводка, достижения, «есть код?», заметки, подарок),
+ *     навигация по всем разделам (у каждого свой заголовок, текущий пункт — aria-current), на телефоне — нижняя панель на экране;
+ *   - дело с этого телефона (сохранение плеера) — вопрос «добавить в аккаунт», после «Добавить» — в «Моих делах»;
+ *   - выход возвращает форму входа. 390 и 1280, «Дворами» и «Следами». Снимки — в --shots. */
 async function accountCheck(browser, shots) {
   const out = [];
-  const seeds = accountSeeds();
-  const runs = [];
-  for (const brand of ['dvorami', 'sledami']) for (const w of [390, 1280]) for (const seed of ['empty', 'mine']) runs.push([brand, w, seed]);
-  runs.push(['dvorami', 390, 'ready']);
+  const now = Date.now();
+  const local = { 'dvorami:play:zilart': JSON.stringify({ v: 1, quest: 'zilart', phase: 'walk', p: 1, k: 0, paused: true, t_start: now - 50 * 36e5,
+      events: [{ t: now - 50 * 36e5, kind: 'start', point: null }, { t: now - 49 * 36e5, kind: 'walk', point: 2 }, { t: now - 49 * 36e5 + 9e5, kind: 'note', point: 2, text: 'Проверка заметки' }] }),
+    'dvorami:code:zilart': 'TEST-CODE' };
   const links = new Set();
-  for (const [brand, w, seed] of runs) {
-    const where = `account/${brand === 'sledami' ? '?brand=sledami' : ''} (${seed})`;
+  const runs = [];
+  for (const brand of ['dvorami', 'sledami']) for (const w of [390, 1280]) runs.push([brand, w]);
+  for (const [brand, w] of runs) {
+    const q = brand === 'sledami' ? '?brand=sledami' : '';
+    const where = `account/${q} @${w}`;
     const ctx = await browser.newContext({ viewport: { width: w, height: 844 }, deviceScaleFactor: 1 });
     await ctx.route('**/*', route => route.request().url().startsWith(BASE) ? route.continue() : route.abort());
-    await ctx.addInitScript(s => { try { localStorage.clear(); for (const k in s) localStorage.setItem(k, s[k]); } catch (e) {} }, seeds[seed].store);
+    // каждый прогон — с чистого листа; на телефоне ещё и сохранение плеера (дело на этом телефоне без аккаунта)
+    await ctx.addInitScript(([seed, first]) => { try { if (!sessionStorage.getItem('sc:init')) { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem('sc:init', '1'); if (first) for (const k in seed) localStorage.setItem(k, seed[k]); } } catch (e) {} }, [local, w === 390 && brand === 'dvorami']);
     const page = await ctx.newPage();
-    const errs = [];
+    const errs = [], ext = [];
     page.on('pageerror', e => errs.push('JS: ' + e.message));
-    await page.goto(`${BASE}/account/${brand === 'sledami' ? '?brand=sledami' : ''}`, { waitUntil: 'load' });
-    await page.waitForTimeout(500);
-    const r = await page.evaluate(inPage, MAIN_CTA);
-    r.problems.forEach(p => out.push(`${where} @${w}: ${p}`));
-    r.links.filter(l => l.startsWith(BASE)).forEach(l => links.add(l.split('#')[0]));
-    errs.forEach(e => out.push(`${where} @${w}: ${e}`));
-    const s = await page.evaluate(() => {
-      const vis = el => { if (!el) return false; const b = el.getBoundingClientRect(), cs = getComputedStyle(el); return b.width > 0 && b.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden'; };
-      return { brand: document.documentElement.dataset.brand || 'dvorami', sw: document.documentElement.scrollWidth, empty: vis(document.getElementById('my-empty')),
-        emptyCta: Array.from(document.querySelectorAll('#my-empty a.btn')).some(vis), list: vis(document.getElementById('my-list')),
-        note: (document.getElementById('my-note') || {}).textContent || '', bg: getComputedStyle(document.body).backgroundColor,
-        cur: (Array.from(document.querySelectorAll('.lines .lines-item[aria-current]')).find(vis) || {}).textContent || '',
-        cards: Array.from(document.querySelectorAll('.my-card')).map(c => ({ state: c.dataset.state, no: c.dataset.case, text: c.innerText.replace(/\s+/g, ' ') })),
-        shown: Array.from(document.querySelectorAll('#qgrid > .qcard[data-case]')).filter(li => !li.hidden).map(li => li.dataset.case) };
-    });
-    if (s.sw > w + 1) out.push(`${where} @${w}: горизонтальная прокрутка (${s.sw} при ${w})`);
-    if (s.brand !== brand) out.push(`${where} @${w}: тема «${s.brand}» вместо «${brand}»`);
-    if (!/этом браузере/.test(s.note)) out.push(`${where} @${w}: нет строки о том, что список хранится в этом браузере`);
-    if (!s.cur.startsWith(brand === 'sledami' ? 'Следами' : 'Дворами')) out.push(`${where} @${w}: текущая линия в полосе — «${s.cur}»`);
-    if (brand === 'sledami' && s.bg !== 'rgb(18, 16, 14)') out.push(`${where} @${w}: фон не «Следами» (${s.bg})`);
-    const want = seeds[seed].cards;
-    if (!want.length) {
-      if (!s.empty || !s.emptyCta) out.push(`${where} @${w}: нет пустого состояния с кнопкой выбора дела`);
-      if (s.list || s.cards.length) out.push(`${where} @${w}: без дел на устройстве показан список`);
-    } else {
-      if (s.empty) out.push(`${where} @${w}: есть дела, а показано пустое состояние`);
-      if (s.cards.length !== want.length) out.push(`${where} @${w}: карточек ${s.cards.length}, нужно ${want.length}`);
-      for (const [st, re] of want) {
-        const c = s.cards.find(x => x.state === st);
-        if (!c) out.push(`${where} @${w}: нет дела в состоянии «${st}»`);
-        else if (!re.test(c.text)) out.push(`${where} @${w}: дело в состоянии «${st}» — «${c.text.slice(0, 140)}» (ждали ${re})`);
-        if (c && brand === 'dvorami' && s.shown.includes(c.no)) out.push(`${where} @${w}: дело №${c.no} и в списке, и в витрине ниже`);
+    page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push('консоль: ' + m.text().slice(0, 160)); });
+    page.on('request', r => { const u = r.url(); if (!u.startsWith(BASE) && !/^(data|blob):/.test(u)) ext.push(u); });
+    const vis = sel => page.evaluate(s => { const el = document.querySelector(s); if (!el) return false; const b = el.getBoundingClientRect(), cs = getComputedStyle(el); return b.width > 0 && b.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && !el.closest('[hidden]'); }, sel);
+    const text = sel => page.evaluate(s => { const el = document.querySelector(s); return el ? el.innerText.replace(/\s+/g, ' ').trim() : ''; }, sel);
+    const settle = () => page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 4000 }).catch(() => {}).then(() => page.waitForTimeout(700));
+    const general = async (label) => {
+      const r = await page.evaluate(inPage, MAIN_CTA);
+      r.problems.forEach(p => out.push(`${where} ${label}: ${p}`));
+      r.links.filter(l => l.startsWith(BASE)).forEach(l => links.add(l.split('#')[0]));
+    };
+    await page.goto(`${BASE}/account/${q}`, { waitUntil: 'load' });
+    await settle();
+    // --- без входа
+    if (!(await vis('#f-login'))) out.push(`${where}: без входа нет формы входа`);
+    if (!(await vis('#acc-demo'))) out.push(`${where}: нет плашки «Демо» (заглушка api.js — вход ненастоящий, это нужно сказать)`);
+    if (await vis('#acc-app')) out.push(`${where}: кабинет виден без входа`);
+    if ((await page.evaluate(() => document.documentElement.dataset.brand || 'dvorami')) !== brand) out.push(`${where}: тема не «${brand}»`);
+    if (brand === 'sledami' && (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)) !== 'rgb(18, 16, 14)') out.push(`${where}: фон не «Следами»`);
+    await general('вход');
+    if (shots && w === 390) { fs.mkdirSync(shots, { recursive: true }); await page.screenshot({ path: path.join(shots, `account-${brand}-login-${w}.jpg`), fullPage: true, quality: 80 }); }
+    if (w === 390 && brand === 'dvorami') {
+      // неверный пароль — общий ответ без подсказок
+      await page.fill('#li-email', 'demo@example.com'); await page.fill('#li-pw', 'не-тот-пароль-123'); await page.click('#f-login .auth-go');
+      await page.waitForTimeout(900);
+      const e1 = await text('#li-err');
+      if (!/Неверная почта или пароль/.test(e1)) out.push(`${where}: неверный пароль — «${e1}» (ждали «Неверная почта или пароль»)`);
+      // регистрация с настоящей почтой на стенде — отказ
+      await page.click('[data-go="register"]'); await page.waitForTimeout(200);
+      await page.fill('#rg-email', 'ivan@mail.ru'); await page.fill('#rg-pw', 'три слова подряд'); await page.check('#rg-consent');
+      await page.click('#f-register .auth-go'); await page.waitForTimeout(900);
+      const e2 = await text('#rg-err');
+      if (!/демо/i.test(e2)) out.push(`${where}: регистрация с настоящей почтой на стенде не отклонена: «${e2}»`);
+      await page.fill('#rg-email', 'kto@example.com'); await page.fill('#rg-pw', '12345');
+      await page.click('#f-register .auth-go'); await page.waitForTimeout(300);
+      if (!/короче/.test(await text('#rg-err'))) out.push(`${where}: короткий пароль при регистрации не остановлен`);
+      // регистрация демо-адресом → код из «письма» → кабинет → дело этого телефона — вопрос «добавить», после «Добавить» — в «Моих делах»
+      await page.fill('#rg-email', 'kto@example.com'); await page.fill('#rg-pw', 'три слова подряд');
+      await page.click('#f-register .auth-go'); await page.waitForTimeout(900);
+      if (!(await vis('#f-verify'))) out.push(`${where}: после регистрации нет экрана «Проверьте почту»`);
+      else {
+        await page.fill('#vf-code', '000000'); await page.click('#f-verify .auth-go'); await page.waitForTimeout(800);
+        if (!/не\s+подошёл/.test(await text('#vf-err'))) out.push(`${where}: неверный код из письма не остановлен`);
+        await page.fill('#vf-code', '246810'); await page.click('#f-verify .auth-go');
+        await page.waitForFunction(() => !document.getElementById('acc-app').hidden, null, { timeout: 5000 }).catch(() => {});
+        await settle();
+        if (!(await vis('.w-import'))) out.push(`${where}: дело на этом телефоне без аккаунта — нет вопроса «добавить в аккаунт»`);
+        else {
+          await page.click('[data-act="import"]'); await settle();
+          if (await vis('.w-import')) out.push(`${where}: после «Добавить» вопрос о переносе не исчез`);
+          await page.evaluate(() => { location.hash = '#cases'; }); await settle();
+          if (!/Синяя птица/.test(await text('#cases'))) out.push(`${where}: перенесённое с телефона дело не появилось в «Моих делах»`);
+          if (!/Продолжить с\s+точки\s+2/i.test(await text('#cases'))) out.push(`${where}: у перенесённого дела нет «Продолжить с точки 2»`);
+          await page.evaluate(() => { location.hash = '#notes'; }); await settle();
+          if (!/Проверка заметки/.test(await text('#notes'))) out.push(`${where}: заметка из плеера не перенеслась в «Заметки»`);
+        }
+        await page.evaluate(() => { location.hash = '#settings'; }); await settle();
+        await page.click('#settings .set-out [data-act="logout"]'); await settle();
+        if (!(await vis('#f-login'))) out.push(`${where}: после «Выйти» нового аккаунта нет формы входа`);
       }
     }
-    if (shots && w === 390 && seed !== 'ready') {
-      fs.mkdirSync(shots, { recursive: true });
-      await page.screenshot({ path: path.join(shots, `account-${brand}-${seed}-${w}.jpg`), fullPage: true, quality: 80 });
+    // --- вход демо-аккаунтом
+    await page.click('[data-act="demo-fill"]'); await page.waitForTimeout(150);
+    await page.click('#f-login .auth-go');
+    await page.waitForFunction(() => !document.getElementById('acc-app').hidden, null, { timeout: 5000 }).catch(() => {});
+    await settle();
+    if (!(await vis('#overview'))) { out.push(`${where}: после входа демо-аккаунтом нет «Обзора»`); await ctx.close(); continue; }
+    const ov = await page.evaluate(() => ({ widgets: [...document.querySelectorAll('#ov-widgets > .w-card')].map(x => x.className), cont: (document.querySelector('.w-continue') || {}).innerText || '',
+      sw: document.documentElement.scrollWidth, nav: (() => { const n = document.getElementById('acc-nav'); const b = n.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), h: innerHeight, items: [...n.querySelectorAll('a[data-view]')].filter(a => a.getBoundingClientRect().width > 0).map(a => a.dataset.view) }; })() }));
+    for (const wcls of ['w-continue', 'w-stats', 'w-ach', 'w-code', 'w-notes', 'w-gift']) if (!ov.widgets.some(c => c.includes(wcls))) out.push(`${where}: на «Обзоре» нет виджета ${wcls}`);
+    if (!/Продолжить с\s+точки\s+\d/i.test(ov.cont)) out.push(`${where}: виджет «Продолжить» без «Продолжить с точки N»: «${ov.cont.replace(/\s+/g, ' ').slice(0, 120)}»`);
+    if (ov.sw > w + 1) out.push(`${where}: горизонтальная прокрутка в кабинете (${ov.sw})`);
+    if (w < 960 && (ov.nav.bottom > ov.nav.h + 1 || ov.nav.top < ov.nav.h - 120)) out.push(`${where}: нижняя панель разделов не у нижнего края экрана (${ov.nav.top}…${ov.nav.bottom} при ${ov.nav.h})`);
+    if (ov.nav.items.length < 5) out.push(`${where}: в навигации видно ${ov.nav.items.length} разделов`);
+    await general('обзор');
+    if (shots && w === 390) await page.screenshot({ path: path.join(shots, `account-${brand}-overview-${w}.jpg`), fullPage: true, quality: 80 });
+    // --- разделы
+    for (const v of ['cases', 'purchases', 'achievements', 'notes', 'settings', 'overview']) {
+      const link = await page.$(`#acc-nav a[data-view="${v}"]`);
+      if (link && await link.isVisible()) await link.click(); else await page.evaluate(x => { location.hash = '#' + x; }, v);
+      await settle();
+      const st = await page.evaluate(x => ({ shown: [...document.querySelectorAll('.acc-view')].filter(s => !s.hidden).map(s => s.id), cur: (document.querySelector('#acc-nav a[aria-current="page"]') || {}).dataset,
+        h: (document.getElementById('h-' + x) || {}).textContent || '', body: (document.getElementById(x) || {}).innerText || '', sw: document.documentElement.scrollWidth, title: document.title }), v);
+      if (st.shown.length !== 1 || st.shown[0] !== v) out.push(`${where}: раздел #${v} — видны ${JSON.stringify(st.shown)}`);
+      if (!st.cur || st.cur.view !== v) out.push(`${where}: раздел #${v} не отмечен в навигации (aria-current)`);
+      if (!st.h.trim()) out.push(`${where}: у раздела #${v} нет заголовка`);
+      if (!st.title.toLowerCase().startsWith(st.h.trim().split(/\s/)[0].toLowerCase())) out.push(`${where}: заголовок вкладки «${st.title}» не про раздел #${v}`);
+      if (st.sw > w + 1) out.push(`${where}: #${v} — горизонтальная прокрутка (${st.sw})`);
+      if (/Загружаем/.test(st.body)) out.push(`${where}: #${v} остался в «Загружаем…»`);
+      const want = { cases: /(На паузе|Идёт|Готово к старту|Раскрыто)/i, purchases: /оплачено/i, achievements: /(получено|Раскройте)/i, notes: /(Новая заметка|Заметок)/i, settings: /Выйти на\s+всех устройствах/i }[v];
+      if (want && !want.test(st.body)) out.push(`${where}: в разделе #${v} нет ожидаемого (${want})`);
+      if (v !== 'overview') await general('#' + v);
+      if (shots && w === 390 && brand === 'dvorami' && v !== 'overview') await page.screenshot({ path: path.join(shots, `account-${brand}-${v}-${w}.jpg`), fullPage: true, quality: 80 });
     }
+    // --- выход
+    const out1 = await page.$('#acc-nav [data-act="logout"]');
+    if (out1 && await out1.isVisible()) await out1.click();
+    else { await page.evaluate(() => { location.hash = '#settings'; }); await settle(); await page.click('#settings .set-out [data-act="logout"]'); }
+    await settle();
+    if (!(await vis('#f-login'))) out.push(`${where}: после «Выйти» нет формы входа`);
+    errs.forEach(e => out.push(`${where}: ${e}`));
+    [...new Set(ext)].forEach(u => out.push(`${where}: запрос наружу ${u.slice(0, 80)} (кабинет на стенде ничего не отправляет)`));
     await ctx.close();
   }
+  // без JS: форм нет, есть объяснение
+  const nj = await browser.newContext({ viewport: { width: 390, height: 844 }, javaScriptEnabled: false });
+  await nj.route('**/*', route => route.request().url().startsWith(BASE) ? route.continue() : route.abort());
+  const np = await nj.newPage();
+  await np.goto(`${BASE}/account/`, { waitUntil: 'load' });
+  const nr = await np.evaluate(() => ({ form: [...document.querySelectorAll('.auth-form')].some(f => f.getBoundingClientRect().height > 0), txt: document.body.innerText }));
+  if (nr.form) out.push('account/ без JS: форма входа видна — без JS она отправит пароль в никуда');
+  if (!/включите JavaScript/.test(nr.txt)) out.push('account/ без JS: нет объяснения «включите JavaScript»');
+  await nj.close();
   for (const u of links) { const st = await status(u); if (st !== 200) out.push(`account: локальная ссылка ${u.replace(BASE, '')} → ${st}`); }
+  return out;
+}
+
+/* «Мои дела» без браузера (и в --sync): сеть — только из site/account/api.js (fetch, XMLHttpRequest, sendBeacon, WebSocket —
+ * нигде больше в коде кабинета); на стенде режим mock и плашка «Демо»; CSP на странице; нет встроенных скриптов (CSP их
+ * запрещает); формы входа — POST (без JS пароль не уйдёт в адрес). Обратная — accountStaticSelftest. */
+function accountStaticIssues(files) {
+  const out = [];
+  const page = files['index.html'] || '';
+  for (const [f, src] of Object.entries(files)) {
+    if (f === 'api.js' || !f.endsWith('.js')) continue;
+    const m = src.match(/\b(fetch\s*\(|XMLHttpRequest|sendBeacon|new\s+WebSocket|EventSource)/);
+    if (m) out.push(`site/account/${f}: сетевой вызов «${m[1]}» вне api.js — весь обмен с сервером только через api.js`);
+  }
+  const mode = (page.match(/<meta name="dv-api" content="([^"]*)"/) || [])[1];
+  if (mode == null) out.push('site/account/index.html: нет <meta name="dv-api"> — api.js не знает режима');
+  else if (mode !== 'mock' && !/^https:\/\/api\.(dvorami|sledami|zalami)\.ru\/v1$/.test(mode)) out.push(`site/account/index.html: dv-api «${mode}» — ждали mock или https://api.<марка>.ru/v1`);
+  if (mode === 'mock' && !/id="acc-demo"/.test(page)) out.push('site/account/index.html: режим mock без плашки «Демо»');
+  if (!/http-equiv="Content-Security-Policy"/.test(page)) out.push('site/account/index.html: нет CSP');
+  const inline = (page.match(/<script(?![^>]*\bsrc=)(?![^>]*type="application\/(?:ld\+)?json")[^>]*>/g) || []);
+  if (inline.length) out.push(`site/account/index.html: встроенный скрипт ${inline[0]} — CSP его заблокирует; в файл`);
+  (page.match(/<form\b[^>]*class="auth-form"[^>]*>/g) || []).forEach(f => { if (!/method="post"/.test(f)) out.push(`site/account/index.html: форма входа без method="post": ${f.slice(0, 60)}`); });
+  return out;
+}
+function accountStatic() {
+  const dir = path.join(ROOT, 'account');
+  const files = {};
+  for (const f of fs.readdirSync(dir)) if (/\.(js|html)$/.test(f)) files[f] = fs.readFileSync(path.join(dir, f), 'utf8');
+  const out = accountStaticIssues(files);
+  const bad = accountStaticIssues({ 'index.html': '<meta name="dv-api" content="http://x"><script>1</script><form class="auth-form">', 'app.js': 'fetch("/x")' }).join(' | ');
+  for (const w of ['вне api.js', 'dv-api «http://x»', 'нет CSP', 'встроенный скрипт', 'method="post"']) if (!bad.includes(w)) out.push(`«Мои дела» (самопроверка): сломанная копия не поймана — «${w}»`);
+  if (accountStaticIssues({ 'index.html': '<meta name="dv-api" content="mock"><div id="acc-demo"></div><meta http-equiv="Content-Security-Policy" content="x"><form class="auth-form" method="post">', 'app.js': 'api.login()' }).length) out.push('«Мои дела» (самопроверка): исправная копия краснеет');
+  return out;
+}
+
+/* Блок «Другие линии» в теле витрины (владелец 28.11: «Почему блок про Следами есть, а про Залами нет… эти блоки должны быть выше
+ * блоков под SEO/GEO»): на главной «Дворами» и «Следами» — между метками other:start/end (scripts/build_cases.py, other_html);
+ * блок выше SEO/GEO-справки (<!-- seo:start -->, #guide) и FAQ (#faq); в нём карточка каждой другой линии (data-line); линия со
+ * своей витриной (site/<id>/ или корень у «Дворами») — ссылкой на неё; без витрины («Залами») — «скоро», без ссылки на витрину.
+ * Обратная проверка — otherSelftest(). */
+const OTHER_PAGES = { 'index.html': 'dvorami', 'sledami/index.html': 'sledami' };
+const LINE_IDS = ['dvorami', 'sledami', 'zalami'];
+function otherIssues(html, rel, brand, live) {
+  const out = [];
+  const m = html.match(/<!-- other:start[^>]*-->([\s\S]*?)<!-- other:end -->/);
+  if (!m) return [`${rel}: нет блока «Другие линии» (метки <!-- other:start --> / <!-- other:end -->, scripts/build_cases.py — other_html)`];
+  const at = m.index;
+  for (const [name, re] of [['SEO/GEO-справки (<!-- seo:start -->)', /<!-- seo:start/], ['справки #guide', /<section[^>]*\bid="guide"/], ['FAQ (#faq)', /<section[^>]*\bid="faq"/]]) {
+    const i = html.search(re);
+    if (i >= 0 && at > i) out.push(`${rel}: блок «Другие линии» ниже ${name} — блоки для посетителя выше SEO/GEO и FAQ (владелец 28.11): переставьте метки other`);
+  }
+  if (!/<section[^>]*\bid="other"/.test(m[1])) out.push(`${rel}: между метками other нет section#other`);
+  for (const id of LINE_IDS) {
+    if (id === brand) continue;
+    const li = (m[1].match(new RegExp(`<li[^>]*data-line="${id}"[^>]*>([\\s\\S]*?)</li>`)) || [])[1];
+    if (li == null) { out.push(`${rel}: в блоке «Другие линии» нет линии «${id}»`); continue; }
+    const hrefs = [...li.matchAll(/href="([^"]*)"/g)].map(x => x[1]);
+    const toShow = h => id === 'dvorami' ? /^(\.\.\/|\.\/)(\?|$)/.test(h) : new RegExp(`(^|/)${id}/|${id}\\.ru`).test(h);
+    if (live[id]) { if (!hrefs.some(toShow)) out.push(`${rel}: у линии «${id}» есть витрина, а в блоке нет ссылки на неё`); }
+    else {
+      if (!/скоро/.test(li)) out.push(`${rel}: линия «${id}» без витрины — в блоке нет «скоро»`);
+      if (hrefs.some(toShow)) out.push(`${rel}: линия «${id}» без витрины — ссылка на витрину ведёт в пустоту`);
+    }
+  }
+  return out;
+}
+function otherSync() {
+  const live = { dvorami: true };
+  for (const id of LINE_IDS) if (id !== 'dvorami') live[id] = fs.existsSync(path.join(ROOT, id, 'index.html'));
+  const out = [];
+  for (const [rel, brand] of Object.entries(OTHER_PAGES)) out.push(...otherIssues(fs.readFileSync(path.join(ROOT, rel), 'utf8'), rel, brand, live));
+  return out;
+}
+function otherSelftest() {
+  const live = { dvorami: true, sledami: true, zalami: false };
+  const card = (id, body) => `<li class="other-card" data-line="${id}">${body}</li>`;
+  const ok = '<section id="probe"></section><!-- other:start --><section id="other"><ul>' + card('sledami', '<a href="sledami/?from=dvorami">Следами</a>') +
+    card('zalami', 'Залами <span>скоро</span><a href="https://t.me/x">канал</a>') + '</ul></section><!-- other:end --><!-- seo:start --><section id="guide"></section><!-- seo:end --><section id="faq"></section>';
+  const out = [];
+  const good = otherIssues(ok, 'fx', 'dvorami', live);
+  if (good.length) out.push('исправный блок краснеет: ' + good.join('; '));
+  const below = ok.replace(/<!-- other:start -->[\s\S]*<!-- other:end -->/, '').replace('</section>\n', '') + ok.match(/<!-- other:start -->[\s\S]*<!-- other:end -->/)[0];
+  if (!otherIssues(below, 'fx', 'dvorami', live).some(x => /ниже SEO/.test(x))) out.push('блок ниже SEO/GEO не пойман');
+  if (!otherIssues(ok.replace(/<li[^>]*data-line="zalami"[\s\S]*?<\/li>/, ''), 'fx', 'dvorami', live).some(x => /нет линии «zalami»/.test(x))) out.push('блок без «Залами» не пойман');
+  if (!otherIssues(ok.replace('https://t.me/x', '../zalami/'), 'fx', 'dvorami', live).some(x => /ведёт в пустоту/.test(x))) out.push('ссылка на несуществующую витрину «Залами» не поймана');
+  if (!otherIssues(ok.replace('скоро', ''), 'fx', 'dvorami', live).some(x => /нет «скоро»/.test(x))) out.push('«Залами» без «скоро» не пойман');
   return out;
 }
 
@@ -990,7 +1145,10 @@ async function mapTaps() {
   llmsSync(spoilers).forEach(m => err('llms.txt ↔ дела', '', m));
   ldSync().forEach(m => err('JSON-LD', '', m));
   accountSync().forEach(m => err('«Мои дела» ↔ дела', '', m));
+  accountStatic().forEach(m => err('«Мои дела»', '', m));
   lineSelftest().forEach(m => err('линии (самопроверка)', '', m));
+  otherSync().forEach(m => err('«Другие линии»', '', m));
+  otherSelftest().forEach(m => err('«Другие линии» (самопроверка)', '', m));
   priceOldCheck().forEach(m => err('зачёркнутая цена', '', m));
   // предупреждения — не красное: печатаются в конце, выкладку не блокируют
   const warns = seoLengths().map(w => 'длина сниппета: ' + w);

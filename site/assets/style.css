@@ -1506,7 +1506,14 @@ img.is-broken { visibility: hidden; }
 :root { --city-accent: var(--accent); --city-pop-bg: var(--surface); --city-pop-fg: var(--text); --city-line: var(--line); --city-font: var(--font-text); }
 .city-soon { background: var(--surface); }
 .city-soon .link-plain { font-size: 19px; }
-/* «Другой формат» — карточка как «Связаться»; кнопка ведёт на «Следами», отметка 18+ — плашкой, а не цветом */
+/* «Другие линии» (section#other, scripts/build_cases.py — other_html): карточка на каждую другую линию — «Следами» (кнопка,
+   отметка 18+ плашкой, а не цветом) и «Залами» («скоро», кнопка — на канал). Блок выше SEO/GEO и FAQ (владелец 28.11) */
+.other-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.other-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.other-h { font: 800 clamp(22px, 2.6vw, 30px)/1.15 var(--font-display); letter-spacing: -0.01em; }
+.other-soon { display: inline-block; margin-left: 10px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); vertical-align: 4px;
+  font: 600 14px/1.2 var(--font-text); letter-spacing: 0; color: var(--text-2); }
+.other-card--soon { background: var(--surface); border-style: dashed; }
 .other-card { display: grid; gap: 20px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 18px; padding: 28px 22px; }
 .other-card p { margin-top: 12px; max-width: 52ch; color: var(--text-2); }
 .other-btn { justify-self: start; gap: 10px; }

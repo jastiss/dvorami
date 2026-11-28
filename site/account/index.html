@@ -4,9 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Мои дела | Дворами</title>
-<meta name="description" content="Дела «Дворами» и «Следами», которые вы начали или раскрыли: продолжить с той точки, где остановились.">
-<!-- Личная страница: не индексируется ни на стенде, ни на боевом сайте (docs/account.md, «Данные») -->
+<meta name="description" content="Личный кабинет «Дворами», «Следами» и «Залами»: ваши дела с прогрессом на любом телефоне, покупки и подарки, достижения и заметки.">
+<!-- Личная страница: не индексируется ни на стенде, ни на боевом сайте (docs/account.md, ADR-6) -->
 <meta name="robots" content="noindex, nofollow">
+<!-- CSP (team/playbooks/engineer.md, п. 8): свои файлы, Метрика после согласия, API трёх марок. Встроенных скриптов нет.
+     Метрика: адреса — по её справке о CSP 🔶. frame-ancestors в <meta> не работает — на боевом заголовком (docs/account.md, раздел 3) -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://mc.yandex.ru https://yastatic.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://mc.yandex.ru; font-src 'self'; connect-src 'self' https://api.dvorami.ru https://api.sledami.ru https://api.zalami.ru https://mc.yandex.ru wss://mc.yandex.ru; frame-src blob: https://mc.yandex.ru; child-src blob: https://mc.yandex.ru; form-action 'self'; base-uri 'self'; object-src 'none'">
+<!-- Обмен с сервером — только site/account/api.js. mock — демо стенда без сервера; боевой: content="https://api.dvorami.ru/v1" -->
+<meta name="dv-api" content="mock">
 <meta name="theme-color" content="#0E1630">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
@@ -17,15 +22,8 @@
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="stylesheet" href="../assets/lines.css">
 <link rel="stylesheet" href="../assets/account.css">
-<script>
-  document.documentElement.classList.add('js');
-  // Тема по марке сайта, с которого пришли (кабинет один, оформление — марки): ?brand=sledami или домен sledami.ru.
-  // Ставится до отрисовки, чтобы не мигала чужая тема (docs/account.md, «Единый кабинет на три марки»)
-  try {
-    var b = (location.search.match(/[?&]brand=([a-z]+)/) || [])[1] || (/(^|\.)sledami\.ru$/.test(location.hostname) ? 'sledami' : '');
-    if (b === 'sledami') document.documentElement.dataset.brand = 'sledami';
-  } catch (e) {}
-</script>
+<!-- тема марки до отрисовки (?brand=sledami или домен sledami.ru) — без мигания чужой темы -->
+<script src="boot.js"></script>
 <script src="../assets/analytics.js" defer></script>
 </head>
 <body class="theme-platform account-page">
@@ -33,6 +31,18 @@
 <!-- lines:start — полоса линий и «Мои дела» собирает scripts/build_cases.py (lines_html); руками не править -->
 <nav class="lines" aria-label="Линии «Дворами» и мои дела"><div class="lines-in"><ul class="lines-list"><li><a class="lines-item" href="../" aria-current="true">Дворами</a></li><li><a class="lines-item" href="../sledami/?from=dvorami" data-city-href data-track="brand_cross" data-track-to="sledami" data-track-place="lines">Следами<span class="lines-18" aria-hidden="true">18+</span><span class="vh">, 18 плюс</span></a></li><li class="lines-soon-li"><span class="lines-item lines-item--soon">Залами<span class="vh"> — дела в музеях,</span><span class="lines-soon">скоро</span></span></li></ul><a class="lines-my" href="../account/" data-track="account_open" data-track-place="lines"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 7v11a1.5 1.5 0 0 0 1.5 1.5h14a1.5 1.5 0 0 0 1.5-1.5V9.5A1.5 1.5 0 0 0 19 8h-7l-2-2.5H5A1.5 1.5 0 0 0 3.5 7Z"/><path d="M8 13.5h8"/></svg><span>Мои дела</span></a></div></nav>
 <!-- lines:end -->
+
+<svg class="acc-sprite" aria-hidden="true" focusable="false" width="0" height="0">
+  <symbol id="ai-home" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1Z"/></symbol>
+  <symbol id="ai-cases" viewBox="0 0 24 24"><path d="M3.5 7v11a1.5 1.5 0 0 0 1.5 1.5h14a1.5 1.5 0 0 0 1.5-1.5V9.5A1.5 1.5 0 0 0 19 8h-7l-2-2.5H5A1.5 1.5 0 0 0 3.5 7Z"/><path d="M8 13.5h8"/></symbol>
+  <symbol id="ai-gift" viewBox="0 0 24 24"><path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13"/><path d="M12 7c-1.5-3-5-3.5-5-1.2C7 7 9 7 12 7Zm0 0c1.5-3 5-3.5 5-1.2C17 7 15 7 12 7Z"/></symbol>
+  <symbol id="ai-star" viewBox="0 0 24 24"><path d="m12 3.8 2.5 5.1 5.6.8-4 4 1 5.6-5.1-2.7-5 2.7.9-5.6-4-4 5.6-.8Z"/></symbol>
+  <symbol id="ai-note" viewBox="0 0 24 24"><path d="M6 3.5h9l3.5 3.5v13.5H6Z"/><path d="M14.5 3.5V7.5h4M9 12h6M9 15.5h6"/></symbol>
+  <symbol id="ai-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></symbol>
+  <symbol id="ai-exit" viewBox="0 0 24 24"><path d="M14 4.5H6.5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1H14M10 12h10M16.5 8.5 20 12l-3.5 3.5"/></symbol>
+  <symbol id="ai-key" viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.8"/><path d="M11.8 12H21M17.5 12v3.5M20.5 12v2.5"/></symbol>
+  <symbol id="ai-seal" viewBox="0 0 24 24"><circle cx="12" cy="9.5" r="5.8"/><path d="m8.6 14.3-1.6 6 5-2.6 5 2.6-1.6-6"/><path d="m12 6.6.9 1.9 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3Z"/></symbol>
+</svg>
 
 <header class="site-header">
   <div class="wrap">
@@ -51,115 +61,185 @@
   </div>
 </header>
 
-<main id="main">
-<section class="section my-sec" aria-labelledby="h1">
-  <div class="wrap">
-    <nav class="crumbs" aria-label="Хлебные крошки"><ol><li><a class="only-dvorami" href="../">Главная</a><a class="only-sledami" href="../sledami/">Следами</a></li><li aria-current="page">Мои дела</li></ol></nav>
-    <h1 id="h1" class="my-h1">Мои дела</h1>
-    <p class="my-note" id="my-note">Список хранится в&nbsp;этом браузере: на&nbsp;другом телефоне его не&nbsp;будет.</p>
+<main id="main" class="acc">
+  <!-- Плашка демо: только в режиме mock (api.js). Вход ненастоящий, данные — в этой вкладке, настоящую почту ввести нельзя -->
+  <div class="acc-demo" id="acc-demo" hidden>
+    <div class="wrap acc-demo-in">
+      <p class="acc-demo-p"><b class="acc-demo-tag">Демо</b> Вход ненастоящий: ничего не&nbsp;отправляется, всё остаётся в&nbsp;этой вкладке. Настоящую почту не&nbsp;вводите.</p>
+      <details class="acc-demo-more">
+        <summary>Как попробовать</summary>
+        <ul>
+          <li>Вход: <b>demo@example.com</b>, пароль <b>dvorami-demo</b>.</li>
+          <li>Регистрация: любой адрес <b>@example.com</b>; код из&nbsp;«письма»&nbsp;— <b>246810</b>.</li>
+          <li>Код дела для «Есть код?»: <b>ZIL-DEMO-2026</b>.</li>
+          <li>Ссылка «Задать пароль» из&nbsp;письма после покупки: <a href="?set=demo">открыть</a>.</li>
+        </ul>
+        <button type="button" class="link-plain acc-demo-reset" data-act="demo-reset" aria-label="Начать демо заново">Начать демо заново</button>
+      </details>
+      <button type="button" class="btn btn--ghost acc-demo-fill" data-act="demo-fill">Подставить демо-вход</button>
+    </div>
+  </div>
 
-    <!-- Список собирает ../assets/account.js из сохранений плеера на этом устройстве (dvorami:play:<id>, dvorami:code:<id>,
-         dvorami:rating:<id>); плеер не меняется. Без JS и без сохранений — пустое состояние ниже. -->
-    <div class="my-list" id="my-list" hidden></div>
+  <!-- ===== Вход: панели переключает app.js; без JS формы скрыты (пароль не уйдёт в адрес) ===== -->
+  <section id="login" class="acc-auth" aria-labelledby="auth-h-login">
+    <div class="wrap">
+      <div class="auth-card ym-hide-content" data-cta>
+        <noscript><p class="auth-nojs">Чтобы войти, включите JavaScript. Дело открывается и&nbsp;без входа&nbsp;— по&nbsp;ссылке из&nbsp;письма. <a href="../#quests">Выбрать дело</a></p></noscript>
 
-    <div class="my-empty" id="my-empty" data-cta>
-      <p class="my-empty-h">Здесь появятся дела, которые вы&nbsp;начнёте.</p>
-      <p>Откройте дело по&nbsp;ссылке из&nbsp;письма или введите код на&nbsp;первом экране. Дело появится здесь, и&nbsp;продолжить его можно будет с&nbsp;той точки, где вы&nbsp;остановились.</p>
-      <div class="my-empty-cta">
-        <a class="btn only-dvorami" href="#more">Выбрать дело</a>
-        <a class="btn only-sledami" href="../sledami/#cases">Открыть картотеку</a>
-        <a class="link-plain" href="#code">У&nbsp;меня есть код</a>
+        <div class="auth-panel" data-panel="login">
+          <p class="auth-kicker">Мои дела</p>
+          <h1 id="auth-h-login" class="auth-h" tabindex="-1">Вход</h1>
+          <p class="auth-sub">Один вход для&nbsp;«Дворами», «Следами» и&nbsp;«Залами»: дела, прогресс и&nbsp;подарки&nbsp;— на&nbsp;любом телефоне.</p>
+          <form class="auth-form" id="f-login" novalidate method="post" action="./">
+            <div class="fld"><label for="li-email">Почта</label><input id="li-email" name="email" type="email" class="ym-disable-keys" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="254" required></div>
+            <div class="fld"><label for="li-pw">Пароль</label><div class="pw"><input id="li-pw" name="password" type="password" class="ym-disable-keys" autocomplete="current-password" maxlength="256" required><button type="button" class="pw-eye" aria-controls="li-pw" aria-pressed="false">Показать</button></div></div>
+            <p class="f-err" id="li-err" hidden></p>
+            <button class="btn auth-go" type="submit">Войти</button>
+            <button type="button" class="link-plain auth-link" data-go="forgot">Забыли пароль?</button>
+          </form>
+          <div class="auth-alt"><span>Нет аккаунта?</span><button type="button" class="btn btn--ghost" data-go="register">Создать аккаунт</button></div>
+          <p class="auth-note">Купили дело? Пароль задаётся по&nbsp;ссылке «Задать пароль» из&nbsp;письма с&nbsp;кодом. Дело открывается и&nbsp;без входа&nbsp;— по&nbsp;ссылке из&nbsp;письма.</p>
+        </div>
+
+        <div class="auth-panel" data-panel="register" hidden>
+          <p class="auth-kicker">Мои дела</p>
+          <h1 id="auth-h-register" class="auth-h" tabindex="-1">Создать аккаунт</h1>
+          <p class="auth-sub">Пришлём на&nbsp;почту код, чтобы убедиться, что адрес ваш.</p>
+          <form class="auth-form" id="f-register" novalidate method="post" action="./">
+            <div class="fld"><label for="rg-email">Почта</label><input id="rg-email" name="email" type="email" class="ym-disable-keys" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="254" required></div>
+            <div class="fld"><label for="rg-pw">Придумайте пароль</label><div class="pw"><input id="rg-pw" name="password" type="password" class="ym-disable-keys" autocomplete="new-password" maxlength="256" required aria-describedby="rg-pw-hint"><button type="button" class="pw-eye" aria-controls="rg-pw" aria-pressed="false">Показать</button></div>
+              <p class="fld-hint" id="rg-pw-hint" data-pw-hint="rg-pw">Не короче 10 знаков. Удобно&nbsp;— 3–4 слова через пробел.</p></div>
+            <div class="fld"><label for="rg-code">Код дела <span class="fld-opt">если есть</span></label><input id="rg-code" name="code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20"></div>
+            <label class="chk"><input type="checkbox" name="consent" id="rg-consent" required><span>Согласен на&nbsp;<a href="../legal/consent/" target="_blank" rel="noopener">обработку персональных данных</a></span></label>
+            <p class="f-err" id="rg-err" hidden></p>
+            <button class="btn auth-go" type="submit">Создать аккаунт</button>
+          </form>
+          <div class="auth-alt"><span>Уже есть аккаунт?</span><button type="button" class="btn btn--ghost" data-go="login">Войти</button></div>
+        </div>
+
+        <div class="auth-panel" data-panel="verify" hidden>
+          <p class="auth-kicker">Почти готово</p>
+          <h1 id="auth-h-verify" class="auth-h" tabindex="-1">Проверьте почту</h1>
+          <p class="auth-sub">Мы&nbsp;отправили код на&nbsp;<b data-fill="pending-email"></b>. Он&nbsp;действует 15&nbsp;минут.</p>
+          <form class="auth-form" id="f-verify" novalidate method="post" action="./">
+            <div class="fld"><label for="vf-code">Код из&nbsp;письма</label><input id="vf-code" name="code" class="code-in" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" required></div>
+            <p class="f-err" id="vf-err" hidden></p>
+            <button class="btn auth-go" type="submit">Подтвердить</button>
+          </form>
+          <p class="auth-note">Не&nbsp;пришло за&nbsp;минуту? Проверьте «Спам» и&nbsp;«Промоакции». <button type="button" class="link-plain auth-link" data-act="resend" data-purpose="verify">Отправить ещё раз</button> · <button type="button" class="link-plain auth-link" data-go="register">Другая почта</button></p>
+        </div>
+
+        <div class="auth-panel" data-panel="forgot" hidden>
+          <p class="auth-kicker">Мои дела</p>
+          <h1 id="auth-h-forgot" class="auth-h" tabindex="-1">Восстановить доступ</h1>
+          <p class="auth-sub">Пришлём на&nbsp;почту код и&nbsp;ссылку, чтобы задать новый пароль.</p>
+          <form class="auth-form" id="f-forgot" novalidate method="post" action="./">
+            <div class="fld"><label for="fg-email">Почта</label><input id="fg-email" name="email" type="email" class="ym-disable-keys" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="254" required></div>
+            <p class="f-err" id="fg-err" hidden></p>
+            <button class="btn auth-go" type="submit">Прислать код</button>
+          </form>
+          <div class="auth-alt"><span>Вспомнили пароль?</span><button type="button" class="btn btn--ghost" data-go="login">Войти</button></div>
+        </div>
+
+        <div class="auth-panel" data-panel="reset" hidden>
+          <p class="auth-kicker">Восстановление</p>
+          <h1 id="auth-h-reset" class="auth-h" tabindex="-1">Новый пароль</h1>
+          <p class="auth-sub">Если аккаунт с&nbsp;адресом <b data-fill="reset-email"></b> есть, письмо с&nbsp;кодом уже в&nbsp;пути. Код действует 15&nbsp;минут.</p>
+          <form class="auth-form" id="f-reset" novalidate method="post" action="./">
+            <div class="fld"><label for="rs-code">Код из&nbsp;письма</label><input id="rs-code" name="code" class="code-in" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" required></div>
+            <div class="fld"><label for="rs-pw">Новый пароль</label><div class="pw"><input id="rs-pw" name="password" type="password" class="ym-disable-keys" autocomplete="new-password" maxlength="256" required aria-describedby="rs-pw-hint"><button type="button" class="pw-eye" aria-controls="rs-pw" aria-pressed="false">Показать</button></div>
+              <p class="fld-hint" id="rs-pw-hint" data-pw-hint="rs-pw">Не короче 10 знаков. Вход на&nbsp;других устройствах закроется.</p></div>
+            <p class="f-err" id="rs-err" hidden></p>
+            <button class="btn auth-go" type="submit">Сохранить и&nbsp;войти</button>
+          </form>
+          <p class="auth-note"><button type="button" class="link-plain auth-link" data-act="resend" data-purpose="reset">Отправить код ещё раз</button> · <button type="button" class="link-plain auth-link" data-go="login">Вернуться ко&nbsp;входу</button></p>
+        </div>
+
+        <div class="auth-panel" data-panel="setpw" hidden>
+          <p class="auth-kicker">Спасибо за&nbsp;покупку</p>
+          <h1 id="auth-h-setpw" class="auth-h" tabindex="-1">Задайте пароль</h1>
+          <p class="auth-sub">Логин&nbsp;— <b data-fill="invite-email"></b>. С&nbsp;паролем дело и&nbsp;прогресс будут на&nbsp;любом телефоне.</p>
+          <form class="auth-form" id="f-setpw" novalidate method="post" action="./">
+            <input type="email" name="username" autocomplete="username" hidden data-fill-value="invite-email">
+            <div class="fld"><label for="sp-pw">Пароль</label><div class="pw"><input id="sp-pw" name="password" type="password" class="ym-disable-keys" autocomplete="new-password" maxlength="256" required aria-describedby="sp-pw-hint"><button type="button" class="pw-eye" aria-controls="sp-pw" aria-pressed="false">Показать</button></div>
+              <p class="fld-hint" id="sp-pw-hint" data-pw-hint="sp-pw">Не короче 10 знаков. Удобно&nbsp;— 3–4 слова через пробел.</p></div>
+            <label class="chk"><input type="checkbox" name="consent" id="sp-consent" required><span>Согласен на&nbsp;<a href="../legal/consent/" target="_blank" rel="noopener">обработку персональных данных</a></span></label>
+            <p class="f-err" id="sp-err" hidden></p>
+            <button class="btn auth-go" type="submit">Сохранить и&nbsp;войти</button>
+          </form>
+          <p class="auth-note">Ссылка из&nbsp;письма одноразовая и&nbsp;действует 72&nbsp;часа. Истекла&nbsp;— <button type="button" class="link-plain auth-link" data-go="forgot">восстановите доступ</button> по&nbsp;той&nbsp;же почте.</p>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section id="more" class="section more-sec only-dvorami" aria-labelledby="h-more">
-  <div class="wrap">
-    <div class="more-head">
-      <span class="hand">выбирайте дело</span>
-      <h2 id="h-more" class="h2" data-more-h>Квесты по&nbsp;Москве</h2>
-    </div>
-    <ul class="qgrid qgrid--home" id="qgrid" data-cta>
-      <!-- cards:start — карточки дел собирает scripts/build_cases.py из поля card в platform/site/cases/c*.py; руками не править -->
-      <li class="qcard" data-status="soon" data-case="1">
-        <span class="qc-cover"><img src="../assets/ill/case-01.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №1: ЗИЛАРТ"><span class="qc-rating rating" data-rating="zilart-sinyaya-ptica"></span></span>
-        <h3 class="qc-title"><span class="qc-no">Дело №1</span> Синяя птица</h3>
-        <span class="qc-where">ЗИЛАРТ · юг Москвы</span>
-        <p>Чьё честное слово стоит в&nbsp;письме 1931&nbsp;года — и&nbsp;было&nbsp;ли оно сдержано? Ответ&nbsp;— на&nbsp;улицах ЗИЛАРТа.</p>
-        <p class="qc-meta"><span class="nw">Метро «ЗИЛ» ·</span> <span class="nw">10&nbsp;точек ·</span> <span class="nw">3&nbsp;км ·</span> <span class="nw">2,5–3&nbsp;часа · 0+</span></p>
-        <div class="qc-foot"><span class="qc-badge qc-badge--soon">Скоро в&nbsp;продаже</span><span class="qc-price"><b>990&nbsp;₽ <s class="price-old"><span class="visually-hidden">прежняя цена </span>1590&nbsp;₽</s></b> за&nbsp;дело</span></div>
-        <a class="qc-btn" href="../moscow/zilart-sinyaya-ptica/" aria-label="Кто дал слово? Подробнее о деле №1" data-track="quest_card" data-track-quest="zilart-sinyaya-ptica" data-track-place="account" data-track-cta="ask">Кто дал слово?</a>
-      </li>
-      <li class="qcard" data-status="dev" data-case="2">
-        <span class="qc-cover"><img src="../assets/ill/case-02.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №2: Чистые пруды и Покровка"><span class="qc-rating rating" data-rating="chistye-prudy-bashnya"></span></span>
-        <h3 class="qc-title"><span class="qc-no">Дело №2</span> Башня выше Ивана Великого</h3>
-        <span class="qc-where">Чистые пруды и&nbsp;Покровка</span>
-        <p>Кто знал заранее, что в&nbsp;Меншикову башню ударит молния? Проверьте на&nbsp;Чистых прудах, кара&nbsp;ли это за&nbsp;гордыню.</p>
-        <p class="qc-meta"><span class="nw">Метро «Чистые пруды» ·</span> <span class="nw">10&nbsp;точек ·</span> <span class="nw">≈3&nbsp;км ·</span> <span class="nw">2–2,5&nbsp;часа · 0+</span></p>
-        <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn" href="../moscow/chistye-prudy-bashnya/" aria-label="Кто знал заранее? Подробнее о деле №2" data-track="quest_card" data-track-quest="chistye-prudy-bashnya" data-track-place="account" data-track-cta="ask">Кто знал заранее?</a>
-      </li>
-      <li class="qcard" data-status="dev" data-case="3">
-        <span class="qc-cover"><img src="../assets/ill/case-03.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №3: Коломенское"><span class="qc-rating rating" data-rating="kolomenskoe-tuman"></span></span>
-        <h3 class="qc-title"><span class="qc-no">Дело №3</span> Туман в&nbsp;овраге</h3>
-        <span class="qc-where">Коломенское</span>
-        <p>Из&nbsp;какого года гонец, что вышел из&nbsp;тумана в&nbsp;Коломенском? Сверьте его рассказ с&nbsp;церквями и&nbsp;воротами и&nbsp;проводите домой.</p>
-        <p class="qc-meta"><span class="nw">Метро «Коломенская» ·</span> <span class="nw">8&nbsp;точек ·</span> <span class="nw">4&nbsp;км ·</span> <span class="nw">2–2,5&nbsp;часа · 0+</span></p>
-        <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn" href="../moscow/kolomenskoe-tuman/" aria-label="Какой год у гонца? Подробнее о деле №3" data-track="quest_card" data-track-quest="kolomenskoe-tuman" data-track-place="account" data-track-cta="ask">Какой год у гонца?</a>
-      </li>
-      <li class="qcard" data-status="dev" data-case="4">
-        <span class="qc-cover"><img src="../assets/ill/case-04.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №4: Красная площадь"><span class="qc-rating rating" data-rating="krasnaya-ploshchad-imena"></span></span>
-        <h3 class="qc-title"><span class="qc-no">Дело №4</span> Стёртые имена</h3>
-        <span class="qc-where">Красная площадь и&nbsp;Александровский сад</span>
-        <p>Кто вписал чужие записи в&nbsp;обмеры Красной площади 1936&nbsp;года? Перемерьте сами и&nbsp;решите, что вернуть на&nbsp;место.</p>
-        <p class="qc-meta"><span class="nw">Метро «Александровский сад» ·</span> <span class="nw">9&nbsp;точек ·</span> <span class="nw">≈2&nbsp;км ·</span> <span class="nw">1,5–2&nbsp;часа · 0+</span></p>
-        <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn" href="../moscow/krasnaya-ploshchad-imena/" aria-label="Чья это рука? Подробнее о деле №4" data-track="quest_card" data-track-quest="krasnaya-ploshchad-imena" data-track-place="account" data-track-cta="ask">Чья это рука?</a>
-      </li>
-      <li class="qcard" data-status="dev" data-case="5">
-        <span class="qc-cover"><img src="../assets/ill/case-05.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №5: Китай-город"><span class="qc-rating rating" data-rating="kitay-gorod-list"></span></span>
-        <h3 class="qc-title"><span class="qc-no">Дело №5</span> Фальшивый лист</h3>
-        <span class="qc-where">Китай-город</span>
-        <p>Кто подбрасывает ошибку в&nbsp;лист новичка? Новичок&nbsp;— вы: сверьте каждую подробность с&nbsp;Китай-городом, и&nbsp;вас примут в&nbsp;цех.</p>
-        <p class="qc-meta"><span class="nw">Метро «Театральная» ·</span> <span class="nw">9&nbsp;точек ·</span> <span class="nw">≈2,5&nbsp;км ·</span> <span class="nw">1,5–2&nbsp;часа · 0+</span></p>
-        <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn" href="../moscow/kitay-gorod-list/" aria-label="Чья это ошибка? Подробнее о деле №5" data-track="quest_card" data-track-quest="kitay-gorod-list" data-track-place="account" data-track-cta="ask">Чья это ошибка?</a>
-      </li>
-      <li class="qcard" data-status="dev" data-case="6">
-        <span class="qc-cover"><img src="../assets/ill/case-06.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №6: Арбат вечером"><span class="qc-rating rating" data-rating="arbat-gogol"></span></span>
-        <h3 class="qc-title"><span class="qc-no">Дело №6</span> Загадки Турандот</h3>
-        <span class="qc-where">Арбат и&nbsp;арбатские переулки</span>
-        <p>Какая из&nbsp;трёх масок унесла у&nbsp;принцессы Турандот восьмую загадку? Сверьте их показания с&nbsp;Арбатом и&nbsp;верните пропажу.</p>
-        <p class="qc-meta"><span class="nw">Метро «Арбатская» ·</span> <span class="nw">8&nbsp;загадок ·</span> <span class="nw">≈2,5&nbsp;км ·</span> <span class="nw">1,5–2&nbsp;часа · 0+</span></p>
-        <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn" href="../moscow/arbat-gogol/" aria-label="Кто унёс загадку? Подробнее о деле №6" data-track="quest_card" data-track-quest="arbat-gogol" data-track-place="account" data-track-cta="ask">Кто унёс загадку?</a>
-      </li>
-      <li class="qcard" data-status="dev" data-case="7">
-        <span class="qc-cover"><img src="../assets/ill/case-07.svg" width="1200" height="900" loading="lazy" alt="Иллюстрация к делу №7: ВДНХ"><span class="qc-rating rating" data-rating="vdnh-sestra"></span></span>
-        <h3 class="qc-title"><span class="qc-no">Дело №7</span> Шестнадцатая сестра</h3>
-        <span class="qc-where">ВДНХ · север Москвы</span>
-        <p>Кто из&nbsp;шестнадцати золотых сестёр с&nbsp;фонтана ВДНХ пишет открытки? Пришлите им виды выставки и&nbsp;найдите её&nbsp;в&nbsp;кругу.</p>
-        <p class="qc-meta"><span class="nw">Метро «ВДНХ» ·</span> <span class="nw">8&nbsp;точек ·</span> <span class="nw">≈4,5&nbsp;км ·</span> <span class="nw">2–2,5&nbsp;часа · 0+</span></p>
-        <div class="qc-foot"><span class="qc-badge">В&nbsp;разработке</span></div>
-        <a class="qc-btn" href="../moscow/vdnh-sestra/" aria-label="Кто пишет открытки? Подробнее о деле №7" data-track="quest_card" data-track-quest="vdnh-sestra" data-track-place="account" data-track-cta="ask">Кто пишет открытки?</a>
-      </li>
-      <!-- cards:end -->
-    </ul>
-  </div>
-</section>
+  <!-- ===== Кабинет: навигация и разделы; содержимое рисует app.js из ответов api.js ===== -->
+  <div class="acc-shell ym-hide-content" id="acc-app" hidden>
+    <nav class="acc-nav" id="acc-nav" aria-label="Разделы «Моих дел»" data-cta>
+      <a href="#overview" data-view="overview"><svg aria-hidden="true" focusable="false"><use href="#ai-home"/></svg><span>Обзор</span></a>
+      <a href="#cases" data-view="cases"><svg aria-hidden="true" focusable="false"><use href="#ai-cases"/></svg><span class="nl">Мои дела</span><span class="ns" aria-hidden="true">Дела</span></a>
+      <a href="#purchases" data-view="purchases"><svg aria-hidden="true" focusable="false"><use href="#ai-gift"/></svg><span class="nl">Покупки и&nbsp;подарки</span><span class="ns" aria-hidden="true">Покупки</span></a>
+      <a href="#achievements" data-view="achievements"><svg aria-hidden="true" focusable="false"><use href="#ai-star"/></svg><span class="nl">Достижения</span><span class="ns" aria-hidden="true">Награды</span></a>
+      <a href="#notes" data-view="notes" class="acc-nav-wide"><svg aria-hidden="true" focusable="false"><use href="#ai-note"/></svg><span>Заметки</span></a>
+      <a href="#settings" data-view="settings"><svg aria-hidden="true" focusable="false"><use href="#ai-user"/></svg><span class="nl">Настройки</span><span class="ns" aria-hidden="true">Профиль</span></a>
+      <div class="acc-nav-me"><span class="acc-nav-email" id="nav-email"></span><button type="button" class="acc-nav-out" data-act="logout"><svg aria-hidden="true" focusable="false"><use href="#ai-exit"/></svg><span>Выйти</span></button></div>
+    </nav>
 
-<section id="code" class="section code-sec" aria-labelledby="h-code">
-  <div class="wrap">
-    <div class="code-card" data-cta>
-      <h2 id="h-code" class="h2">Есть код из&nbsp;письма или подарка?</h2>
-      <p>Откройте ссылку из&nbsp;письма: дело откроется само и&nbsp;появится в&nbsp;этом списке. Если ссылки нет, выберите дело и&nbsp;введите код на&nbsp;первом экране.</p>
-      <ul class="code-list" id="code-list"></ul>
-      <p class="code-help">Код потерялся? Напишите нам в&nbsp;<a data-tg="channel" href="https://t.me/dvorami_quest" target="_blank" rel="noopener">Telegram</a>&nbsp;— найдём.</p>
+    <div class="acc-views">
+      <p class="acc-net" id="acc-net" hidden>Нет связи с&nbsp;сервером&nbsp;— показываем сохранённое. Продолжить дело можно и&nbsp;без сети.</p>
+
+      <section id="overview" class="acc-view" aria-labelledby="h-overview" hidden>
+        <div class="view-head"><h1 id="h-overview" class="view-h" tabindex="-1">Мои дела</h1><p class="view-sub" id="ov-sub"></p></div>
+        <div class="widgets" id="ov-widgets" aria-busy="true"></div>
+      </section>
+
+      <section id="cases" class="acc-view" aria-labelledby="h-cases" hidden>
+        <div class="view-head"><h1 id="h-cases" class="view-h" tabindex="-1">Мои дела</h1><p class="view-sub">Начатые, готовые к&nbsp;старту и&nbsp;раскрытые&nbsp;— со&nbsp;всех телефонов.</p></div>
+        <div class="chips" role="group" aria-label="Показать дела" id="cases-filter">
+          <button type="button" class="chip" data-filter="all" aria-pressed="true">Все</button>
+          <button type="button" class="chip" data-filter="going" aria-pressed="false">Идут</button>
+          <button type="button" class="chip" data-filter="ready" aria-pressed="false">Ждут старта</button>
+          <button type="button" class="chip" data-filter="done" aria-pressed="false">Раскрыты</button>
+        </div>
+        <ul class="my-cards" id="cases-list"></ul>
+        <p class="view-empty" id="cases-empty" hidden></p>
+      </section>
+
+      <section id="purchases" class="acc-view" aria-labelledby="h-purchases" hidden>
+        <div class="view-head"><h1 id="h-purchases" class="view-h" tabindex="-1">Покупки и&nbsp;подарки</h1><p class="view-sub">Чек приходит на&nbsp;почту от&nbsp;ЮKassa сразу после оплаты.</p></div>
+        <ul class="orders" id="orders-list"></ul>
+        <div class="w-card w-gift-big">
+          <svg class="w-ico" aria-hidden="true" focusable="false"><use href="#ai-gift"/></svg>
+          <div><h2 class="w-h">Подарить дело</h2><p>Код и&nbsp;открытка придут вам на&nbsp;почту: отправите сами, когда захотите. Подарок действует 12&nbsp;месяцев.</p></div>
+          <a class="btn" href="../moscow/" data-track="account_gift">Выбрать дело в&nbsp;подарок</a>
+        </div>
+      </section>
+
+      <section id="achievements" class="acc-view" aria-labelledby="h-achievements" hidden>
+        <div class="view-head"><h1 id="h-achievements" class="view-h" tabindex="-1">Достижения</h1><p class="view-sub" id="ach-sub"></p></div>
+        <ul class="badges" id="ach-list"></ul>
+      </section>
+
+      <section id="notes" class="acc-view" aria-labelledby="h-notes" hidden>
+        <div class="view-head"><h1 id="h-notes" class="view-h" tabindex="-1">Заметки</h1><p class="view-sub">Заметки из&nbsp;плеера («Заметка к&nbsp;точке») приходят сюда сами. Видите их&nbsp;только вы.</p></div>
+        <form class="w-card note-form" id="f-note" novalidate>
+          <h2 class="w-h">Новая заметка</h2>
+          <div class="fld"><label for="nt-case">Дело</label><select id="nt-case" name="quest"></select></div>
+          <div class="fld"><label for="nt-text">Текст</label><textarea id="nt-text" name="text" rows="3" maxlength="2000" required></textarea></div>
+          <p class="f-err" id="nt-err" hidden></p>
+          <button class="btn" type="submit">Сохранить заметку</button>
+        </form>
+        <div id="notes-list"></div>
+      </section>
+
+      <section id="settings" class="acc-view" aria-labelledby="h-settings" hidden>
+        <div class="view-head"><h1 id="h-settings" class="view-h" tabindex="-1">Настройки</h1></div>
+        <div class="set-grid" id="settings-body"></div>
+      </section>
     </div>
   </div>
-</section>
+
+  <p class="visually-hidden" id="sr-say" aria-live="polite"></p>
 </main>
 
 <footer class="site-footer">
@@ -172,6 +252,7 @@
 <script type="application/json" id="cases-data">[{"no":1,"slug":"zilart-sinyaya-ptica","brand":"dvorami","short":"Синяя птица","where":"ЗИЛАРТ · юг Москвы","img":"case-01.svg","points":10,"status":"soon","url":"moscow/zilart-sinyaya-ptica/","play":"zilart","version":"5.6"},{"no":2,"slug":"chistye-prudy-bashnya","brand":"dvorami","short":"Башня выше Ивана Великого","where":"Чистые пруды и Покровка","img":"case-02.svg","points":10,"status":"dev","url":"moscow/chistye-prudy-bashnya/","play":null,"version":""},{"no":3,"slug":"kolomenskoe-tuman","brand":"dvorami","short":"Туман в овраге","where":"Коломенское","img":"case-03.svg","points":8,"status":"dev","url":"moscow/kolomenskoe-tuman/","play":"kolomenskoe","version":"2.2-field"},{"no":4,"slug":"krasnaya-ploshchad-imena","brand":"dvorami","short":"Стёртые имена","where":"Красная площадь и Александровский сад","img":"case-04.svg","points":9,"status":"dev","url":"moscow/krasnaya-ploshchad-imena/","play":null,"version":""},{"no":5,"slug":"kitay-gorod-list","brand":"dvorami","short":"Фальшивый лист","where":"Китай-город","img":"case-05.svg","points":9,"status":"dev","url":"moscow/kitay-gorod-list/","play":null,"version":""},{"no":6,"slug":"arbat-gogol","brand":"dvorami","short":"Загадки Турандот","where":"Арбат и арбатские переулки","img":"case-06.svg","points":8,"status":"dev","url":"moscow/arbat-gogol/","play":null,"version":""},{"no":7,"slug":"vdnh-sestra","brand":"dvorami","short":"Шестнадцатая сестра","where":"ВДНХ · север Москвы","img":"case-07.svg","points":8,"status":"dev","url":"moscow/vdnh-sestra/","play":null,"version":""}]</script>
 <!-- cases-data:end -->
 <script src="../assets/site.js" defer></script>
-<script src="../assets/account.js" defer></script>
+<script src="api.js" defer></script>
+<script src="app.js" defer></script>
 </body>
 </html>

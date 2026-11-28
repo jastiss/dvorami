@@ -118,6 +118,55 @@ def lines_band(root, brand='dvorami'):
     return (f'<div class="lines-band"><div class="wrap"><h2 class="lines-band-h">Другие линии</h2><ul>{"".join(out)}</ul></div></div>')
 
 
+# ---------- Блок «Другие линии» в теле витрины (section#other) ----------
+# Владелец 28.11: «Почему блок про Следами есть, а про Залами нет на сайте Дворами? …эти блоки должны быть выше блоков
+# под SEO/GEO». Карточка — на каждую линию из LINES, кроме своей; линия без витрины (url None) — «скоро» и ссылка на канал,
+# где объявим запуск, а не на витрину. Вставляется между метками <!-- other:start --> / <!-- other:end --> (OTHER_PAGES);
+# метки стоят выше <!-- seo:start --> и #faq — это проверяет site_check --sync (otherIssues). Тексты — без сюжетов дел
+# (docs/sledami/concept.md, 7а; docs/account.md, раздел 14).
+OTHER_TEXT = {
+    'sledami': {'title': 'Для&nbsp;взрослых компаний&nbsp;— «Следами»',
+                'text': 'Вечерние детективные прогулки по&nbsp;следам настоящих историй. Тоже без&nbsp;гида и&nbsp;расписания, но&nbsp;темы взрослые: только&nbsp;18+.',
+                'btn': 'Открыть «Следами»'},
+    'dvorami': {'title': 'Гуляете с&nbsp;детьми? Есть «Дворами»',
+                'text': 'Семейные квесты-прогулки по&nbsp;районам: сюжет без&nbsp;крови, ответы&nbsp;— в&nbsp;деталях улиц и&nbsp;дворов, старт в&nbsp;любой день.',
+                'btn': 'Открыть «Дворами»'},
+    'zalami': {'title': 'Дела в&nbsp;музеях&nbsp;— «Залами»',
+               'text': 'Расследования в&nbsp;залах музеев: улики&nbsp;— в&nbsp;картинах, скульптурах и&nbsp;вещах за&nbsp;стеклом. Тоже без&nbsp;гида. Готовим первые дела&nbsp;— о&nbsp;запуске расскажем в&nbsp;Telegram-канале.',
+               'btn': 'Узнать о&nbsp;запуске'},
+}
+OTHER_PAGES = [('index.html', '', 'dvorami'), (os.path.join('sledami', 'index.html'), '../', 'sledami')]
+CHANNEL = 'https://t.me/dvorami_quest'
+
+
+def other_html(root, brand):
+    """section#other: «Другие линии» для витрины марки brand. Разметка по марке: у «Следами» свои классы (sledami.css)."""
+    sled = brand == 'sledami'
+    items = []
+    for ln in LINES:
+        if ln['id'] == brand:
+            continue
+        t = OTHER_TEXT[ln['id']]
+        if ln['url'] is None:
+            btn = (f'<a class="btn btn--ghost other-btn" data-tg="channel" href="{CHANNEL}" target="_blank" rel="noopener" '
+                   f'data-track="brand_soon" data-track-to="{ln["id"]}" data-track-place="block">{t["btn"]}</a>')
+            soon = '<span class="other-soon">скоро</span>'
+        else:
+            adult = ' <span class="other-18" aria-label="18 плюс">18+</span>' if ln.get('adult') else ''
+            href = (root + ln['url'] if ln['url'] else (root or './')) + f'?from={brand}'
+            cls = 'btn btn--ghost other-btn' if sled else 'btn btn--dark other-btn'
+            btn = (f'<a class="{cls}" href="{href}" data-city-href data-track="brand_cross" data-track-to="{ln["id"]}" '
+                   f'data-track-place="block">{t["btn"]}{adult}</a>')
+            soon = ''
+        items.append(f'<li class="other-card{" other-card--soon" if soon else ""}" data-line="{ln["id"]}"><div>'
+                     f'<h3 class="other-h">{t["title"]}{soon}</h3><p>{t["text"]}</p></div>{btn}</li>')
+    hand = '<p class="hand">Другие линии</p>' if sled else '<span class="hand">тоже без&nbsp;гида</span>'
+    sec = 'other' if sled else 'section section--flush other-sec'
+    return (f'<section class="{sec}" id="other" aria-labelledby="h-other">\n <div class="wrap">\n'
+            f'  <div class="other-head">{hand}<h2 class="h2" id="h-other">{"Не&nbsp;только ночные дела" if sled else "Другие линии"}</h2></div>\n'
+            f'  <ul class="other-list">{"".join(items)}</ul>\n </div>\n</section>')
+
+
 def price_old_html(c):
     """Зачёркнутая цена справа от цены продажи (владелец 27.11, «для стимулирования продаж»). Поле дела price_old:
     {'rub': 1590, 'sr': 'прежняя цена', 'note': None}; по умолчанию поля нет — ничего не показываем.
@@ -543,8 +592,8 @@ def card_status(c):
 
 
 # Каталоги, куда вставляются карточки дел (между метками cards:start / cards:end): файл, путь до корня site/, место (для аналитики).
-# «Мои дела» — тоже каталог: в пустом кабинете это витрина дел, в заполненном — «Другие дела» (account.js прячет уже начатые).
-CATALOGS = [('index.html', '', 'home'), (os.path.join('moscow', 'index.html'), '../', 'moscow'), (os.path.join('account', 'index.html'), '../', 'account')]
+# «Мои дела» (28.11) — не каталог: «Следующее дело» кабинет рисует сам из #cases-data (build_account).
+CATALOGS = [('index.html', '', 'home'), (os.path.join('moscow', 'index.html'), '../', 'moscow')]
 
 
 def meta_html(meta):
@@ -621,7 +670,7 @@ def quest_version(qid):
 
 
 def build_account(cases):
-    """Данные дел для «Моих дел» (site/assets/account.js): номер, название, где, обложка, точки, статус, плеер и версия
+    """Данные дел для «Моих дел» (site/account/app.js и заглушка api.js): номер, название, где, обложка, точки, статус, плеер и версия
     сценария (дело обновилось — сказать). Без текстов дела: только то, что и так есть в карточке."""
     plays = play_pages()
     rows = []
@@ -655,6 +704,11 @@ def build_lines():
             raise SystemExit(f'{rel}: нет меток <!-- lines:start --> / <!-- lines:end -->')
         page = re.sub(r'(<!-- lines-band:start[^>]*-->\n).*?(<!-- lines-band:end -->)',
                       lambda m: m.group(1) + lines_band(root, brand) + '\n' + m.group(2), page, flags=re.S)
+        if (rel, root, brand) in OTHER_PAGES:
+            page, n = re.subn(r'(<!-- other:start[^>]*-->\n).*?(<!-- other:end -->)',
+                              lambda m: m.group(1) + other_html(root, brand) + '\n' + m.group(2), page, flags=re.S)
+            if n != 1:
+                raise SystemExit(f'{rel}: нет меток <!-- other:start --> / <!-- other:end --> (блок «Другие линии», выше seo:start и FAQ)')
         with open(path, 'w', encoding='utf-8') as fh:
             fh.write(page)
         print('→', os.path.relpath(path, REPO), '(линии)')
