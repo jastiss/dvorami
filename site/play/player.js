@@ -912,14 +912,16 @@
     var imgs = srcs.map(function (s, i) {
       return picHtml(s, i ? '' : alt, (i ? ' hidden' : '') + ' data-layer="' + i + '"');
     }).join('');
+    // картинка в кадре не обрезается никогда (std/images.md, владелец 28.11): вписана целиком, поля кадра закрывает её же размытая копия
+    var back = srcs.length === 1 ? '<i class="pl-frame-bg" aria-hidden="true" style="background-image:url(\'' + esc(encodeURI(webpOf(srcs[0]) || srcs[0])) + '\')"></i>' : '';
     var box = srcs.length > 1
       ? '<button type="button" class="pl-frame pl-frame--layers' + none + '" data-act="layer" data-i="0" data-n="' + srcs.length + '" style="aspect-ratio:' + esc(ratio) + '" aria-label="' + esc(alt) + '. Слой 1 из ' + srcs.length + ', нажмите — следующий">' + ph + imgs +
         '<span class="pl-dots" aria-hidden="true">' + srcs.map(function (s, i) { return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</span></button>'
       : srcs.length && !l.inOpt
         // любая картинка — целиком по нажатию, на весь экран (openZoom); у обрезанной вертикальной так видна деталь на краю кадра
-        ? '<button type="button" class="pl-frame pl-frame--zoom' + (tall ? ' pl-frame--crop' : '') + '" data-act="zoom" data-src="' + esc(srcs[0]) + '" data-alt="' + esc(alt) + '" style="aspect-ratio:' + esc(ratio) + '" aria-label="' + esc(alt) + '. Открыть картинку целиком">' + ph + imgs +
+        ? '<button type="button" class="pl-frame pl-frame--zoom' + (tall ? ' pl-frame--crop' : '') + '" data-act="zoom" data-src="' + esc(srcs[0]) + '" data-alt="' + esc(alt) + '" style="aspect-ratio:' + esc(ratio) + '" aria-label="' + esc(alt) + '. Открыть картинку целиком">' + ph + back + imgs +
           '<span class="pl-zoom" aria-hidden="true">' + ico('zoom') + '</span></button>'
-        : '<div class="pl-frame' + none + '" style="aspect-ratio:' + esc(ratio) + '"' + (srcs.length ? '' : ' role="img" aria-label="' + esc(alt) + ' (картинка готовится)"') + '>' + ph + imgs + '</div>';
+        : '<div class="pl-frame' + none + '" style="aspect-ratio:' + esc(ratio) + '"' + (srcs.length ? '' : ' role="img" aria-label="' + esc(alt) + ' (картинка готовится)"') + '>' + ph + back + imgs + '</div>';
     return '<figure class="pl-fig" data-arrow-at="image">' + box + (l.caption ? '<figcaption>' + inline(l.caption) + '</figcaption>' : '') + '</figure>';
   }
   // Звук: плеер реплики. У всех реплик экрана есть файлы — играет их подряд; нет — то же место с плашкой «Аудио скоро».
@@ -3418,6 +3420,14 @@
     img.src = img.getAttribute('src');
     return true;
   }
+  // Файл шире, чем записано в деле (сцену перерисовали в широкий формат под тем же именем, а ratio в quest.json ещё старый), —
+  // кадр берёт пропорции файла: широкая картинка не стоит в квадрате с пустыми полями сверху и снизу (std/images.md, 28.11)
+  document.addEventListener('load', function (e) {
+    var t = e.target, fr = t && t.tagName === 'IMG' && t.closest && t.closest('.pl-fig > .pl-frame');
+    if (!fr || fr.classList.contains('pl-frame--layers') || fr.closest('.pl-opt') || !t.naturalWidth || !t.naturalHeight) return;
+    var m = String(fr.style.aspectRatio || '').match(/([\d.]+)\s*\/\s*([\d.]+)/), was = m ? +m[1] / +m[2] : 0, real = t.naturalWidth / t.naturalHeight;
+    if (was && real > was * 1.08) { fr.style.aspectRatio = t.naturalWidth + ' / ' + t.naturalHeight; fitFigs(); }
+  }, true);
   // Картинка не загрузилась — остаётся заглушка с подписью, раскладка не прыгает
   document.addEventListener('error', function (e) {
     var t = e.target;

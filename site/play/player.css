@@ -464,7 +464,7 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 }
 
 /* ---------- Формат 5 (docs/quest-format.md): реплики, картинки, письмо-улика, карточки доски, варианты, выбор ---------- */
-:root { --ink-hand: #46287A; --stamp: #B3261E; --rule: #6F8FB8; --font-hand: 'Georgia', 'Times New Roman', serif; }
+:root { --ink-hand: #46287A; --stamp: #A01E17; --rule: #6F8FB8; --font-hand: 'Caveat', 'Segoe Print', 'Bradley Hand', 'Georgia', cursive; }
 
 /* Реплики: имя говорящего всегда подписано; герои различаются формой полосы слева, а не только цветом */
 .pl-line { position: relative; padding: 2px 0 2px 14px; border-left: 3px solid var(--accent); }
@@ -487,9 +487,30 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-line--radio .pl-prose { font-family: var(--font-doc); font-size: 16px; color: var(--text-2); }
 .pl-line--titr { border-left: 0; padding-left: 0; }
 .pl-line--titr .pl-prose { font-style: italic; color: var(--text-2); }
-.pl-line--paper { border-left: 0; padding: 14px 16px; background: var(--paper); color: var(--ink); border-radius: min(var(--radius), 8px); }
-.pl-line--paper .pl-who, .pl-line--paper .pl-who small { color: var(--ink-2); }
-.pl-hand { font-family: var(--font-hand); font-style: italic; color: var(--ink-hand); font-size: 18px; }
+/* Бумаги дела (владелец 28.11: «на старой жёлтой бумаге, тушью»): записка, карточка свидетеля, протокол, письмо и его оборот —
+   пожелтевший лист с фактурой (--paper-grain: шум SVG, 0 запросов), потемневшими краями и рукописным текстом. Текст остаётся
+   текстом: его читают озвучка и скринридер, правит Автор. Ничего не движется — prefers-reduced-motion учитывать нечем.
+   Бумага одна в обеих темах (это вещь из дела, а не часть интерфейса); в тёмной чуть приглушена, чтобы не слепила. */
+:root { --paper-old: #E6D3A1; --paper-edge: rgba(108, 72, 20, .34); --ink-old: #1F1A14; --ink-old-2: #5A4526; --font-pen: 'Caveat', 'Segoe Print', 'Bradley Hand', cursive;
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.045 .09' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .28 0 0 0 0 .08 0 0 0 .55 -.12'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"); }
+:root[data-theme="sun"] { --paper-old: #EDDCAB; }
+.pl-line--paper, .pl-letter-strip, .pl-letter-back { background: var(--paper-grain), var(--paper-old); color: var(--ink-old);
+  box-shadow: inset 0 0 26px var(--paper-edge), inset 0 0 3px rgba(108, 72, 20, .5), 2px 3px 0 rgba(0, 0, 0, .28); }
+.pl-line--paper { border-left: 0; padding: 14px 16px 16px; border-radius: 2px 5px 3px 6px / 5px 2px 6px 3px; }
+.pl-line--paper .pl-who, .pl-line--paper .pl-who small { color: var(--ink-old-2); }
+.pl-line--paper .pl-prose { font: 700 22px/1.3 var(--font-pen); color: var(--ink-old); }
+.pl-line--paper .pl-prose p + p { margin-top: 4px; }
+/* записка — клочок, положен чуть криво */
+.pl-line--note { transform: rotate(-.6deg); border-radius: 3px 8px 2px 10px / 9px 3px 8px 2px; }
+/* карточка свидетеля, протокол — бланк картотеки: шапка и названия граф напечатаны, ответы вписаны тушью по линейкам */
+.pl-line--card { padding-top: 10px; }
+.pl-line--card .pl-who { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--ink-old); box-shadow: 0 3px 0 -2px var(--ink-old);
+  font: var(--tag-font); letter-spacing: var(--tag-track); text-transform: uppercase; color: var(--ink-old); }
+.pl-line--card .pl-who small { font: 400 15px/1.2 var(--font-text); letter-spacing: 0; text-transform: none; }
+.pl-line--card .pl-prose { line-height: 30px; background: repeating-linear-gradient(to bottom, transparent 0 28px, rgba(90, 69, 38, .32) 28px 29px, transparent 29px 30px); }
+.pl-line--card .pl-prose p + p { margin-top: 0; }
+.pl-line--card .pl-prose b { font: 600 14px/30px var(--font-text); letter-spacing: .05em; text-transform: uppercase; color: var(--ink-old-2); }
+.pl-hand { font: 700 22px/1.3 var(--font-hand); color: var(--ink-hand); }
 .pl-line--paper .pl-hand, .pl-letter .pl-hand { color: var(--ink-hand); }
 .pl-lines > * + * { margin-top: 14px; }
 .pl-scene.pl-lines { border-left: 0; padding-left: 0; }
@@ -498,7 +519,11 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 /* Картинка или заглушка: место держится всегда; не загрузилась — видна подпись */
 .pl-fig { margin: 0; }
 .pl-frame { position: relative; display: block; width: 100%; overflow: hidden; border-radius: min(var(--radius), 12px); background: var(--surface-2); border: 0; padding: 0; color: inherit; }
-.pl-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Картинка в кадре не обрезается (владелец 28.11: «обрезаются герои»): вписана целиком (contain), а поля кадра — если пропорции
+   кадра и файла не совпали или кадр поджат по высоте — закрывает её же размытая копия (.pl-frame-bg), а не пустой фон */
+.pl-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.pl-frame-bg { position: absolute; inset: -24px; background: center / cover no-repeat; filter: blur(18px) brightness(.82) saturate(1.1); pointer-events: none; }
+.pl-frame.is-missing .pl-frame-bg { display: none; }
 .pl-frame img.is-broken { display: none; }
 /* Заглушка с подписью — только когда картинки нет (is-empty) или она не загрузилась (is-missing); пока грузится — ровный фон кадра */
 .pl-frame:not(.is-empty):not(.is-missing) > .pl-ph { display: none; }
@@ -515,8 +540,8 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
    T-123: роль «метка» (--tag-font, как ярлык шага и выбор развилки), а не свой размер 13 px */
 .pl-fresh-tag { display: inline-block; margin-right: 6px; padding: 3px 8px; border: 2px solid var(--accent-text); border-radius: 999px; color: var(--accent-text);
   font: var(--tag-font); letter-spacing: var(--tag-track); text-transform: uppercase; vertical-align: 1px; }
-/* Картинки экрана (std/images.md, «Картинки в плеере», владелец 27.11 — меньше прокрутки): альбомные или квадратные, не выше 42%
-   окна; вертикальная показывается квадратом (обрезка чуть выше середины — там головы героев), целиком — по нажатию, в шторке.
+/* Картинки экрана (std/images.md, «Картинки в плеере», владелец 27.11 — меньше прокрутки): широкие (16:9), не выше 42%
+   окна; старая вертикальная стоит в квадратном кадре целиком, с размытыми полями по бокам; крупно — по нажатию, в шторке.
    Высоту знает и раскладка экранов (player.js, FIG_MAX) */
 .pl-step .pl-frame { max-height: 42vh; max-height: 42dvh; }
 .pl-step .pl-opt .pl-frame { max-height: none; }
@@ -524,7 +549,6 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-step[data-listen] .pl-frame { max-height: max(160px, calc(100vh - 548px)); max-height: max(160px, calc(100dvh - 548px)); }
 .pl-step[data-listen] .pl-opt .pl-frame { max-height: none; }
 .pl-frame--zoom { cursor: zoom-in; }
-.pl-frame--crop img { object-position: 50% 35%; }
 .pl-zoom { position: absolute; right: 8px; bottom: 8px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--bg); color: var(--text); box-shadow: 0 0 0 2px var(--control); }
 .pl-zoom .pl-ico { width: 20px; height: 20px; }
 /* Картинка на весь экран: окно во весь вьюпорт, картинка вписана целиком, фон под окном не прокручивается (html.pl-lock) */
@@ -571,11 +595,10 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 
 /* Письмо-улика: бумажная полоска, пятно на месте слова, линии на просвет, кончик, штамп, оборот */
 .pl-letter { margin: 0; }
-.pl-letter-strip { position: relative; display: flex; align-items: stretch; background: var(--paper); color: var(--ink); border-radius: 3px; min-height: 120px;
-  box-shadow: 0 1px 0 var(--line); overflow: hidden; }
-.pl-letter.is-ruled .pl-letter-strip { background-image: linear-gradient(to bottom, transparent calc(50% - 5px), var(--rule) calc(50% - 5px), var(--rule) calc(50% - 4px), transparent calc(50% - 4px),
+.pl-letter-strip { position: relative; display: flex; align-items: stretch; border-radius: 2px 6px 3px 5px / 5px 2px 6px 3px; min-height: 120px; overflow: hidden; }
+.pl-letter.is-ruled .pl-letter-strip { background-image: var(--paper-grain), linear-gradient(to bottom, transparent calc(50% - 5px), var(--rule) calc(50% - 5px), var(--rule) calc(50% - 4px), transparent calc(50% - 4px),
   transparent calc(50% + 4px), var(--rule) calc(50% + 4px), var(--rule) calc(50% + 5px), transparent calc(50% + 5px)); }
-.pl-letter-text { flex: 1; min-width: 0; padding: 14px 16px; font-family: var(--font-hand); font-style: italic; font-size: 18px; line-height: 1.5; color: var(--ink-hand); }
+.pl-letter-text { flex: 1; min-width: 0; padding: 14px 16px; font: 700 22px/1.25 var(--font-hand); color: var(--ink-hand); }
 .pl-letter-ln { display: block; }
 .pl-stain { display: inline-block; width: 5.2em; height: 1.15em; vertical-align: -.2em; border-radius: 45% 55% 50% 40% / 60% 45% 55% 40%;
   background: radial-gradient(ellipse at 40% 50%, rgba(70, 40, 122, .55), rgba(70, 40, 122, .25) 60%, rgba(70, 40, 122, .08) 75%, transparent 78%); }
@@ -584,9 +607,9 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 .pl-tip svg { display: block; width: 100%; height: 26px; }
 .pl-tip--stuck { background: repeating-linear-gradient(135deg, rgba(0, 0, 0, .10) 0 6px, transparent 6px 12px); }
 .pl-letter-stamp { position: absolute; right: 18px; top: 50%; transform: translateY(-50%) rotate(-8deg); padding: 4px 10px 3px; border: 3px solid var(--stamp); color: var(--stamp);
-  font: 700 18px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .08em; background: var(--paper); }
-.pl-letter-back { margin-top: 10px; padding: 12px 16px; background: var(--paper); color: var(--ink); border-radius: 3px; }
-.pl-letter-back .pl-label { color: var(--ink-2); margin-bottom: 4px; }
+  font: 700 18px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .08em; background: var(--paper-old); }
+.pl-letter-back { margin-top: 10px; padding: 12px 16px; border-radius: 3px 5px 2px 6px / 5px 3px 6px 2px; }
+.pl-letter-back .pl-label { color: var(--ink-old-2); margin-bottom: 4px; }
 .pl-letter figcaption { margin-top: 8px; font-size: 15px; color: var(--text-2); }
 .pl-card--letter .pl-btn { margin-top: 12px; }
 
@@ -821,10 +844,12 @@ details.pl-field[open] > summary { margin-bottom: 4px; }
 
 /* ---------- Обложка дела (владелец 27.11): картинка, название, вопрос дела, паспорт маршрута метками, одна кнопка ---------- */
 .pl-cover { position: relative; margin: -12px -16px 0; overflow: hidden; background: var(--surface-2); }
-.pl-cover-art { aspect-ratio: 4 / 3; max-height: 38vh; max-height: 38dvh; width: 100%; }
+/* Картинка обложки — широкая (16:9), видна целиком: герои в центре не обрезаются и не уходят под заголовок (владелец 28.11).
+   Заголовок стоит под картинкой и заходит на её нижний край (там у обложки спокойное поле) лишь затуханием в 36 px */
+.pl-cover-art { aspect-ratio: 16 / 9; max-height: 38vh; max-height: 38dvh; width: 100%; }
 .pl-cover-art picture { display: block; width: 100%; height: 100%; }
-.pl-cover-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
-.pl-cover-head { position: absolute; left: 0; right: 0; bottom: 0; padding: 48px 16px 10px; background: linear-gradient(to bottom, transparent, var(--bg) 78%); }
+.pl-cover-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }
+.pl-cover-head { position: relative; margin-top: -36px; padding: 36px 16px 10px; background: linear-gradient(to bottom, transparent, var(--bg) 36px); }
 .pl-cover-head h1 { margin-top: 6px; font-family: var(--font-display); font-size: var(--h1-size); line-height: var(--h1-line); font-weight: var(--h1-weight);
   text-transform: var(--h1-case); letter-spacing: var(--h1-track); overflow-wrap: break-word; text-wrap: balance; }
 .pl-main > .pl-cover + * { margin-top: 12px; }
