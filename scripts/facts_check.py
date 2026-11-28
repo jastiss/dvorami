@@ -5,6 +5,11 @@
   python3 scripts/facts_check.py --quest zilart  — одно дело
   python3 scripts/facts_check.py --json          — {"errors": [...], "warns": [...], "info": [...]} для site_check.js
   python3 scripts/facts_check.py --selftest      — фикстура: ❌ у игрока краснеет, мёртвый путь — предупреждение (у ❌ — красное)
+  python3 scripts/facts_check.py --where "не от Китая" [--quest kitay-gorod] — где звучит фраза (H-136): все места у игрока и
+      покупателя — данные витрин (platform/site/cases/), страницы site/ (кроме медиа плеера), site/llms*.txt, quest.json,
+      quests/*/story/, посты канала. Без учёта &nbsp; (и \u00a0, мягкого переноса, невидимых символов), тегов, регистра, ё,
+      кавычек и окончаний слов от 5 букв; фраза может переходить на следующую строку. Понизили статус факта —
+      этим, а не grep: grep не находит «не&nbsp;от&nbsp;Китая» (27.11, c5_kitay.py).
 
 Формат ссылки (docs/facts-format.md): «т.N id/поле/индекс/…» — N = поле n точки, id — её id (можно не писать),
 дальше путь по quest.json через «/» или пробел, индексы с нуля, диапазон «0–2»; «, » — ещё путь от той же точки;
@@ -286,11 +291,78 @@ def composite_status(st):
     return cls if len(cls) > 1 else []
 
 
+INVISIBLE = re.compile("[\u00ad\u200b-\u200d\u2060\ufeff]")   # мягкий перенос, нулевой пробел, соединители — слово не рвут
+ESCAPED_SPACE = re.compile(r"\\u(00a0|202f|2009|2007)|\\xa0", re.I)  # «\u00a0» в исходниках JSON и Python — тоже пробел
+
+
 def norm_site(s):
-    """Текст витрины и цитаты — к одному виду: без тегов и сущностей, регистра, ё, кавычек и знаков препинания."""
+    """Текст витрины и цитаты — к одному виду: без тегов и сущностей (&nbsp; — пробел), невидимых символов, регистра, ё,
+    кавычек и знаков препинания."""
     import html as _html
-    s = _html.unescape(re.sub(r"<[^>]+>", " ", s)).lower().replace("ё", "е")
+    s = ESCAPED_SPACE.sub(" ", s)
+    s = INVISIBLE.sub("", _html.unescape(re.sub(r"<[^>]+>", " ", s))).lower().replace("ё", "е")
     return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", s)).strip()
+
+
+def phrase_re(phrase):
+    """Регулярка для фразы по нормализованному тексту: слова подряд, от 5 букв — по основе (падежи), «…» — пропуск."""
+    parts = []
+    for frag in re.split(r"…|\.\.\.", phrase):
+        words = norm_site(frag).split()
+        if words:
+            parts.append(r"\s+".join(re.escape(w[: max(4, len(w) - 2)]) + r"\w*" if len(w) >= 5 else re.escape(w) for w in words))
+    if not parts:
+        return None
+    return re.compile(r"(?<!\w)" + r"\b.*?\b".join(parts) + r"(?!\w)" if len(norm_site(phrase).split()[-1]) < 5 else r"(?<!\w)" + r"\b.*?\b".join(parts))
+
+
+def where_files(qid=None):
+    """Где игрок или покупатель может встретить фразу (H-136). qid — только файлы этого дела и общие страницы."""
+    site = ROOT / "site"
+    out = []
+    for p in sorted(site.rglob("*")):
+        if not p.is_file() or p.suffix not in (".html", ".txt", ".json", ".js") or "/media/" in p.as_posix():
+            continue
+        rel = p.relative_to(site).as_posix()
+        if rel.startswith("play/") and not (p.name == "index.html"):
+            continue
+        if p.suffix in (".js", ".json") and not rel.startswith("account/"):
+            continue
+        out.append(p)
+    out += sorted((ROOT / "platform" / "site" / "cases").glob("c*.py"))
+    for qd in sorted(QUESTS.iterdir()) if QUESTS.exists() else []:
+        if qid and qd.name != qid:
+            continue
+        if (qd / "quest.json").exists():
+            out.append(qd / "quest.json")
+        out += sorted((qd / "story").glob("*.md")) if (qd / "story").exists() else []
+    out += sorted((ROOT / "docs" / "marketing" / "channel" / "posts").glob("*.md"))
+    return out
+
+
+def where(phrase, qid=None, files=None):
+    """→ [(путь, номер строки, отрывок)]: строка (или строка со следующей — фраза перенесена) содержит фразу."""
+    rx = phrase_re(phrase)
+    if not rx:
+        return []
+    hits = []
+    for p in files if files is not None else where_files(qid):
+        try:
+            lines = pathlib.Path(p).read_text(encoding="utf-8").split("\n")
+        except (OSError, UnicodeDecodeError):
+            continue
+        norm = [norm_site(x) for x in lines]
+        for i, n in enumerate(norm):
+            text, m = n, rx.search(n)
+            if not m and i + 1 < len(norm):   # фраза перенесена: начинается в этой строке, кончается в следующей
+                text = n + " " + norm[i + 1]
+                m = rx.search(text)
+                if m and not (m.start() < len(n) < m.end()):
+                    m = None
+            if m:
+                a = max(0, m.start() - 40)
+                hits.append((str(p), i + 1, ("…" if a else "") + text[a:m.end() + 40]))
+    return hits
 
 
 def showcase_text(qid):
@@ -532,6 +604,20 @@ def selftest():
         out.append("неактивная ветка [s=B] посчитана звучащей")
     if not any("[5]" in x and "ключевого слова" in x for x in w):
         out.append("ссылка не на тот текст (нет «Кандинский») не поймана")
+    # H-136: «где звучит» находит фразу через &nbsp;, \u00a0 в исходнике, мягкий перенос, тег, перенос строки и другой падеж
+    with tempfile.TemporaryDirectory() as d:
+        fx = pathlib.Path(d)
+        (fx / "c5.py").write_text("'teaser': 'Подарок не&nbsp;от&nbsp;Китая — проверьте сами',\n", encoding="utf-8")
+        (fx / "q.json").write_text('{"say": "Это не\\u00a0от Ки\u00adтая, а с Урала"}\n', encoding="utf-8")
+        (fx / "p.html").write_text("<p>Шёлк — не <b>от</b>\nКитая.</p>\n<p>Китайская стена</p>\n", encoding="utf-8")
+        (fx / "x.md").write_text("Фарфор от Китая привезли\n", encoding="utf-8")
+        got = where("не от Китая", files=[fx / "c5.py", fx / "q.json", fx / "p.html", fx / "x.md"])
+        names = sorted({pathlib.Path(h[0]).name for h in got})
+        if names != ["c5.py", "p.html", "q.json"]:
+            out.append(f"--where «не от Китая»: нашлось в {names}, ждали c5.py (&nbsp;), q.json (\\u00a0, мягкий перенос), "
+                       f"p.html (тег и перенос строки) и не x.md (H-136)")
+        if not where("Кружевной грузовик", files=[fx / "p.html"]) == [] or not where("кружевного грузовика", files=[fx / "c5.py"]) == []:
+            out.append("--where: ложное срабатывание")
     return out
 
 
@@ -540,7 +626,16 @@ def main(argv=None):
     ap.add_argument("--quest", action="append")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--where", metavar="ФРАЗА", help="где звучит фраза (H-136): витрины, страницы, llms.txt, quest.json, story, посты")
     a = ap.parse_args(argv)
+    if a.where:
+        hits = where(a.where, (a.quest or [None])[0])
+        for path, line, frag in hits:
+            print(f"{pathlib.Path(path).resolve().relative_to(ROOT)}:{line}: {frag}")
+        n = len(hits)
+        word = "место" if n % 10 == 1 and n % 100 != 11 else "места" if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14 else "мест"
+        print(f"facts_check --where «{a.where}»: {n} {word}" if hits else f"facts_check --where «{a.where}»: нигде")
+        return 0
     if a.selftest:
         s = selftest()
         for m in s:
